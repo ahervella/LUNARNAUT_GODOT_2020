@@ -1,0 +1,149 @@
+extends Area2D
+
+var in_inner_node = false
+var in_outer_node = false
+
+
+func _ready():
+	
+	var detector_pos = get_node("in_detector_shape").get_global_position()
+	var astro_pos = get_node("/root/Control/astro").get_global_position()
+	
+	#In case astro starts inside ship (need to fix to be immediate)
+	if (detector_pos.y < astro_pos.y && (detector_pos.x + 50) > astro_pos.x && global.get("playtest")):
+		out_ship_visibility(false)
+	else:
+		out_ship_visibility(true)
+
+#Signal : When astro enters first detector
+func _on_ship_out_detector_body_entered(body):
+	
+	var groups = body.get_groups()
+	if (groups.has("astro")):
+		in_outer_node = true
+	out_ship_visibility(false)
+		
+#Signal : When astro exits first detector
+func _on_ship_out_detector_body_exited(body):
+	
+	var groups = body.get_groups()
+	if (groups.has("astro")):
+		in_outer_node = false
+	out_ship_visibility(true)
+	
+	
+
+#Signal : When astro enters secoond (inner) detector
+func _on_ship_in_detector_body_entered(body):
+	var groups = body.get_groups()
+	if (groups.has("astro")):
+		in_inner_node = true
+	out_ship_visibility(true)
+		
+#Signal : When astro exits secoond (inner) detector
+func _on_ship_in_detector_body_exited(body):
+	var groups = body.get_groups()
+	if (groups.has("astro")):
+		in_inner_node = false
+	
+	
+	
+
+#tween_exec : Node, Tween_Node, Integer (1 or 0) -> Void
+#is a shell that executes setting and playing tween with inputs determining the start
+#or finish result of the alpha channel and tween path to use.
+func tween_exec(node, tween_node, startOrFin):
+	var cur_color = node.get_modulate()
+	var cur_g = cur_color.g
+	var cur_r = cur_color.r
+	var cur_b = cur_color.b
+	var cur_a = cur_color.a
+	
+	
+	if (node.is_in_group("moon_node")):
+		#turns the moon nodes into black or noraml and alpha fade
+		get_node(tween_node).interpolate_property(node, "modulate", cur_color, Color(startOrFin, startOrFin, startOrFin, startOrFin), 0.3 , 0, Tween.EASE_OUT)
+	
+#	if (node.is_in_group("black_node")):
+#		get_node(tween_node).interpolate_property(node, "modulate", cur_color, Color(startOrFin, startOrFin, startOrFin, startOrFin), 0.5 , 0, Tween.EASE_OUT)
+#
+	#turns node into alpha fade
+	else: get_node(tween_node).interpolate_property(node, "modulate", cur_color, Color(cur_r, cur_g, cur_b, startOrFin), 0.3 , 0, Tween.EASE_OUT)
+	
+	get_node(tween_node).start()
+	
+	
+	
+#out_ship_visibility : Boolean -> Void
+#trigger for when every astro enters or exits one of the detectors
+func out_ship_visibility(thing):
+	
+	#counter for selecting successive tween node
+	var counter = 1
+	
+	var out_ship_nodes = get_tree().get_nodes_in_group("out-ship")
+	var bg_nodes = get_tree().get_nodes_in_group("bg")
+	var moon_nodes = get_tree().get_nodes_in_group("moon_node")
+	#var black_node = get_tree().get_nodes_in_group("black")
+	#var out_floor = get_node("/root/Control/stage/stage_floor")
+	
+	#if astro just jumped in or just jumped out,
+	#then counter (which determines which distinct tween node to use) increases and assigns node to a tween
+	#which will be the same for all because number of nodes no change
+	
+	#if (inner and outer and thing), or (inner and not outer and thing), or (not in either and not inner, which is for initial cond)
+	if ((in_inner_node && in_outer_node && thing) or (in_inner_node && !in_outer_node && thing) or (!in_inner_node && !in_outer_node && !thing)):
+		
+		for i in (bg_nodes):
+			tween_exec(i, str("/root/Control/tween", counter), 0)
+			counter = counter + 1
+			
+		for i in (moon_nodes):
+			tween_exec(i, str("/root/Control/tween", counter), 0)
+			counter = counter + 1
+		
+#		for i in (black_node):
+#			tween_exec(i, str("/root/Control/tween", counter), 1)
+#			counter = counter + 1
+			
+		for i in (out_ship_nodes):
+			tween_exec(i, str("/root/Control/tween", counter), 0)
+			counter = counter + 1
+		counter = 1
+		
+		#disables moon ground floor so astro can go into ship
+		#out_floor.set_disabled(true)
+		
+		
+		
+	if (in_inner_node && in_outer_node && !thing):
+		for i in (out_ship_nodes):
+			tween_exec(i, str("/root/Control/tween", counter), 1)
+			counter = counter + 1
+
+		for i in (moon_nodes):
+			tween_exec(i, str("/root/Control/tween", counter), 1)
+			counter = counter + 1
+			
+#		for i in (black_node):
+#			tween_exec(i, str("/root/Control/tween", counter), 0)
+#			counter = counter + 1
+			
+#		for i in (black_node):
+#			tween_exec(i, str("/root/Control/tween", counter), 1)
+#			counter = counter + 1
+		
+		
+		for i in (bg_nodes):
+			tween_exec(i, str("/root/Control/tween", counter), 1)
+			counter = counter + 1
+			
+		counter = 1
+			
+		#disables moon ground floor so astro can go into ship
+		#out_floor.set_disabled(false)
+		
+		
+		
+	
+
