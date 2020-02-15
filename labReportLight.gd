@@ -1,5 +1,11 @@
 extends Sprite
 
+#ALEJANDRO (Feb-14-2020)
+#this is the script for the blinking lab light that gives the
+#description of the nora alien in the blue lab on the right.
+#all it does is use timers to control the blink. Should update
+#to use the new timers (as seen below, still using old timers)
+
 # Declare member variables here. Examples:
 # var a = 2
 # var b = "text"

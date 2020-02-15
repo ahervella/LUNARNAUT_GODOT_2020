@@ -1,5 +1,11 @@
 extends Sprite
 
+#ALEJANDRO (Feb-14-2020)
+#dThis door script needs some work. Controls functins of the
+#door, but don't think it's been working fully yet, almost there.
+#Need to work on handling door script and logic and setup, specifically
+#becuase there are multiple nodes inheriting this script per door
+
 const DOOR_TIME = 1
 var canOpen : bool = false;
 var autoOpen : bool = false;

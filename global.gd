@@ -1,5 +1,11 @@
 extends Node
 
+#ALEJANDRO (Feb-14-2020)
+#this is the global script that should be used across all levels.
+#I think its still in development of transitiong all of its original
+#functionality to the lvl1 script and leaving here only the actual
+#global functionalities across all the levels.
+
 onready var interactNode = $"/root/Control/astro/InteractFont"
 
 var current_scene

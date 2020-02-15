@@ -1,5 +1,10 @@
 extends RichTextLabel
 
+#ALEJANDRO (Feb-07-2020)
+#This is the OUTDATED old version of interacting
+#with interactable object. This script is garbage for most part
+#and is not used anywhere as of right now
+
 var draw_next_letter = true
 var blink = true
 var texttt

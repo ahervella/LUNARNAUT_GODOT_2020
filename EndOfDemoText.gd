@@ -1,5 +1,10 @@
 extends RichTextLabel
 
+
+#ALEJANDRO (Feb-07-2020)
+#Script for showing a successfully completed demo ontop
+#of the end of demo video
+
 var blink = true
 var timer
 var gameover_timer
@@ -65,19 +70,6 @@ func on_gameover_timer_fin_WON():
 func on_outro_fin():
 	global.replay()
 
-#		textTween.interpolate_property(self, "percent_visible", 1, 0, 0.2 , 0, Tween.EASE_OUT)
-#		textTween.start()
-#		remove_child(gameover_timer)
-	 
-#func _process(delta):
-#	var camPosX
-#	var camPosY
-#	if(true):
-#		var camthign = get_node("Camera2D").get_viewport().get_position()
-#		camPosX = get_node("Camera2D").get_visible_rect().size.x/2
-#		camPosY = get_node("Camera2D").get_visible_rect().size.y/2
-#		self.set_position(camthign)
-#		print(camthign)
 func timer_reset(text):
 	if (blink):
 		set_text(str(text, "_"))

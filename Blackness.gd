@@ -1,6 +1,10 @@
 extends Sprite
 
-
+#ALEJANDRO (Feb-07-2020)
+#This is attached to a giant solid black sprite within
+#the "EndOfDemoArea" that tweens to be opaque to give the
+#illusion of a fade out when the end of the game is reached.
+#This triggers EndOfDemoText.gd methods
 
 # Declare member variables here. Examples:
 # var a = 2

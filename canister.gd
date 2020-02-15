@@ -1,5 +1,10 @@
 extends AnimatedSprite
 
+#ALEJANDRO (Feb-14-2020)
+#interact script for the oxygen canister (only for level 1
+# as of this date). Takes care of all interactions and actions
+# having to do with the canister
+
 var canUseO2 : bool = true;
 const O2_TEXT = "OXYGEN"
 onready var soundNode = null

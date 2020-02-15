@@ -1,5 +1,11 @@
 extends RichTextLabel
 
+#ALEJANDRO (Feb-14-2020)
+#This is the main script for displaying text for in game
+#near astro for all interactable objects. A lot of this was copied from the
+#old interact and modified to be much better. I beleieve this is basically done
+#and just need to have interact architecture be impleneted on all object
+
 var blink = true
 var currentText
 var timer

@@ -1,5 +1,12 @@
 extends KinematicBody2D
 
+#ALEJANDRO (Feb-14-2020)
+#This is the main script that runs the logic of the game
+#and controls our astronaut! Here our astronaut undergoes
+#simulated physics (which are controlled in this script
+#as a kinematicBody2D, used to be a rigidBody2D, but now
+#we have more control)
+#Interaction logics also begin here
 
 onready var CAMERA_NODE = $"/root/Control/Cam2D"
 var NORA_NODE

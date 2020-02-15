@@ -1,5 +1,15 @@
 extends Area2D
 
+#ALEJANDRO (Feb-14-2020)
+#This the script for the bubble in the tunnel on route
+#towards the red lab. This is used to control when to hide it
+#so that when the player is traversing other parts of the cave
+#it will not appear (although layers normally solve this problem,
+#because of how the lab is set up to be ontop of astro due to lights
+#and the walls, I cannot place it behind our main character, so instead
+#I use this method to turn it off. Works fine.)
+#TODO: clean this up a bit
+
 
 var show_lab = false
 #var hide_bg = true

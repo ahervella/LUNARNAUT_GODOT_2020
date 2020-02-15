@@ -1,4 +1,10 @@
 #extends Area2D
+
+#ALEJANDRO (Feb-14-2020)
+#I believe I switched all the ship in and out detection logic to
+#just ship_in. Should probably go clean that up and then delete this
+#Keeping for ref incase any shit is needed
+
 #
 #var detector_pos
 #var astro_pos

@@ -1,4 +1,12 @@
 extends KinematicBody2D
+
+#ALEJANDRO (Feb-14-2020)
+#This is the latest script for making nora (the monster) do shit!
+#This features calculating ray casts to know when to chase in the given direction
+#our astronaut is at. Need to make this more independant if we're going to use it
+#in other scenes, and probably clean up this code AND rename to something better
+
+
 #make this a class?
 var musicChange = true
 var wait = 0

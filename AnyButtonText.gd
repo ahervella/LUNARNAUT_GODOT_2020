@@ -1,5 +1,9 @@
 extends RichTextLabel
 
+#ALEJANDRO (Feb-07-2020)
+#This is the shitty script for pressenting the press any button
+#text that relies on timers, tweens, and text nodes
+
 var blink = true
 var timer
 var gameover_timer
@@ -11,15 +15,14 @@ var act = false
 var gameWon = false
 
 func _ready():
+	#make text empty and visibilty percent 0
 	set_text("")
 	set_percent_visible(0)
 	
 	#for centering the text
 	set_position(Vector2(get_viewport().get_size().x/2 - get_size().x/2, get_position().y))
 	
-	#onGameOver()
-	#var camthign = get_node("Camera2D").get_viewport().get_global_position()
-	#print (camthign)
+	#a gameover timer that also sets the gameWon to the passed game state
 func onGameOver(gameState):
 	gameWon = gameState
 	
@@ -31,18 +34,12 @@ func onGameOver(gameState):
 	gameover_timer.connect("timeout", self, "on_gameover_timer_fin")
 	gameover_timer.start()
 	
+	#method for when the timer above finishes
 func on_gameover_timer_fin():
+	#if died (game not won) show game over text
 	if(!gameWon):
 		animateText(gameOverText)
 		
-#	else:
-#		#global.set("game_won", true):
-#		var demoOutro = $"/root/Control/DemoOutro"
-#		demoOutro.connect("finished", self, "DemoOutroFinished")
-#		demoOutro.show()
-#		demoOutro.play()
-#		#global.set("can_reset", true)
-#		#global.set("game_won", true)
 
 func timer_reset(text):
 	if (blink):

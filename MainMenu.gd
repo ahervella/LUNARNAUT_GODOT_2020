@@ -1,5 +1,16 @@
 extends Node
 
+#ALEJANDRO (Feb-14-2020)
+#This is the scrpt for controlling the main menu. It was kind of bitch deciding
+#how to go back and forth on all the menus and having preloaded all the videos and shit.
+#Part of the difficulty was that upon switching videos and hiding layers and what not,
+#there still seems to be a black flicker between switching which = bad. Though I had fixed
+#it with my transition methods that would pause for a bit before switching but still seems to be
+#there a bit, but not too much that its noticible. Might be nice to leave it as an actual effect
+#for screen flickering!
+#Getting certain key presses at certain timings was also a bitch with key up and down and pressed
+#logic.
+
 var first_one_shot = false
 var second_one_shot = false
 var play_toggle = false

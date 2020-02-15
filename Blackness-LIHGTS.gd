@@ -1,6 +1,9 @@
 extends Sprite
 
-
+#ALEJANDRO (Feb-07-2020)
+#used to make a fade transition with loading the
+#first level. Specifically placed in the scene tree
+# so that the lights appear first then the game
 
 # Declare member variables here. Examples:
 # var a = 2

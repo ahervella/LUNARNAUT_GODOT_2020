@@ -1,5 +1,10 @@
 extends AnimatedSprite
 
+#ALEJANDRO (Feb-14-2020)
+#shitty. Gotta take out this process garbo and make this an
+#interact script (like canister.gd, great example)
+#This is also just for the first level as of date
+
 var one_shot = true
 
 func _ready():

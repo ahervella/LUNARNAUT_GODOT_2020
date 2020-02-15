@@ -1,5 +1,11 @@
 extends TouchScreenButton
 
+#ALEJANDRO (Feb-14-2020)
+#this is the script for controlling the on screen touch controls
+#for when playing on an IOS device! I got this script from this dudes video
+#online I believe during the summer of 2019. works pretty well, haven't
+#cleaned up since that summer though (should do that at some point, not priority tho)
+
 # Gonkee's joystick script for Godot 3 - full tutorial https://youtu.be/uGyEP2LUFPg
 # If you use this script, I would prefer if you gave credit to me and my channel
 

@@ -1,5 +1,16 @@
 extends Area2D
 
+#ALEJANDRO (Feb-14-2020)
+#(ALL FOR SHIP/LUNAR MODULE SPACECRAFt EXIT AT BEGINNING OF FIRST LEVEL)
+#After checking the ship_out_detector file which I thought was also being
+#Used, is just empty. Looks like all the ship in and out logic is done here
+#and could probably use some cleaning and renaming the script to something better...
+#Logic here works on mainly two bubbles near the entrance of the ship; one on the inside,
+#the other on the outside. If astro is outside and falls in far enough, you see the inside of the
+#ship, and vice versa for leaving. needed two so that hopping around the entrance
+#wouldn't be freaking out with changing back and forth, b/c should only change when definitely
+#know that astro will land inside or outside. See the entrance of the ship for bubble details
+
 var in_inner_node = false
 var in_outer_node = false
 
