@@ -6,14 +6,31 @@ extends RichTextLabel
 #old interact and modified to be much better. I beleieve this is basically done
 #and just need to have interact architecture be impleneted on all object
 
+#ALEJANDRO (Feb-24-2020)
+#renaed from interacttt to interact.gd!
+#bickering with an mem allocating bug so decided to just do it
+#manually here :( (for animate text)
+# reasons for that could be:
+	#multiple instances of the astrooo.gd script being loaded within the astro scene and level 1
+	#problem with godot source code and order of freeing shit? (in conjunction with returning pointers)
+	#shit happening at same time on frame (like starting a timer 
+		#and tween, or on the frame after being freed, etc.
+
 var blink = true
 var currentText
 var timer
 const TYPE_TEXT_TIME = 0.5
+const REMOVE_TEXT_TIME = 0.2
+var textTweeen : Tween
+var breakTimerLoop = false
 
 # vvvvvvvvvvvvv ALL FOR ANIMATING PROPER TEXT vvvvvvvvvvvvv
 
 func timer_reset(text):
+	if (breakTimerLoop):
+		breakTimerLoop = false
+		return
+		
 	if (blink):
 		set_text(str(text, "_"))
 
@@ -26,11 +43,16 @@ func timer_reset(text):
 	timer.set_wait_time(1)
 	timer.connect("timeout", self, "on_timeout_complete")
 	timer.start()
-	if (global.get("pressing_e")):
-		pass
+	
+	#var ref = funcref(self, 'on_timeout_complete')
+	#global.newTimer(1, ref)
+	
 #
 func on_timeout_complete():
 	blink = !blink
+	timer.queue_free()
+	#timer = null
+	print("blinking timer working")
 	timer_reset(currentText)
 
 
@@ -91,31 +113,55 @@ func set_text_pos(offsetLocation, topLevel):
 
 func animateText(text, soundNode = null, customPosOffset = Vector2(0,0), topLevel = false, textTime = null): #optional time for tween
 	currentText = text
-	remove_child(timer)
+
+	timer_reset(currentText)
+	
 	set_text_pos(customPosOffset, topLevel)
 	self.set_text(currentText)
 	
-	get_node("Text").interpolate_property(self, "percent_visible", 0, 1, TYPE_TEXT_TIME , 0, Tween.EASE_OUT)
-	get_node("Text").start()
-	timer_reset(currentText)
+	#had to do this manually due to memory allocating issue with ref
+	#-ing the textTweeen
+	textTweeen = Tween.new()
+	add_child(textTweeen)
+	#textTweeen.connect("tween_completed", self, "closeText", [textTweeen])
+	textTweeen.interpolate_property(self, 'percent_visible', 0, 1, TYPE_TEXT_TIME , 0, Tween.EASE_OUT)#global.newTweenNoConnection(self, "percent_visible", 0, 1, TYPE_TEXT_TIME, 0)
+	textTweeen.start()
+	
+	
 
 	if (soundNode != null):
 		soundNode.play(0)
 
 	#if has provided textTime 
-	if (textTime != null):
-		var ref = funcref(self, 'closeText')
-		global.newTimer(3, ref)
+	#if (textTime != null):
+	#	var ref = funcref(self, 'closeText')
+	#	global.newTimer(3, ref)
 
 #make text disapear
 func closeText():
-	#get current percent visible
+#
 	var perVisibile = self.get_percent_visible()
-	get_node("Text").stop_all() # stop all tweens
-	#make tween to close
-	get_node("Text").interpolate_property(self, "percent_visible", perVisibile, 0, 0.2 , 0, Tween.EASE_OUT)
-	get_node("Text").start()
-	remove_child(timer)
-	#set_current_interact(null)
+	
+	#if the tween hasn't been freed via the global newTweenNoConnection signal (as in, 
+	#it is still tweening the text to show and we need to closeText() prematurely,
+	#then this should not be null, and stop all!
+	self.set_percent_visible(perVisibile)
+	
+	textTweeen.stop_all()
+	textTweeen.queue_free()
+	
+	
+	
+	global.newTween(self, "percent_visible", perVisibile, 0, REMOVE_TEXT_TIME, 0, self, "setPerVisZero")
+	
+#seemed to be a bug where the whole text would flash for a single frame,
+#little hack to tryyyy to get aorund that (or at least make it happen less often...)
+func setPerVisZero(object, key):
+	#don't know if this helps with the flicker problem
+	self.set_percent_visible(0)
+	self.set_text("")
+	breakTimerLoop = true
+	
+	
 
 #^^^^^^^^^^^^^^ ALL FOR ANIMATING PROPER TEXT ^^^^^^^^^^^^^^

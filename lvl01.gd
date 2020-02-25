@@ -1,4 +1,4 @@
-extends Node
+extends "res://SCRIPTS/lvl.gd"
 
 #ALEJANDRO (Feb-14-2020)
 #This is the level 1 global file, where all the game logic shoudl be stored,
@@ -6,18 +6,39 @@ extends Node
 # 1. Got most of it from the original global.gd, (need to clean up global.gd and finalize
 #this transition, pretty good for most part right now though.... I think......)
 
+#ALEJANDRO (Feb-23-2020)
+#Set this to extend the new lvl.gd to keep things more organized in terms of what a lvl nodes needs and does
+
 var has_key
 var spawn_key
 var spawnNora
 var doorOpened
-var playTest = true;
 
-enum LVL1{LeftDoor, RightDoor}
 
-var levelNodes : Dictionary = {LVL1.LeftDoor:"/root/Control/door_left", LVL1.RightDoor:"/root/Control/right_door"}
+enum {LeftDoor, RightDoor}
 
 func _ready():
+	
+	ASTRO_GLOBAL_START_POS = Vector2(415.3, 766.25)
+	ASTRO_FACE_RIGHT = false
+	ASTRO_HEALTH = 3
+	
+	CAM_GLOBAL_START_POS  = Vector2(214.26, ASTRO_GLOBAL_START_POS.y) 
+	
+	levelNodes = {LeftDoor:"/root/Control/door_left", RightDoor:"/root/Control/right_door"}
+	
 	init()
+	
+	#volume set at way top
+	#gradual music fade in
+	global.newTweenNoConnection(audio.sound("music", "lvl01"), "volume_db", -50, -2, 3, 0)
+
+
+	#settings for playtest
+	if(global.get("playtest")):
+		initAstro()
+		
+
 	
 func init():
 	has_key = false
@@ -25,17 +46,19 @@ func init():
 	spawnNora = false
 	doorOpened = false
 	
+	audio.loadLevelSounds("lvl01")
 	
-	if (playTest):
+	
+	if (global.playTest):
 		spawnNora = false
 		has_key = false
 		spawn_key = true
 		doorOpened = false
 	
 func LevelLogic(nodePath):
-	if (nodePath == levelNodes[LVL1.LeftDoor]):
-		levelNodes[LVL1.LeftDoor].canOpen = true
-		levelNodes[LVL1.LeftDoor].autoOpen = true
+	if (nodePath == levelNodes[LeftDoor]):
+		levelNodes[LeftDoor].canOpen = true
+		levelNodes[LeftDoor].autoOpen = true
 		doorOpened = true
 
 	

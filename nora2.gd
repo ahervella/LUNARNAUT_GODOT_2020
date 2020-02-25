@@ -135,8 +135,8 @@ func _physics_process(delta):
 		
 		#SCARY NOISES
 		if (musicChange):
-			var music = $"/root/Control/astro/music"
-			var musicIntense = $"/root/Control/astro/musicIntense"
+			var music = audio.sound("music", "lvl01")
+			var musicIntense = audio.sound("musicIntense", "lvl01")
 			
 			var timePlay = music.get_playback_position()
 			var ogVol = music.get_volume_db()
@@ -146,10 +146,10 @@ func _physics_process(delta):
 			global.newTween(music, "volume_db", ogVol, -50, 3, 0, self, "onMusicStop")
 			global.newTweenNoConnection(musicIntense, "volume_db", -50,  ogVol, 1, 0)
 			
-			$"/root/Control/astro/cinematicBoom".play(0)
-			$"/root/Control/astro/lowPulse".play(0)
-			$"/root/Control/astro/breathingScared".play(0)
-			$"/root/Control/astro/breathingCalm".stop()
+			audio.sound("cinematicBoom", "lvl01").play(0)
+			audio.sound("lowPulse", "lvl01").play(0)
+			audio.sound("breathingScared", "lvl01").play(0)
+			audio.sound("breathingCalm", "lvl01").stop()
 			musicChange = false
 		
 		attackTimer += 1
@@ -178,8 +178,8 @@ func _physics_process(delta):
 			attackTimer = 0
 		else:
 			if(!musicChange):
-				$"/root/Control/astro/breathingScared".stop(0)
-				$"/root/Control/astro/breathingCalm".play(0)
+				audio.sound("breathingScared", "lvl01").stop(0)
+				audio.sound("breathingCalm", "lvl01").play(0)
 				musicChange = true
 	
 	wait += 1
@@ -200,7 +200,7 @@ func _physics_process(delta):
 	
 
 func onMusicStop(object, key):
-	$"/root/Control/astro/music".stop()
+	audio.sound("music", "lvl01").stop()
 
 func _on_noraAreaHitBox_body_entered(body):
 	var groups = body.get_groups()

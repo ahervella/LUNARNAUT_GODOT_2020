@@ -34,7 +34,7 @@ func TextInteract():
 	
 
 func use_o2():
-	$"/root/Control/astro/gotKeySound".play(0)
+	audio.sound("gotObject").play(0)
 	self.set_animation("RED")
 	canUseO2 = false
 	$"/root/Control/astro".inc_health()

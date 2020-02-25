@@ -52,6 +52,10 @@ func interacting():
 
 func _ready():
 	
+	if(not visible):
+		deactivate()
+	
+	
 	#buttonTween = Tween.new()
 	add_child(buttonTween)
 	buttonTween.interpolate_property(buttonPath, "modulate", Color(1, 1, 1, 1), Color(1, 1, 1, 0), 1 , 0, Tween.EASE_OUT, 0)
@@ -61,6 +65,20 @@ func _ready():
 	var stickPath = get_parent()
 	stickTween.interpolate_property(stickPath, "modulate", Color(1, 1, 1, 1), Color(1, 1, 1, 0), 1 , 0, Tween.EASE_OUT, 0)
 	
+	
+func deactivate():
+	hide()
+	set_process(false)
+	set_physics_process(false)
+	set_process_unhandled_input(false)
+	set_process_input(false)
+	
+func activate():
+	show()
+	set_process(true)
+	set_physics_process(true)
+	set_process_unhandled_input(true)
+	set_process_input(true)
 
 func _process(delta):
 	#print (movingUp)

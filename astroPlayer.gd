@@ -8,7 +8,11 @@ extends KinematicBody2D
 #we have more control)
 #Interaction logics also begin here
 
-onready var CAMERA_NODE = $"/root/Control/Cam2D"
+#ALEJANDRO (Feb-24-2020)
+#renamed from astrooo to astroPlayer.gd!
+
+export (NodePath) var CAMERA_NODE_PATH = null
+onready var CAMERA_NODE = get_node(CAMERA_NODE_PATH)
 var NORA_NODE
 
 const CAMERA_OFFSET = 200
@@ -47,8 +51,9 @@ var currItem = null
 var can_control = global.get("controls_enabled")
 
 #touch controls
-onready var vJoy = $"/root/Control/Cam2D/CanvasLayer/joyOut/joyIn".moving()
-onready var vButton = $"/root/Control/Cam2D/CanvasLayer/joyOut/joyIn".jumping()
+export (NodePath) var vControllerPath = null
+var vJoy = -5 # -5 has no specific functionality, but can't be null or shit breaks
+var vButton = -5
 
 onready var light2DPosition = get_node("Light2D").get_position()
 onready var light2DScale = get_node("Light2D").get_scale()
@@ -66,46 +71,19 @@ const DIRECTION = {
 }
 
 func _ready():
-	#volume set at way top
-	GradualMusic()
-
-	#starting health
-	set_health(3)
+	
+	if (vControllerPath != null):
+		var vController = get_node(vControllerPath)
+		if (vController != null && vController.is_visible()):
+			vJoy = vController.moving()
+			vButton = vController.jumping()
 
 	#suit sound:
-	$"suitBeep".play()
+	audio.sound("suitBeep").play()
 
 	$"ASTRO_ANIM2"._set_playing(true)
 
-	#settings for playtest
-	if(global.get("playtest")):
-		InitAstro()
 
-func GradualMusic():
-	#var musicVolTween = Tween.new()
-	#add_child(musicVolTween)
-	global.newTweenNoConnection($"music", "volume_db", -50, -2, 3, 0)
-	#musicVolTween.interpolate_property($"music", "volume_db", -50, -2, 3 , 0, Tween.EASE_OUT, 0)
-	
-	#musicVolTween.start()
-
-func InitAstro():
-
-	global.set("spawn_key", false)
-		
-	global.set("has_key", false)
-	
-	#starting position for first level
-	var astroStartPos = Vector2()
-	astroStartPos.x = 415.3
-	astroStartPos.y = 766.25
-	self.set_global_position(astroStartPos)
-	
-	directional_force = DIRECTION.LEFT
-	Move()
-
-	$"/root/Control/Cam2D".set_global_position(Vector2(214.26, astroStartPos.y))
-	
 
 
 func _physics_process(delta):
@@ -165,10 +143,10 @@ func ApplyMovement(delta):
 	if(can_control):
 		return
 
-	if(Input.is_action_pressed("ui_right") or vJoy == 1):
+	if(Input.is_action_pressed("ui_right")): #or vJoy == 1):
 		directional_force += DIRECTION.RIGHT
 
-	if(Input.is_action_pressed("ui_left") or vJoy == -1):
+	if(Input.is_action_pressed("ui_left")): #or vJoy == -1):
 		directional_force += DIRECTION.LEFT
 	
 	Move()
@@ -466,7 +444,7 @@ func on_timeout_complete():
 	
 	if (timer_seq):
 		astro_o2_change(anim_code1)
-		$"suitBeep".play()
+		audio.sound("suitBeep").play()
 
 	else:
 		astro_o2_change(anim_code2)
@@ -583,7 +561,7 @@ func TakeDamage():
 	if(!immune && !dead):
 		#so astro can go through nora
 		NORA_NODE.set_collision_layer_bit( 0, false )
-		$"breathingHurt".play()
+		audio.sound("breathingHurt").play()
 		immune = true
 
 		dec_health()
