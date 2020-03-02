@@ -9,7 +9,6 @@ var ASTRO_GLOBAL_START_POS : Vector2
 var ASTRO_FACE_RIGHT : bool
 var ASTRO_HEALTH : int
 
-export (NodePath) var camNodePath = null
 var CAM_GLOBAL_START_POS : Vector2
 
 var levelNodes : Dictionary
@@ -21,7 +20,7 @@ func _ready():
 #initAstro is not called here but in the extended gd scripts
 func initAstro():
 	var astroNode = get_node(astroNodePath)
-	var camNode = get_node(camNodePath)
+	var camNode = astroNode.CAMERA_NODE
 
 	astroNode.set_global_position(ASTRO_GLOBAL_START_POS)
 	

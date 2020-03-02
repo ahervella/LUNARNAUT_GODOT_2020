@@ -13,9 +13,12 @@ extends KinematicBody2D
 
 export (NodePath) var CAMERA_NODE_PATH = null
 onready var CAMERA_NODE = get_node(CAMERA_NODE_PATH)
-var NORA_NODE
-
 const CAMERA_OFFSET = 200
+
+export (NodePath) var INTERACT_TEXT_NODE_PATH = null
+onready var INTERACT_TEXT_NODE = get_node(INTERACT_TEXT_NODE_PATH)
+
+var NORA_NODE
 
 const AIR_HORZ_SPEED = 160
 const GROUND_HORZ_SPEED = 160
@@ -71,6 +74,14 @@ const DIRECTION = {
 }
 
 func _ready():
+	#need this so that anywhere an interact references the interactNode,
+	#the location is based off only one place here in the astro node
+	global.interactNode = INTERACT_TEXT_NODE
+	
+	#need to do this as well here because the interact text node needs
+	#an astro node reference. Because asto is always below text in scene tree,
+	#this ready should take place before the text ready and not cause problems
+	INTERACT_TEXT_NODE.ASTRO_NODE_PATH = get_path()
 	
 	if (vControllerPath != null):
 		var vController = get_node(vControllerPath)
@@ -153,7 +164,7 @@ func ApplyMovement(delta):
 
 	MoveJump(delta)
 	InteractCheck()
-	MoveCamera()
+	MoveCameraAndInteracText()
 
 
 func Move():
@@ -257,16 +268,25 @@ func MoveJump(delta):
 func InteractCheck():
 	if (currItem == null):
 		return
-	if (Input.is_action_pressed("ui_interact")):
+	if (Input.is_action_just_pressed("ui_interact")):
 			currItem.Interact()
 
 	
 	#currItem.TextInteract()
 
-func MoveCamera():
+func MoveCameraAndInteracText():
 	
-	CAMERA_NODE.set_global_position(Vector2(get_global_position().x + (CAMERA_OFFSET * directional_force.x), get_global_position().y))
-
+	var astroPos = get_global_position() 
+	var textOffset = INTERACT_TEXT_NODE.totalOffset
+	
+	CAMERA_NODE.set_global_position(Vector2(astroPos.x + (CAMERA_OFFSET * directional_force.x), astroPos.y))
+	
+	if (INTERACT_TEXT_NODE.fixedOffset):
+		INTERACT_TEXT_NODE.set_global_position(textOffset)
+		return
+		
+	INTERACT_TEXT_NODE.set_global_position(astroPos + textOffset)
+	
 #****************SUIT LIGHT / HEALTH CONTROLLER***************:
 	
 #color codes used for astro suit
@@ -627,14 +647,14 @@ func _on_groundBubble_body_exited(body):
 		groundedBubble = false
 
 func _on_Item_check_area_entered(area):
-	print("astoooo: shit entered")
-	print(get_groups())
+	#print("astoooo: shit entered")
+	#print(get_groups())
 	if (area.get_groups().has("interact")):
 		currItem = area.get_parent()
 		#do virtual interface check
 		global.InteractInterfaceCheck(currItem)
-		print("astroo: currItem  = " )
-		print(currItem)
+		#print("astroo: currItem  = " )
+		#print(currItem)
 		
 		#Execute autoInteract just once, upon entering
 		currItem.AutoInteract()

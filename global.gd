@@ -9,6 +9,7 @@ extends Node
 #ALEJANDRO (Feb-23-2020)
 #changed the queue_free to deferred with free due to a
 #a smart guy on reddit saying to do so... hahaha
+#https://www.reddit.com/r/godot/comments/8hp3ok/use_call_deferredfree_instead_of_queue_free/
 
 onready var interactNode = $"/root/Control/astro/InteractFont"
 
@@ -60,9 +61,11 @@ func newTween(object, tweeningMethod, startVars, endVars, time, delay, timeoutOb
 
 	
 	tween.start()
-	#return tween
+	
+	#in case we want to do shit with it
+	return tween
 
-func newTweenNoConnection(object, tweeningMethod, startVars, endVars, time, delay) -> Tween:
+func newTweenNoConnection(object, tweeningMethod, startVars, endVars, time, delay):
 	var tween = Tween.new()
 	add_child(tween)
 	tween.interpolate_property(object, tweeningMethod, startVars, endVars, time , 0, Tween.EASE_OUT, delay)
@@ -70,21 +73,12 @@ func newTweenNoConnection(object, tweeningMethod, startVars, endVars, time, dela
 	tween.connect("tween_completed", self, "DestroyTween", [tween])
 	tween.start()
 	
+	#in case we want to do shit with it
 	return tween
 	
 func DestroyTween(object, key, tweenObj):
 	
 	tweenObj.call_deferred('free')
-
-func newTimerOLD(object, time, oneshot, timeoutConnection):
-#func newTimer(time):#, object, method):
-	var timer = Timer.new()
-	object.add_child(timer)
-	timer.set_one_shot(oneshot)
-	timer.set_wait_time(time)
-	timer.connect("timeout", object, timeoutConnection)
-	timer.start()
-	
 
 	
 #func newTimer(object, time, oneshot, timeoutConnection):
@@ -93,11 +87,12 @@ func newTimer(time, ref = null):#object, method):#, object, method):
 	add_child(timer)
 	timer.set_one_shot(true)
 	timer.set_wait_time(time)
-	timer.connect("timeout", self, 'timerTimeout', [timer, ref])
+	timer.connect("timeout", self, 'DestroyTimer', [timer, ref])
 	timer.start()
+	return timer
 	
 
-func timerTimeout(timer, ref):
+func DestroyTimer(timer, ref):
 	#before was using yield which seemed to cause some memory issues,
 	#so went back to old way and just used the refs that were being passed
 	#that had already been setup
@@ -119,8 +114,5 @@ func InteractInterfaceCheck(var interactObj):
 	if (!interactObj.has_method('AutoCloseInteract')):
 		push_error("Interact item missing 'AutoCloseInteract'")
 		
-	#TODO: force TextInteract to be part of it
-	if (!interactObj.has_method('TextInteract')):
-		push_error("Interact item missing 'TextInteract'")
 			
 	

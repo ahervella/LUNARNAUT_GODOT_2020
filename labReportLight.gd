@@ -16,10 +16,10 @@ func _ready():
 	blinkOn()
 	
 func blinkOn():
-	global.newTimerOLD(self, 2, true, "hide")
-	global.newTimerOLD(self, 2.3, true, "show")
-	global.newTimerOLD(self, 2.6, true, "hide")
-	global.newTimerOLD(self, 2.9, true, "reset")
+	global.newTimer(2, funcref(self, 'hide'))#global.newTimerOLD(self, 2, true, "hide")
+	global.newTimer(2.3, funcref(self, 'show'))#global.newTimerOLD(self, 2.3, true, "show")
+	global.newTimer(2.6, funcref(self, 'hide'))#global.newTimerOLD(self, 2.6, true, "hide")
+	global.newTimer(2.9, funcref(self, 'reset'))#global.newTimerOLD(self, 2.9, true, "reset")
 	
 func reset():
 	show()
