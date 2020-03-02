@@ -7,7 +7,6 @@ extends AnimatedSprite
 
 var canUseO2 : bool = true;
 const O2_TEXT = "OXYGEN"
-onready var soundNode = null
 
 func _ready():
 	self.set_animation("GREEN")

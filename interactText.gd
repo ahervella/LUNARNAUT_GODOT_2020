@@ -92,7 +92,13 @@ func set_text_pos(customOffset, fixedText):
 	var get_flip = ASTRO_NODE.get_node("ASTRO_ANIM2").is_flipped_h()
 
 	if (get_flip):
-		totalOffset = Vector2(-POS_OFFSET.x - LOCAL_SIZE.x -customOffset.x, POS_OFFSET.y + customOffset.y)
+		
+		#little hack that adjusts the facing left offset if the text typed doesn't
+		#take up the whole width of the text box
+		var textLength = get_text().length()
+		var pixelOffset = textLength * (LOCAL_SIZE.x / 12.0)
+		
+		totalOffset = Vector2(-POS_OFFSET.x - pixelOffset -customOffset.x, POS_OFFSET.y + customOffset.y)
 		return
 	
 	totalOffset = POS_OFFSET + customOffset

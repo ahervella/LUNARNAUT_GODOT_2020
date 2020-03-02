@@ -35,20 +35,10 @@ func Interact():
 		return
 	if (T_I_DISPLAY_TIME != 0):
 		
-		timer = Timer.new()
-		add_child(timer)
-		timer.set_one_shot(true)
-		timer.set_wait_time(T_I_DISPLAY_TIME)
-		timer.connect("timeout", self, 'EndOfInteractTimer')
-		timer.start()
+		timer = global.newTimer(T_I_DISPLAY_TIME, funcref(self, 'AutoInteract'))
 		
-		#global.newTimer(T_I_DISPLAY_TIME, funcref(self, 'AutoInteract'))
 	global.interactNode.animateText(TEXT_INTERACT, InteractAudioNode(), CustomPos(), FIXED_TEXT)
 	can_interact = false
-
-func EndOfInteractTimer():
-	timer.queue_free()
-	AutoInteract()
 
 func AutoInteract():
 	print("auto interact" + self.name)
@@ -58,7 +48,7 @@ func AutoInteract():
 func AutoCloseInteract():
 	if (is_instance_valid(timer) && timer.is_class("Timer")):
 		timer.stop()
-		timer.queue_free()
+		timer.call_deferred('free')
 	
 	can_interact = true
 	global.interactNode.closeText(HideAudioNode())
