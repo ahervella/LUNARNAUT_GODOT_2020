@@ -31,7 +31,7 @@ func _ready():
 	
 	#volume set at way top
 	#gradual music fade in
-	global.newTweenNoConnection(audio.sound("music", "lvl01"), "volume_db", -50, -2, 3, 0)
+	global.newTween(audio.sound("music", "lvl01"), "volume_db", -50, -2, 3, 0)
 
 
 	#settings for playtest

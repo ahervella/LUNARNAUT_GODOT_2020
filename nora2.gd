@@ -143,8 +143,8 @@ func _physics_process(delta):
 			musicIntense.set_volume_db (-50)
 			musicIntense.play(timePlay)
 			#fade the two in and out
-			global.newTween(music, "volume_db", ogVol, -50, 3, 0, self, "onMusicStop")
-			global.newTweenNoConnection(musicIntense, "volume_db", -50,  ogVol, 1, 0)
+			global.newTween(music, "volume_db", ogVol, -50, 3, 0, funcref(self, "onMusicStop"))
+			global.newTween(musicIntense, "volume_db", -50,  ogVol, 1, 0)
 			
 			audio.sound("cinematicBoom", "lvl01").play(0)
 			audio.sound("lowPulse", "lvl01").play(0)

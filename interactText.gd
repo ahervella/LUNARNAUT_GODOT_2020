@@ -103,12 +103,13 @@ func set_text_pos(customOffset, fixedText):
 func animateText(text, soundNode = null, customPosOffset = Vector2(0,0), fixedText = false, textTime = null): #optional time for tween
 	#need to store locally to add blinking underscore affect in timers above
 	currentText = text
+	
 	#used for checking things are properly cleaning up
 #	print("animating")
 #	print(get_child_count())
 #	print(get_child(0))
-	print(global.get_child_count())
-	print(global.get_children())
+#	print(global.get_child_count())
+#	print(global.get_children())
 
 	#reset the blinking timer
 	timer_reset(currentText)
@@ -123,7 +124,7 @@ func animateText(text, soundNode = null, customPosOffset = Vector2(0,0), fixedTe
 		textTime = TYPE_TEXT_TIME
 		
 	
-	textTweeen = global.newTweenNoConnection(self, "percent_visible", 0, 1, textTime, 0)
+	textTweeen = global.newTween(self, "percent_visible", 0, 1, textTime, 0)
 	
 	
 
@@ -136,7 +137,7 @@ func closeText(soundNode = null):
 #
 	var perVisibile = self.get_percent_visible()
 	
-	#if the tween hasn't been freed via the global newTweenNoConnection signal (as in, 
+	#if the tween hasn't been freed via the global newTween signal (as in, 
 	#it is still tweening the text to show and we need to closeText() prematurely,
 	#then stop the tween and clean up
 	if (is_instance_valid(textTweeen)):
@@ -150,7 +151,7 @@ func closeText(soundNode = null):
 	textTweeen = null
 	
 	
-	global.newTweenNoConnection(self, "percent_visible", perVisibile, 0, REMOVE_TEXT_TIME, 0)
+	global.newTween(self, "percent_visible", perVisibile, 0, REMOVE_TEXT_TIME, 0)
 	
 	if soundNode == null:
 		soundNode = audio.sound("textHide")

@@ -528,7 +528,7 @@ func InitDeath():
 	var b = cur_color.b
 	var a = cur_color.a
 	
-	global.newTweenNoConnection($"/root/Control/Cam2D/hurtTint", "modulate", Color(r, g, b, a), Color(r, g, b, 1), 3, 0)
+	global.newTween($"/root/Control/Cam2D/hurtTint", "modulate", Color(r, g, b, a), Color(r, g, b, 1), 3, 0)
 	
 	set_collision_layer_bit( 0, false )
 	global.set("astroDead", true)
@@ -545,9 +545,9 @@ func FadeOutSound():
 	var breathingCalm = $"breathingCalm"
 	var suitBeep = $"suitBeep"
 	
-	global.newTweenNoConnection(breathingScared, "volume_db", breathingScared.get_volume_db(), -80, 2, 0)
-	global.newTweenNoConnection(breathingCalm, "volume_db", breathingCalm.get_volume_db(), -80, 2, 0)
-	global.newTweenNoConnection(suitBeep, "volume_db", suitBeep.get_volume_db(), -80, 2, 0)
+	global.newTween(breathingScared, "volume_db", breathingScared.get_volume_db(), -80, 2, 0)
+	global.newTween(breathingCalm, "volume_db", breathingCalm.get_volume_db(), -80, 2, 0)
+	global.newTween(suitBeep, "volume_db", suitBeep.get_volume_db(), -80, 2, 0)
 
 #***********END OF HEALTH SHIT***************
 
@@ -620,9 +620,9 @@ func TakeDamageFlash():
 	var b = cur_color.b
 	var a = cur_color.a
 	
-	global.newTweenNoConnection($"/root/Control/Cam2D/hurtTint", "modulate", Color(r, g, b, a), Color(r, g, b, 0.7), 0.5, 0)
+	global.newTween($"/root/Control/Cam2D/hurtTint", "modulate", Color(r, g, b, a), Color(r, g, b, 0.7), 0.5, 0)
 	#last numbre is delay for starting tween
-	global.newTween(self, "modulate", Color(r, g, b), Color(r, 0, 0), 0.5, 0, self, "TakeDamageFlashReverse")
+	global.newTween(self, "modulate", Color(r, g, b), Color(r, 0, 0), 0.5, 0, funcref(self, "TakeDamageFlashReverse"))
 
 func TakeDamageFlashReverse(object, key):
 	
@@ -632,9 +632,9 @@ func TakeDamageFlashReverse(object, key):
 	var b = cur_color.b
 	var a = cur_color.a
 	
-	global.newTweenNoConnection($"/root/Control/Cam2D/hurtTint", "modulate", Color(r, g, b, a), Color(r, g, b, 0), 0.5, 0)
+	global.newTween($"/root/Control/Cam2D/hurtTint", "modulate", Color(r, g, b, a), Color(r, g, b, 0), 0.5, 0)
 	
-	global.newTweenNoConnection(self, "modulate", Color(r, 0, 0), Color(r, g, b), 0.5, 0.5)
+	global.newTween(self, "modulate", Color(r, 0, 0), Color(r, g, b), 0.5, 0.5)
 
 
 

@@ -60,8 +60,8 @@ func openDoor():
 	var bottomDiff = abs(shadeFixBottom.get_position().y - bottom_pos)
 	var shadeFixBottomNewPos = shadeFixBottom.get_position() + Vector2(0, bottomDiff)
 	
-	global.newTweenNoConnection(shadeFixTop, "position", shadeFixTop.get_position(), shadeFixTopNewPos, DOOR_TIME, 0)
-	global.newTweenNoConnection(shadeFixBottom, "position", shadeFixBottom.get_position(), shadeFixBottomNewPos, DOOR_TIME, 0)
+	global.newTween(shadeFixTop, "position", shadeFixTop.get_position(), shadeFixTopNewPos, DOOR_TIME, 0)
+	global.newTween(shadeFixBottom, "position", shadeFixBottom.get_position(), shadeFixBottomNewPos, DOOR_TIME, 0)
 
 
 

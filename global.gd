@@ -11,6 +11,11 @@ extends Node
 #a smart guy on reddit saying to do so... hahaha
 #https://www.reddit.com/r/godot/comments/8hp3ok/use_call_deferredfree_instead_of_queue_free/
 
+#ALEJANDRO (Mar-01-2020)
+#finally got rid of newTweenNoConnection and newTweenOld and made them work just with newTween
+#can always check in the future like I was now if shit is working properly by printing the child count
+#and child array of global
+
 onready var interactNode = $"/root/Control/astro/InteractFont"
 
 var current_scene
@@ -49,40 +54,33 @@ func replay():
 func goto_scene(path):
 	get_tree().change_scene(path)
 	
-func newTween(object, tweeningMethod, startVars, endVars, time, delay, timeoutObject, timeOutConnection):
-	var tween = Tween.new()
-	object.add_child(tween)
-
-	#can you connect tween_completed to multiple methods?
-	tween.connect("tween_completed", self, "DestroyTween", [tween])
-
-	tween.interpolate_property(object, tweeningMethod, startVars, endVars, time , 0, Tween.EASE_OUT, delay)
-	tween.connect("tween_completed", timeoutObject, timeOutConnection)
-
+func newTween(object, tweeningMethod, startVars, endVars, time, delay, func_ref = null):
 	
-	tween.start()
-	
-	#in case we want to do shit with it
-	return tween
-
-func newTweenNoConnection(object, tweeningMethod, startVars, endVars, time, delay):
 	var tween = Tween.new()
+	#always need to add child to something for it to work
 	add_child(tween)
+
+	#connect tween once its done to self destruct (to avoid mem leaks) and call any related funcs if any
+	tween.connect("tween_completed", self, "DestroyTween", [tween, func_ref])
+
 	tween.interpolate_property(object, tweeningMethod, startVars, endVars, time , 0, Tween.EASE_OUT, delay)
-	#can you connect tween_completed to multiple methods?
-	tween.connect("tween_completed", self, "DestroyTween", [tween])
+	
 	tween.start()
 	
 	#in case we want to do shit with it
 	return tween
 	
-func DestroyTween(object, key, tweenObj):
-	
+#here by default func_ref is null if nothing is passed (in case called outside here)
+func DestroyTween(object, key, tweenObj, func_ref = null):
+	#ensures that next frame free will be called on this tween instance
 	tweenObj.call_deferred('free')
 
+	#if any other functions to be called were passed, do that
+	if (func_ref != null):
+		func_ref.call_func()
 	
-#func newTimer(object, time, oneshot, timeoutConnection):
-func newTimer(time, ref = null):#object, method):#, object, method):
+
+func newTimer(time, ref = null):
 	var timer = Timer.new()
 	add_child(timer)
 	timer.set_one_shot(true)
@@ -104,6 +102,8 @@ func DestroyTimer(timer, ref):
 		ref.call_func()
 	
 
+#these are functions that any interact node must have (acts as an interface enforcer)
+#ALSO, the interact node MUST have "interact" in node area group to work
 func InteractInterfaceCheck(var interactObj):
 	if (!interactObj.has_method('Interact')):
 		push_error("Interact item missing 'Interact'")

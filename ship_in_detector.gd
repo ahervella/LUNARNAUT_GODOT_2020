@@ -122,7 +122,7 @@ func tween_exec(node, startOrFin):
 	
 	if (node.is_in_group("moon_node")):
 		#turns the moon nodes into black or noraml and alpha fade
-		global.newTweenNoConnection(node, "modulate", cur_color, Color(startOrFin, startOrFin, startOrFin, startOrFin), 0.3, 0)
+		global.newTween(node, "modulate", cur_color, Color(startOrFin, startOrFin, startOrFin, startOrFin), 0.3, 0)
 		#get_node(tween_node).interpolate_property(node, "modulate", cur_color, Color(startOrFin, startOrFin, startOrFin, startOrFin), 0.3 , 0, Tween.EASE_OUT)
 	
 #	if (node.is_in_group("black_node")):
@@ -130,7 +130,7 @@ func tween_exec(node, startOrFin):
 #
 	#turns node into alpha fade
 	else:
-		global.newTweenNoConnection(node, "modulate", cur_color, Color(cur_r, cur_g, cur_b, startOrFin), 0.3, 0)
+		global.newTween(node, "modulate", cur_color, Color(cur_r, cur_g, cur_b, startOrFin), 0.3, 0)
 		#get_node(tween_node).interpolate_property(node, "modulate", cur_color, Color(cur_r, cur_g, cur_b, startOrFin), 0.3 , 0, Tween.EASE_OUT)
 	
 	
