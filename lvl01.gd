@@ -41,7 +41,7 @@ func _ready():
 
 	
 func init():
-	has_key = false
+	has_key = true
 	spawn_key = true
 	spawnNora = false
 	doorOpened = false
