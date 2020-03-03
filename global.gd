@@ -49,10 +49,28 @@ func init():
 func replay():
 	init()
 	get_tree().change_scene("res://MainMenu.tscn")
+	current_scene = get_tree().get_current_scene()
 
 	
 func goto_scene(path):
 	get_tree().change_scene(path)
+	current_scene = get_tree().get_current_scene()
+	
+	
+#used to get the specific level variables, funcs, and attributes
+#will return null if the current scene is not the level given 
+func lvl(lvlNum : int):
+	
+	#level scene names must be in "lvl##" format
+	var sceneName = current_scene.name
+	
+	if (int(sceneName.substr(2,4)) == lvlNum):
+		return get_tree().get_current_scene()
+	
+	return null
+	
+	
+#VVVVVVV - TWEEN AND TIMER FUNCS - VVVVVVVVVVV#
 	
 func newTween(object, tweeningMethod, startVars, endVars, time, delay, func_ref = null):
 	

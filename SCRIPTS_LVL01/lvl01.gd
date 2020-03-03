@@ -14,6 +14,7 @@ var spawn_key
 var spawnNora
 var doorOpened
 
+var doorShadowTscn= preload("res://SCENES/doorShadow.tscn")
 
 enum {LeftDoor, RightDoor}
 
