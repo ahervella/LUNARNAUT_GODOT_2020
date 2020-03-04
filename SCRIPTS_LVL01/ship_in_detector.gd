@@ -14,11 +14,16 @@ extends Area2D
 var in_inner_node = false
 var in_outer_node = false
 
+func _read():
+	#used here to make all ready shit happen on first frame after ready
+	#so that lvl01 loads things properly
+	call_deferred('readyDeferred')
 
-func _ready():
+func readyDeferred():
 	
 	var detector_pos = get_node("in_detector_shape").get_global_position()
-	var astro_pos = get_node("/root/Control/astro").get_global_position()
+	
+	var astro_pos = get_node(get_parent().get_parent().astroNodePath).get_global_position()
 	
 	#In case astro starts inside ship (need to fix to be immediate)
 	if (detector_pos.y < astro_pos.y && (detector_pos.x + 50) > astro_pos.x && global.get("playtest")):

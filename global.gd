@@ -16,7 +16,7 @@ extends Node
 #can always check in the future like I was now if shit is working properly by printing the child count
 #and child array of global
 
-onready var interactNode = $"/root/Control/astro/InteractFont"
+var interactNode #$"/root/Control/astro/InteractFont"
 
 var current_scene
 var new_scene
@@ -44,6 +44,7 @@ func init():
 
 	playTest = false
 	
+	
 
 
 func replay():
@@ -59,13 +60,15 @@ func goto_scene(path):
 	
 #used to get the specific level variables, funcs, and attributes
 #will return null if the current scene is not the level given 
-func lvl(lvlNum : int):
+func lvl(lvlNum : int = -1):
+	var scene = get_tree().get_current_scene()
+	#return current lvl (because lvl usually has default vars like astro node
+	if (lvlNum == -1):
+		return scene
 	
-	#level scene names must be in "lvl##" format
-	var sceneName = current_scene.name
-	
-	if (int(sceneName.substr(2,4)) == lvlNum):
-		return get_tree().get_current_scene()
+	#level scene names must be in "lvl##" format	
+	if (int(scene.name.substr(2,4)) == lvlNum):
+		return scene
 	
 	return null
 	

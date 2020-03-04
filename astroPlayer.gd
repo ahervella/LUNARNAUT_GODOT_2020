@@ -522,14 +522,14 @@ func InitDeath():
 	#used to control and stop all other anims in set_anim
 	dead = true
 	
-	
-	var cur_color = $"/root/Control/Cam2D/hurtTint".get_modulate()
+	var hurtTintNode = CAMERA_NODE.get_node("hurtTint")
+	var cur_color = hurtTintNode.get_modulate()#$"/root/Control/Cam2D/hurtTint".get_modulate()
 	var g = cur_color.g
 	var r = cur_color.r
 	var b = cur_color.b
 	var a = cur_color.a
 	
-	global.newTween($"/root/Control/Cam2D/hurtTint", "modulate", Color(r, g, b, a), Color(r, g, b, 1), 3, 0)
+	global.newTween(hurtTintNode, "modulate", Color(r, g, b, a), Color(r, g, b, 1), 3, 0)
 	
 	set_collision_layer_bit( 0, false )
 	global.set("astroDead", true)
@@ -537,7 +537,7 @@ func InitDeath():
 	$"ASTRO_ANIM2".set_animation("DEATH")
 	
 	#activate blackscreen ending for death (false indicated did not win)
-	get_node("/root/Control/EndOfDemo/Blackness").startEndDemoBlacknessTween(false)
+	get_node("/root/lvl01/EndOfDemo/Blackness").startEndDemoBlacknessTween(false)
 	
 	FadeOutSound()
 
@@ -615,25 +615,27 @@ func TakeDamageImpactLaunch(direction):
 	vel = Vector2(500 * direction, -500)
 func TakeDamageFlash():
 
-	var cur_color = $"/root/Control/Cam2D/hurtTint".get_modulate()
+	var hurtTintNode = CAMERA_NODE.get_node("hurtTint")
+	var cur_color = hurtTintNode.get_modulate()
 	var g = cur_color.g
 	var r = cur_color.r
 	var b = cur_color.b
 	var a = cur_color.a
 	
-	global.newTween($"/root/Control/Cam2D/hurtTint", "modulate", Color(r, g, b, a), Color(r, g, b, 0.7), 0.5, 0)
+	global.newTween(hurtTintNode, "modulate", Color(r, g, b, a), Color(r, g, b, 0.7), 0.5, 0)
 	#last numbre is delay for starting tween
 	global.newTween(self, "modulate", Color(r, g, b), Color(r, 0, 0), 0.5, 0, funcref(self, "TakeDamageFlashReverse"))
 
 func TakeDamageFlashReverse(object, key):
 	
-	var cur_color = $"/root/Control/Cam2D/hurtTint".get_modulate()
+	var hurtTintNode = CAMERA_NODE.get_node("hurtTint")
+	var cur_color = hurtTintNode.get_modulate()
 	var g = cur_color.g
 	var r = cur_color.r
 	var b = cur_color.b
 	var a = cur_color.a
 	
-	global.newTween($"/root/Control/Cam2D/hurtTint", "modulate", Color(r, g, b, a), Color(r, g, b, 0), 0.5, 0)
+	global.newTween(hurtTintNode, "modulate", Color(r, g, b, a), Color(r, g, b, 0), 0.5, 0)
 	
 	global.newTween(self, "modulate", Color(r, 0, 0), Color(r, g, b), 0.5, 0.5)
 

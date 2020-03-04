@@ -47,7 +47,6 @@ func Interact():
 	can_interact = false
 
 func AutoInteract():
-	print("auto interact" + self.name)
 	can_interact = true
 	TextInteract()
 

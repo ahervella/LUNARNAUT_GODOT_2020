@@ -31,7 +31,7 @@ var pressingInteract = -1
 #2 = just pressed, 1 = pressed, 0 = just released, -1 = released
 var movingUp = -1
 onready var buttonTween = Tween.new()
-onready var buttonPath = $"/root/Control/Cam2D/CanvasLayer/joyButton"
+onready var buttonPath = get_node(global.lvl().astroNodePath).bue#$"/root/Control/Cam2D/CanvasLayer/joyButton"
 var stickTween
 
 #getters for astro script

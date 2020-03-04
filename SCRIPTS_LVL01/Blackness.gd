@@ -40,7 +40,7 @@ func _on_EndOfDemoArea_body_entered(body):
 	if (groups.has("astro") && one_shot && !global.get("astroDead")):
 		one_shot = false
 		
-		$"/root/Control/astro".fadeOutSound()
+		global.lvl().astroNode.fadeOutSound()
 		global.controls_enabled = false
 		startEndDemoBlacknessTween(true)
 	
@@ -64,7 +64,7 @@ func startEndDemoBlacknessTween(won):
 	tweeny.interpolate_property(self, "modulate", Color(cur_r, cur_g, cur_b, 0), Color(cur_r, cur_g, cur_b, 1), 2 , 0, Tween.EASE_OUT, delayTime)
 	tweeny.start()
 
-	get_node("/root/Control/Cam2D/CanvasLayer/DemoText").onGameOver(won)
-	get_node("/root/Control/Cam2D/CanvasLayer/AnyButtonText").onGameOver(won)
+	get_node("/root/lvl01/Cam2D/CanvasLayer/DemoText").onGameOver(won)
+	get_node("/root/lvl01/Cam2D/CanvasLayer/AnyButtonText").onGameOver(won)
 		
 

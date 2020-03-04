@@ -28,4 +28,4 @@ func _on_health_drop_body_entered(body):
 	var groups = body.get_groups()
 	if (groups.has("astro") and one_shot):
 		one_shot = false
-		$"/root/Control/astro".dec_health()
+		global.lvl().astroNode.dec_health()

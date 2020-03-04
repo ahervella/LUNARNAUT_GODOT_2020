@@ -36,7 +36,7 @@ func use_o2():
 	audio.sound("gotObject").play(0)
 	self.set_animation("RED")
 	canUseO2 = false
-	$"/root/Control/astro".inc_health()
-	$"/root/Control/astro".inc_health()
-	$"/root/Control/astro".inc_health()
+	global.lvl().astroNode.inc_health()
+	global.lvl().astroNode.inc_health()
+	global.lvl().astroNode.inc_health()
 		

@@ -14,11 +14,16 @@ var spawn_key
 var spawnNora
 var doorOpened
 
+export (NodePath) var noraNodePath = null
+var noraNode = null
 var doorShadowTscn= preload("res://SCENES/doorShadow.tscn")
 
-enum {LeftDoor, RightDoor}
 
 func _ready():
+	
+	._ready()
+	
+	noraNode = get_node(noraNodePath)
 	
 	ASTRO_GLOBAL_START_POS = Vector2(415.3, 766.25)
 	ASTRO_FACE_RIGHT = false
@@ -26,9 +31,7 @@ func _ready():
 	
 	CAM_GLOBAL_START_POS  = Vector2(214.26, ASTRO_GLOBAL_START_POS.y) 
 	
-	levelNodes = {LeftDoor:"/root/Control/door_left", RightDoor:"/root/Control/right_door"}
-	
-	init()
+	initLevel()
 	
 	#volume set at way top
 	#gradual music fade in
@@ -41,7 +44,7 @@ func _ready():
 		
 
 	
-func init():
+func initLevel():
 	has_key = true
 	spawn_key = true
 	spawnNora = false
@@ -56,10 +59,5 @@ func init():
 		spawn_key = true
 		doorOpened = false
 	
-func LevelLogic(nodePath):
-	if (nodePath == levelNodes[LeftDoor]):
-		levelNodes[LeftDoor].canOpen = true
-		levelNodes[LeftDoor].autoOpen = true
-		doorOpened = true
 
 	

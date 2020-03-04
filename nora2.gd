@@ -42,7 +42,7 @@ func noraFaceRight(right):
 	#$"noraShapeGroundRight2".set_disabled(!right)
 	#$"noraShapeGroundLeft".set_disabled(right)
 	#$"noraShapeGroundLeft2".set_disabled(right)
-	if($"/root/Control".has_key):
+	if(global.lvl(01).has_key):
 		$"noraRayAttackRightTop".set_enabled(right)
 		$"noraRayAttackRightBottom".set_enabled(right)
 		$"noraRayAttackLeftTop".set_enabled(!right)
@@ -105,7 +105,7 @@ func moveRight():
 
 func _physics_process(delta):
 	
-	if (!$"/root/Control".spawnNora && one_shot):
+	if (!global.lvl(1).spawnNora && one_shot):
 		return
 	else:
 		one_shot = false
@@ -125,7 +125,7 @@ func _physics_process(delta):
 		attackTimer = 0
 
 	var noraGP = get_global_position()
-	var astroGP = $"/root/Control/astro".get_global_position()
+	var astroGP = global.lvl().astroNode.get_global_position()
 		
 	
 	
@@ -164,7 +164,7 @@ func _physics_process(delta):
 				moveLeft()
 		else:
 			var noraPosX = self.get_global_position().x
-			var astroPosX = $"/root/Control/astro".get_global_position().x
+			var astroPosX = global.lvl().astroNode.get_global_position().x
 			
 			if (noraPosX > astroPosX ):
 				noraFaceRight(false)

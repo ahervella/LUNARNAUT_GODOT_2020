@@ -63,10 +63,11 @@ func _ready():
 	doorBottom = get_node("doorBottom")
 	
 	doorShadowTopClosePos = doorShadowTop.get_position()
-	doorShadowTopOpenPos = doorShadowTopClosePos - Vector2(0, DOOR_OPEN_RANGE)
+	#adding 2 so that shadows move faster and don't bleed infront of door
+	doorShadowTopOpenPos = doorShadowTopClosePos - Vector2(0, DOOR_OPEN_RANGE + 2)
 	
 	doorShadowBottomClosePos = doorShadowBottom.get_position()
-	doorShadowBottomOpenPos = doorShadowBottomClosePos + Vector2(0, DOOR_OPEN_RANGE)
+	doorShadowBottomOpenPos = doorShadowBottomClosePos + Vector2(0, DOOR_OPEN_RANGE + 2)
 	
 	doorTopClosePos = doorTop.get_position()
 	doorTopOpenPos = doorTopClosePos - Vector2(0, DOOR_OPEN_RANGE)
@@ -76,19 +77,6 @@ func _ready():
 
 
 
-#const DOOR_TIME = 1
-#var canClose : bool = false;
-#var autoClose : bool = false;
-#var doorPromptText = "ENTER_ ACCESS_ CODE"
-#var doorPromptDenied = "ACCESS_ DENIED"
-#var doorPromptGranted = "ACCESS_ GRANTED"
-#onready var soundNode = $"/root/Control/astro/doorCloseSound"
-#onready var customLocation : Vector2 = Vector2(-20, -15)
-#
-#
-#func Interact():
-#	if (!canClose):
-#		$"/root/Control".LevelLogic(self.get_path())
 #
 
 func moveDoorPart(doorNode, doorStartPos, doorEndPos, doorTweenNode):

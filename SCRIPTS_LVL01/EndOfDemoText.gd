@@ -57,11 +57,11 @@ func on_gameover_timer_fin():
 	
 func on_gameover_timer_fin_WON():
 	print("step2")
-	var outro = $"/root/Control/DemoOutro"
+	var outro = $"/root/lvl01/DemoOutro"
 	outro.show()
-	$"/root/Control/Cam2D"._set_current(false)
-	$"/root/Control/DemoOutro/DemoOutroCam"._set_current(true)
-	#outro.set_global_position($"/root/Control/Cam2D".get_global_position())
+	$"/root/lvl01/Cam2D"._set_current(false)
+	$"/root/lvl01/DemoOutro/DemoOutroCam"._set_current(true)
+	#outro.set_global_position($"/root/lvl01/Cam2D".get_global_position())
 	
 	outro.connect("finished", self, "on_outro_fin")
 	outro.play()
