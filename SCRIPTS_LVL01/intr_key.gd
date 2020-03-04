@@ -21,7 +21,7 @@ func AutoCloseInteract():
 
 #function thats used here just to call the text after key has been gotten
 func PostTextInteract():
-	global.interactNode.animateText(TEXT_INTERACT, InteractAudioNode(), CustomPos(), FIXED_TEXT)
+	global.interactNode.animateText(TEXT_INTERACT, InteractAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT)
 
 #override interact so that we set the lvl01 key to true
 func Interact():

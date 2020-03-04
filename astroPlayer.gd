@@ -49,6 +49,7 @@ const IMMUNE_TIME = 2.5
 
 #the current item astro is in
 var currItem = null
+var currItemGlobalPos : Vector2
 
 #used to turn off any inputs
 var can_control = global.get("controls_enabled")
@@ -282,7 +283,7 @@ func MoveCameraAndInteracText():
 	CAMERA_NODE.set_global_position(Vector2(astroPos.x + (CAMERA_OFFSET * directional_force.x), astroPos.y))
 	
 	if (INTERACT_TEXT_NODE.fixedOffset):
-		INTERACT_TEXT_NODE.set_global_position(textOffset)
+		INTERACT_TEXT_NODE.set_global_position(currItemGlobalPos + textOffset)
 		return
 		
 	INTERACT_TEXT_NODE.set_global_position(astroPos + textOffset)
@@ -653,8 +654,10 @@ func _on_Item_check_area_entered(area):
 		currItem = area.get_parent()
 		#do virtual interface check
 		global.InteractInterfaceCheck(currItem)
-		#print("astroo: currItem  = " )
-		#print(currItem)
+		
+		#need to store global pos for when it leaves astro
+		#in case it is fixed text
+		currItemGlobalPos = currItem.get_global_position()
 		
 		#Execute autoInteract just once, upon entering
 		currItem.AutoInteract()

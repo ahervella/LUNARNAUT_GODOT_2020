@@ -7,10 +7,14 @@ extends "res://SCRIPTS/intr_default.gd"
 ##Need to work on handling door script and logic and setup, specifically
 ##becuase there are multiple nodes inheriting this script per door
 #
+
+#ALEJANDRO (Mar-03-2020)
+#Threw out all of old door shit, started door scene and script from scratch,
+#feeling really good about using the default to extend functionality
 export (String) var LOCKED_DOOR_TEXT = null
 export (String) var UNLOCKED_DOOR_TEXT = null
 
-export (float) var DOOR_TIME = 2
+export (float) var DOOR_TIME = 1
 export (float) var DOOR_OPEN_RANGE = 19
 export (bool) var DOOR_AUTO_OPEN = true
 export (bool) var DOOR_LOCKED = false
@@ -51,6 +55,8 @@ func _ready():
 #	print("doorindex")
 	move_child(doorShadowNode, get_index()+1)
 	
+	doorShadowNode.set_global_position(get_global_position())
+	
 	doorShadowTop = doorShadowNode.get_node("doorShadowTop")
 	doorShadowBottom = doorShadowNode.get_node("doorShadowBottom")
 	doorTop = get_node("doorTop")
@@ -66,7 +72,7 @@ func _ready():
 	doorTopOpenPos = doorTopClosePos - Vector2(0, DOOR_OPEN_RANGE)
 	
 	doorBottomClosePos = doorBottom.get_position()
-	doorBottomOpenPos = doorTopClosePos + Vector2(0, DOOR_OPEN_RANGE)
+	doorBottomOpenPos = doorBottomClosePos + Vector2(0, DOOR_OPEN_RANGE)
 
 
 
@@ -93,34 +99,37 @@ func moveDoorPart(doorNode, doorStartPos, doorEndPos, doorTweenNode):
 		currentPos = doorNode.get_position()
 		doorTweenNode.stop_all()
 		doorTweenNode.call_deferred('free')
-	doorTweenNode = null
+	else:
+		doorTweenNode = null
 	
-	doorTweenNode = global.newTween(doorNode, 'position', currentPos, doorEndPos, DOOR_TIME, 0)
+	return global.newTween(doorNode, 'position', currentPos, doorEndPos, DOOR_TIME, 0, null, Tween.TRANS_CIRC, Tween.EASE_OUT)
 	
 	
 	
 func openDoor():
 	
-	moveDoorPart(doorShadowTop, doorShadowTopClosePos, doorShadowTopOpenPos, doorShadowTopTween)
-	moveDoorPart(doorShadowBottom, doorShadowBottomClosePos, doorShadowBottomOpenPos, doorShadowBottomTween)
-	moveDoorPart(doorTop, doorTopClosePos, doorTopOpenPos, doorTopTween)
-	moveDoorPart(doorBottom, doorBottomClosePos, doorBottomOpenPos, doorBottomTween)
+	doorShadowTopTween = moveDoorPart(doorShadowTop, doorShadowTopClosePos, doorShadowTopOpenPos, doorShadowTopTween)
+	doorShadowBottomTween = moveDoorPart(doorShadowBottom, doorShadowBottomClosePos, doorShadowBottomOpenPos, doorShadowBottomTween)
+	doorTopTween = moveDoorPart(doorTop, doorTopClosePos, doorTopOpenPos, doorTopTween)
+	doorBottomTween = moveDoorPart(doorBottom, doorBottomClosePos, doorBottomOpenPos, doorBottomTween)
 	
 func closeDoor():
 	
-	moveDoorPart(doorShadowTop, doorShadowTopOpenPos, doorShadowTopClosePos, doorShadowTopTween)
-	moveDoorPart(doorShadowBottom, doorShadowBottomOpenPos, doorShadowBottomClosePos, doorShadowBottomTween)
-	moveDoorPart(doorTop, doorTopOpenPos, doorTopClosePos, doorTopTween)
-	moveDoorPart(doorBottom, doorBottomOpenPos, doorBottomClosePos, doorBottomTween)
+	doorShadowTopTween = moveDoorPart(doorShadowTop, doorShadowTopOpenPos, doorShadowTopClosePos, doorShadowTopTween)
+	doorShadowBottomTween = moveDoorPart(doorShadowBottom, doorShadowBottomOpenPos, doorShadowBottomClosePos, doorShadowBottomTween)
+	doorTopTween = moveDoorPart(doorTop, doorTopOpenPos, doorTopClosePos, doorTopTween)
+	doorBottomTween = moveDoorPart(doorBottom, doorBottomOpenPos, doorBottomClosePos, doorBottomTween)
 	
 	
 
 	
 func AutoInteract():
-	
-#	print("door auto interact")
-	TextInteract()
-	can_interact = true
+#	print("working autodoor?")
+##	print("door auto interact")
+#	TextInteract()
+#	can_interact = true
+	.AutoInteract()
+
 	if (DOOR_AUTO_OPEN || !DOOR_LOCKED):
 		openDoor()
 #
@@ -143,7 +152,7 @@ func Interact():
 	#unlock case
 	if (dependantBool):
 		DOOR_LOCKED = false
-		global.interactNode.animateText(UNLOCKED_DOOR_TEXT, InteractAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT)
+		global.interactNode.animateText(UNLOCKED_DOOR_TEXT, InteractAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
 		return
 		
 		
@@ -154,9 +163,12 @@ func Interact():
 		
 		timer = global.newTimer(T_I_DISPLAY_TIME, funcref(self, 'AutoInteract'))	
 	
-	global.interactNode.animateText(LOCKED_DOOR_TEXT, ShowAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT)
+	global.interactNode.animateText(LOCKED_DOOR_TEXT, ShowAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
 	
 	
+func AutoCloseInteract():
+	.AutoCloseInteract()
+	closeDoor()
 #func AutoOpenInteract():
 #	print("auto_close")
 #	global.interactNode.closeText()

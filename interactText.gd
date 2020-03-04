@@ -39,7 +39,6 @@ const LOCAL_SIZE = Vector2(125, 116)
 var totalOffset : Vector2 = Vector2(0,0)
 var fixedOffset : bool = false
 
-
 var textTweeen : Tween
 var breakTimerLoop = false
 
@@ -81,32 +80,47 @@ func on_timeout_complete():
 
 
 
-func set_text_pos(customOffset, fixedText):
+func set_text_pos(customOffset, fixedText, textSidePosition):
 	
 	fixedOffset = fixedText
-
 	if (fixedText):
 		totalOffset = customOffset
 		return
 	
-	var get_flip = ASTRO_NODE.get_node("ASTRO_ANIM2").is_flipped_h()
+	
+	#logic for deciding on which side to of astro to draw text
+	#can be set manually via animateText
+	var get_flip
+
+	print(textSidePosition)
+	if (textSidePosition == 1):
+		get_flip = false
+	elif (textSidePosition == -1):
+		get_flip = true
+	else:
+		get_flip = ASTRO_NODE.get_node("ASTRO_ANIM2").is_flipped_h()
+
 
 	if (get_flip):
 		
 		#little hack that adjusts the facing left offset if the text typed doesn't
 		#take up the whole width of the text box
 		var textLength = get_text().length()
-		var pixelOffset = textLength * (LOCAL_SIZE.x / 12.0)
+		var pixelOffset = fmod(textLength, 12) * (LOCAL_SIZE.x / 12.0)
 		
 		totalOffset = Vector2(-POS_OFFSET.x - pixelOffset -customOffset.x, POS_OFFSET.y + customOffset.y)
+		print(totalOffset)
 		return
 	
+	print(totalOffset)
 	totalOffset = POS_OFFSET + customOffset
 	
 
 
 
-func animateText(text, soundNode = null, customPosOffset = Vector2(0,0), fixedText = false, textTime = null): #optional time for tween
+func animateText(text, soundNode = null, customPosOffset = Vector2(0,0),
+				fixedText = false, textSide : int = 0, textTime = null):
+	#optional time for tween
 	#need to store locally to add blinking underscore affect in timers above
 	currentText = text
 	
@@ -120,13 +134,15 @@ func animateText(text, soundNode = null, customPosOffset = Vector2(0,0), fixedTe
 	#reset the blinking timer
 	timer_reset(currentText)
 	
-	#set the text position
-	set_text_pos(customPosOffset, fixedText)
 	#assign text to text box
 	self.set_text(currentText)
 	
+	#set the text position
+	set_text_pos(customPosOffset, fixedText, textSide)
+	
+	
 	#if no specific typing time given, set to default
-	if textTime == null:
+	if (textTime == null || textTime == 0):
 		textTime = TYPE_TEXT_TIME
 		
 	
@@ -146,15 +162,15 @@ func closeText(soundNode = null):
 	#if the tween hasn't been freed via the global newTween signal (as in, 
 	#it is still tweening the text to show and we need to closeText() prematurely,
 	#then stop the tween and clean up
-	if (is_instance_valid(textTweeen)):
+	if (is_instance_valid(textTweeen) && textTweeen.is_class("Tween")):
 		#seems to be running into a bug where it points to some random thing in mem occasionally after I queue free it,
 		#so here I check to make sure its a tween before calling stuff
-		if (textTweeen.is_class("Tween")):
-			textTweeen.stop_all()
-			textTweeen.call_deferred('free')
+		textTweeen.stop_all()
+		textTweeen.call_deferred('free')
 			
 	#make our var not point to a random thing in memory (from weird bug)
-	textTweeen = null
+	else:
+		textTweeen = null
 	
 	
 	global.newTween(self, "percent_visible", perVisibile, 0, REMOVE_TEXT_TIME, 0)

@@ -72,7 +72,7 @@ func lvl(lvlNum : int):
 	
 #VVVVVVV - TWEEN AND TIMER FUNCS - VVVVVVVVVVV#
 	
-func newTween(object, tweeningMethod, startVars, endVars, time, delay, func_ref = null):
+func newTween(object, tweeningMethod, startVars, endVars, time, delay, func_ref = null, transType = Tween.TRANS_LINEAR, tweenType = Tween.EASE_OUT):
 	
 	var tween = Tween.new()
 	#always need to add child to something for it to work
@@ -81,7 +81,7 @@ func newTween(object, tweeningMethod, startVars, endVars, time, delay, func_ref 
 	#connect tween once its done to self destruct (to avoid mem leaks) and call any related funcs if any
 	tween.connect("tween_completed", self, "DestroyTween", [tween, func_ref])
 
-	tween.interpolate_property(object, tweeningMethod, startVars, endVars, time , 0, Tween.EASE_OUT, delay)
+	tween.interpolate_property(object, tweeningMethod, startVars, endVars, time, transType, tweenType, delay)
 	
 	tween.start()
 	
