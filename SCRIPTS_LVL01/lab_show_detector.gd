@@ -17,12 +17,13 @@ func _ready():
 	call_deferred('readyDeferred')
 
 func readyDeferred():
+	pass
 	
-	var lab_nodes = (get_tree().get_nodes_in_group("lab"))
-	for i in lab_nodes:
-		i.set_visible(show_lab)
+	#var lab_nodes = (get_tree().get_nodes_in_group("lab"))
+	#for i in lab_nodes:
+	#	i.set_visible(show_lab)
 	
-	global.lvl(1).noraNode.hide()
+	#global.lvl(1).noraNode.hide()
 
 
 func _on_lab_show_detector_body_entered(body):

@@ -3,7 +3,6 @@ extends Node
 #ALEJANDRO (Feb-23-2020)
 #This is the node from which to extend level nodes, which basically makes sure each level has the basic
 #requirments needed to start the level properly. 
-
 export (NodePath) var astroNodePath = null
 var astroNode
 var ASTRO_GLOBAL_START_POS : Vector2
@@ -15,6 +14,7 @@ var CAM_GLOBAL_START_POS : Vector2
 var levelNodes : Dictionary
 
 func _ready():
+	
 	astroNode = get_node("astro")
 	global.interactNode = astroNode.INTERACT_TEXT_NODE
 	
@@ -36,3 +36,4 @@ func initAstro():
 	astroNode.set_health(ASTRO_HEALTH)
 
 	camNode.set_global_position(CAM_GLOBAL_START_POS)
+	

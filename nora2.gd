@@ -148,8 +148,8 @@ func _physics_process(delta):
 			
 			audio.sound("cinematicBoom", "lvl01").play(0)
 			audio.sound("lowPulse", "lvl01").play(0)
-			audio.sound("breathingScared", "lvl01").play(0)
-			audio.sound("breathingCalm", "lvl01").stop()
+			audio.sound("breathingScared").play(0)
+			audio.sound("breathingCalm").stop()
 			musicChange = false
 		
 		attackTimer += 1
@@ -178,8 +178,8 @@ func _physics_process(delta):
 			attackTimer = 0
 		else:
 			if(!musicChange):
-				audio.sound("breathingScared", "lvl01").stop(0)
-				audio.sound("breathingCalm", "lvl01").play(0)
+				audio.sound("breathingScared").stop(0)
+				audio.sound("breathingCalm").play(0)
 				musicChange = true
 	
 	wait += 1
@@ -199,7 +199,7 @@ func _physics_process(delta):
 		wait = 0;
 	
 
-func onMusicStop(object, key):
+func onMusicStop():
 	audio.sound("music", "lvl01").stop()
 
 func _on_noraAreaHitBox_body_entered(body):
