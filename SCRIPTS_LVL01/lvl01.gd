@@ -20,8 +20,6 @@ var doorShadowTscn= preload("res://SCENES/doorShadow.tscn")
 
 
 func _ready():
-	if Engine.editor_hint:
-		return
 		
 	._ready()
 	
@@ -47,8 +45,6 @@ func _ready():
 
 	
 func initLevel():
-	if Engine.editor_hint:
-		return
 		
 	has_key = true
 	spawn_key = true
@@ -67,12 +63,3 @@ func initLevel():
 
 	
 
-func _on_trig_redLab_body_entered(body):
-	if Engine.editor_hint:
-		return
-		
-	var groups = body.get_groups()
-	if (groups.has("astro")):
-		var detector_pos = get_node("detector_shape").get_global_position()
-		var astro_pos = global.lvl().astroNode.get_global_position()
-		#show_lab = ((detector_pos.x - astro_pos.x)>0)

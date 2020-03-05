@@ -70,9 +70,9 @@ func _on_ship_in_detector_body_exited(body):
 func out_ship_visibility(thing):
 	
 	
-	var out_ship_nodes = get_tree().get_nodes_in_group("out-ship")
-	var bg_nodes = get_tree().get_nodes_in_group("bg")
-	var moon_nodes = get_tree().get_nodes_in_group("moon_node")
+	var out_ship_nodes = global.lvl(01).get_tree().get_nodes_in_group("out-ship")
+	var bg_nodes = global.lvl(01).get_tree().get_nodes_in_group("bg")
+	var moon_nodes = global.lvl(01).get_tree().get_nodes_in_group("moon_node")
 	#var black_node = get_tree().get_nodes_in_group("black")
 	#var out_floor = get_node("/root/Control/stage/stage_floor")
 	
@@ -130,9 +130,6 @@ func tween_exec(node, startOrFin):
 		global.newTween(node, "modulate", cur_color, Color(startOrFin, startOrFin, startOrFin, startOrFin), 0.3, 0)
 		#get_node(tween_node).interpolate_property(node, "modulate", cur_color, Color(startOrFin, startOrFin, startOrFin, startOrFin), 0.3 , 0, Tween.EASE_OUT)
 	
-#	if (node.is_in_group("black_node")):
-#		get_node(tween_node).interpolate_property(node, "modulate", cur_color, Color(startOrFin, startOrFin, startOrFin, startOrFin), 0.5 , 0, Tween.EASE_OUT)
-#
 	#turns node into alpha fade
 	else:
 		global.newTween(node, "modulate", cur_color, Color(cur_r, cur_g, cur_b, startOrFin), 0.3, 0)

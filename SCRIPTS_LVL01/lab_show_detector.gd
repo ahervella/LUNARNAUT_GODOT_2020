@@ -30,43 +30,22 @@ func _on_lab_show_detector_body_entered(body):
 	#print("we're in")
 	var groups = body.get_groups()
 	if (groups.has("astro")):
-		var detector_pos = get_node("detector_shape").get_global_position()
-		var astro_pos = global.lvl().astroNode.get_global_position()
-		show_lab = ((detector_pos.x - astro_pos.x)>0)
-		#hide_bg = ((detector_pos.x - astro_pos.x)<0)
+		show_lab = !global.lvl().trigChunkNode.onRightSide(body, get_node("shape"))
+	
+		print("show lab")
+		print(show_lab)
 	
 		global.lvl(1).noraNode.show()
 	
 	
-		var lab_nodes = (get_tree().get_nodes_in_group("lab"))
+		var lab_nodes = (global.lvl(01).get_tree().get_nodes_in_group("lab"))
 		for i in lab_nodes:
 			i.set_visible(show_lab)
 			
 		#fix for lab above shit, and activated in interact script
-		$"/root/lvl01/lab_above/lab_above_1".hide()
-		#done by hide_stars detector
-		#var bg_nodes = (get_tree().get_nodes_in_group("bg"))
-		#for i in bg_nodes:
-		#	i.set_visible(hide_bg)
-
-
-func _on_lab_show_detector_body_exited(body):
-	var groups = body.get_groups()
-	if (groups.has("astro")):
-		var detector_pos = get_node("detector_shape").get_global_position()
-		var astro_pos = global.lvl().astroNode.get_global_position()
-		show_lab = ((detector_pos.x - astro_pos.x)<0)
-		#hide_bg = ((detector_pos.x - astro_pos.x)<0)
-	
-		global.lvl(1).noraNode.show()
-	
-	
-		var lab_nodes = (get_tree().get_nodes_in_group("lab"))
-		for i in lab_nodes:
-			i.set_visible(show_lab)
-			
-		#fix for lab above shit, and activated in interact script
-		$"/root/lvl01/lab_above/lab_above_1".hide()
+		
+		#global.lvl(1).get_node("lab_above/lab_above_1").hide()
+		
 		#done by hide_stars detector
 		#var bg_nodes = (get_tree().get_nodes_in_group("bg"))
 		#for i in bg_nodes:

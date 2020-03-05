@@ -5,6 +5,8 @@ extends Node
 #requirments needed to start the level properly. 
 export (NodePath) var astroNodePath = null
 var astroNode
+export (NodePath) var trigChunkNodePath = null
+var trigChunkNode
 var ASTRO_GLOBAL_START_POS : Vector2
 var ASTRO_FACE_RIGHT : bool
 var ASTRO_HEALTH : int
@@ -15,7 +17,8 @@ var levelNodes : Dictionary
 
 func _ready():
 	
-	astroNode = get_node("astro")
+	astroNode = get_node(astroNodePath)
+	trigChunkNode = get_node(trigChunkNodePath)
 	global.interactNode = astroNode.INTERACT_TEXT_NODE
 	
 #initAstro is not called here but in the extended gd scripts

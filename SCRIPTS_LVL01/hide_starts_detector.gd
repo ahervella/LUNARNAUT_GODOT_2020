@@ -9,36 +9,21 @@ extends Area2D
 #rendering once the player reaches the bubble at which point it would be safe to hide them
 
 
-var hide_starts = true
+var hideStars = true
 # class member variables go here, for example:
 # var a = 2
 # var b = "textvar"
 
 func _on_hide_stars_detector_body_entered(body):
-	pass # Replace with function body.
+	
 	#print("we're in")
 	var groups = body.get_groups()
 	if (groups.has("astro")):
-		var detector_pos = get_node("detector_shape").get_global_position()
-		var astro_pos = global.lvl().astroNode.get_global_position()
-		hide_starts = ((detector_pos.x - astro_pos.x)<0)
+		hideStars = global.lvl().trigChunkNode.onRightSide(body, get_node("shape"))
 	
-			
 		var bg_nodes = (get_tree().get_nodes_in_group("bg"))
 		for i in bg_nodes:
-			i.set_visible(hide_starts)
-
-func _on_hide_stars_detector_body_exited(body):
-	var groups = body.get_groups()
-	if (groups.has("astro")):
-		var detector_pos = get_node("detector_shape").get_global_position()
-		var astro_pos = global.lvl().astroNode.get_global_position()
-		hide_starts = ((detector_pos.x - astro_pos.x)>0)
-	
-			
-		var bg_nodes = (get_tree().get_nodes_in_group("bg"))
-		for i in bg_nodes:
-			i.set_visible(hide_starts)
+			i.set_visible(hideStars)
 
 
 
