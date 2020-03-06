@@ -106,9 +106,12 @@ func set_text_pos(customOffset, fixedText, textSidePosition):
 		#little hack that adjusts the facing left offset if the text typed doesn't
 		#take up the whole width of the text box
 		var textLength = get_text().length()
-		var pixelOffset = fmod(textLength, 12) * (LOCAL_SIZE.x / 12.0)
+		var pixelOffSet = 12
+		if (textLength < 12):
+			pixelOffSet = fmod(textLength, 12)
+		pixelOffSet *= (LOCAL_SIZE.x / 13.0)
 		
-		totalOffset = Vector2(-POS_OFFSET.x - pixelOffset -customOffset.x, POS_OFFSET.y + customOffset.y)
+		totalOffset = Vector2(-POS_OFFSET.x - pixelOffSet -customOffset.x, POS_OFFSET.y + customOffset.y)
 		print(totalOffset)
 		return
 	

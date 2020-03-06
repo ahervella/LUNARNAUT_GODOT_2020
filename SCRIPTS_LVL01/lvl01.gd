@@ -37,6 +37,7 @@ func _ready():
 	#gradual music fade in
 	global.newTween(audio.sound("music", "lvl01"), "volume_db", -50, -2, 3, 0)
 
+	astroNode.set_health(ASTRO_HEALTH)
 
 	#settings for playtest
 	if(global.get("playtest")):

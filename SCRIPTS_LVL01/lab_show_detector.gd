@@ -27,6 +27,10 @@ func readyDeferred():
 
 
 func _on_lab_show_detector_body_entered(body):
+	
+	#just so for testing and not having to go all the way from the top to hide the stars
+	get_parent().get_node("chunk_hide_stars")._on_hide_stars_detector_body_entered(body)
+	
 	#print("we're in")
 	var groups = body.get_groups()
 	if (groups.has("astro")):

@@ -1,4 +1,4 @@
-extends Sprite
+extends "res://SCRIPTS/intr_default.gd"
 
 #ALEJANDRO (Feb-14-2020)
 #this is the script for the blinking lab light that gives the

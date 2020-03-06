@@ -4,6 +4,7 @@ extends Node
 
 export (bool) var PrintLevelChunkingReport = false setget levelChunkingReportSet
 export (bool) var IncludeAllGroups = false
+export (String) var SearchNodes = ""
 var lvlNodes : Array
 const LAYER_SEPERATOR = "^^^^"
 const INTENDED_CHUNK_GROUPS = ["chunk_ship", "chunk_cave", "chunk_lab"]
@@ -45,7 +46,8 @@ func printNodeTree(node, layer):
 	if (node.get_groups().size() > 0):
 		for group in node.get_groups():
 			if (INTENDED_CHUNK_GROUPS.has(group) || IncludeAllGroups):
-				tabString = str(tabString, group, ", ")
+				if (SearchNodes != "" && group in SearchNodes):
+					tabString = str(tabString, group, ", ")
 			
 		
 	tabString = str(tabString, "] ")

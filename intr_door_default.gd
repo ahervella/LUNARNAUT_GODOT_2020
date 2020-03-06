@@ -45,6 +45,8 @@ var doorBottomClosePos : Vector2
 var doorBottomOpenPos : Vector2
 var doorBottomTween : Tween
 
+var doorBarrierShape : CollisionShape2D
+
 
 
 func _ready():
@@ -61,6 +63,7 @@ func _ready():
 	doorShadowBottom = doorShadowNode.get_node("doorShadowBottom")
 	doorTop = get_node("doorTop")
 	doorBottom = get_node("doorBottom")
+	doorBarrierShape = get_node("doorStaticBody/doorShape")
 	
 	doorShadowTopClosePos = doorShadowTop.get_position()
 	#adding 2 so that shadows move faster and don't bleed infront of door
@@ -95,14 +98,14 @@ func moveDoorPart(doorNode, doorStartPos, doorEndPos, doorTweenNode):
 	
 	
 func openDoor():
-	
+	doorBarrierShape.set_disabled(true)
 	doorShadowTopTween = moveDoorPart(doorShadowTop, doorShadowTopClosePos, doorShadowTopOpenPos, doorShadowTopTween)
 	doorShadowBottomTween = moveDoorPart(doorShadowBottom, doorShadowBottomClosePos, doorShadowBottomOpenPos, doorShadowBottomTween)
 	doorTopTween = moveDoorPart(doorTop, doorTopClosePos, doorTopOpenPos, doorTopTween)
 	doorBottomTween = moveDoorPart(doorBottom, doorBottomClosePos, doorBottomOpenPos, doorBottomTween)
 	
 func closeDoor():
-	
+	doorBarrierShape.set_disabled(false)
 	doorShadowTopTween = moveDoorPart(doorShadowTop, doorShadowTopOpenPos, doorShadowTopClosePos, doorShadowTopTween)
 	doorShadowBottomTween = moveDoorPart(doorShadowBottom, doorShadowBottomOpenPos, doorShadowBottomClosePos, doorShadowBottomTween)
 	doorTopTween = moveDoorPart(doorTop, doorTopOpenPos, doorTopClosePos, doorTopTween)
@@ -114,9 +117,10 @@ func closeDoor():
 func AutoInteract():
 #	print("working autodoor?")
 ##	print("door auto interact")
-#	TextInteract()
-#	can_interact = true
-	.AutoInteract()
+	if (DOOR_LOCKED):
+		TextInteract()
+	can_interact = true
+	#.AutoInteract()
 
 	if (DOOR_AUTO_OPEN || !DOOR_LOCKED):
 		openDoor()
@@ -140,6 +144,7 @@ func Interact():
 	#unlock case
 	if (dependantBool):
 		DOOR_LOCKED = false
+		openDoor()
 		global.interactNode.animateText(UNLOCKED_DOOR_TEXT, InteractAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
 		return
 		
@@ -156,7 +161,9 @@ func Interact():
 	
 func AutoCloseInteract():
 	.AutoCloseInteract()
-	closeDoor()
+	
+	if (!DOOR_LOCKED):
+		closeDoor()
 #func AutoOpenInteract():
 #	print("auto_close")
 #	global.interactNode.closeText()

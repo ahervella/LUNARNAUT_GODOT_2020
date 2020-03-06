@@ -18,7 +18,6 @@ const CAMERA_OFFSET = 200
 export (NodePath) var INTERACT_TEXT_NODE_PATH = null
 onready var INTERACT_TEXT_NODE = get_node(INTERACT_TEXT_NODE_PATH)
 
-var NORA_NODE
 
 const AIR_HORZ_SPEED = 160
 const GROUND_HORZ_SPEED = 160
@@ -32,6 +31,11 @@ var directional_force = Vector2()
 const GRAVITY = 3
 
 var groundedBubble = true
+
+#used so that when multiple shapes enter or exit, can keep track
+#on whether there is at least one solid (floor) shape touching
+var solidBodyCount = 0
+
 #needed so can't initiate jump mechanics in midair, after falling
 var jumping = false
 var holdDownCanJump = true
@@ -44,15 +48,15 @@ const DEFAULT_JUMP_FORCE = -150
 var jumpForce = DEFAULT_JUMP_FORCE
 
 var dead = false
+var preDeath = false
 var immune = false
 const IMMUNE_TIME = 2.5
+var touchingNora = false
 
 #the current item astro is in
 var currItem = null
 var currItemGlobalPos : Vector2
 
-#used to turn off any inputs
-var can_control = global.get("controls_enabled")
 
 #touch controls
 export (NodePath) var vControllerPath = null
@@ -104,7 +108,7 @@ func _physics_process(delta):
 	if (groundedBubble):
 		jumping = false
 		holdDownCanJump = true
-		if(get_anim()=="FALL"):
+		if(get_anim()=="FALL" || get_anim()=="JUMP"):
 			set_anim("LAND")
 		airTime = 0
 		jumpForce = DEFAULT_JUMP_FORCE
@@ -149,17 +153,8 @@ func _physics_process(delta):
 func ApplyMovement(delta):
 	#governs direction of buttons being pressed. Mostly used for
 	#horizontal movement. Resets to zero every frame
-	directional_force = DIRECTION.ZERO
 	
-	#if control disabled, return
-	if(can_control):
-		return
-
-	if(Input.is_action_pressed("ui_right")): #or vJoy == 1):
-		directional_force += DIRECTION.RIGHT
-
-	if(Input.is_action_pressed("ui_left")): #or vJoy == -1):
-		directional_force += DIRECTION.LEFT
+	ApplyInput()
 	
 	Move()
 
@@ -167,6 +162,19 @@ func ApplyMovement(delta):
 	InteractCheck()
 	MoveCameraAndInteracText()
 
+func ApplyInput():
+	
+	directional_force = DIRECTION.ZERO
+	
+	if(!global.controls_enabled):
+		return
+	
+
+	if(Input.is_action_pressed("ui_right")): #or vJoy == 1):
+		directional_force += DIRECTION.RIGHT
+
+	if(Input.is_action_pressed("ui_left")): #or vJoy == -1):
+		directional_force += DIRECTION.LEFT
 
 func Move():
 	var cullMode
@@ -231,6 +239,9 @@ func MoveJump(delta):
 	#TODO: 60 here is not taking into accoun gravity?
 	if (vel.y >= 50.0 && get_anim() != "FALL" &&  !groundedBubble):
 		set_anim("FALL")
+		return
+
+	if (!global.controls_enabled):
 		return
 
 	var jumpJustPressed = Input.is_action_just_pressed("ui_accept") || Input.is_action_just_pressed("ui_up") || vButton == 2
@@ -319,13 +330,13 @@ func get_anim():
 #set_anim(anim_code_post): takes in animation word (no light code) and
 #sets the animation with the current anim light code
 func set_anim(anim_code_post):
-	if (anim_code_post == "JUMP"):
-		
+	if (dead):
 		return
 	
-	#if(notDead):
-	if(true):
-		$"ASTRO_ANIM2".set_animation(curr_anim_code + "_" + anim_code_post)
+	if (anim_code_post == "JUMP"):
+		return
+	
+	$"ASTRO_ANIM2".set_animation(curr_anim_code + "_" + anim_code_post)
 
 
 
@@ -447,19 +458,28 @@ func flipCheck(ac):
 #TODO: switch to base class timer
 func timer_reset():
 	
+	if(is_instance_valid(timer) && timer.is_class("Timer")):
+		timer.stop()
+		timer.call_deferred('free')
+	else:
+		timer = null
+	
 	#anim_code1 and anim_code2 are the anim codes that are blinking
-	timer = Timer.new()
-	add_child(timer)
-	timer.set_one_shot(true)
-	timer.set_wait_time(blink_time)
-	timer.connect("timeout", self, "on_timeout_complete")
-	timer.start()
+#	timer = Timer.new()
+#	add_child(timer)
+#	timer.set_one_shot(true)
+#	timer.set_wait_time(blink_time)
+#	timer.connect("timeout", self, "on_timeout_complete")
+#	timer.start()
+
+	timer = global.newTimer(blink_time, funcref(self, "on_timeout_complete"))
 	
 	#global.newTimer(blink_time)
 	#on_timeout_complete()
 
 #switches between anim_code1 & 2
 func on_timeout_complete():
+	
 	
 	timer_seq = !timer_seq
 	
@@ -498,7 +518,7 @@ func dec_health():
 
 	#trigger death animation and turn off controls
 	if (health_code <= 1):
-		global.set("controls_enabled", false)
+		global.controls_enabled = false
 	
 		if(dead):
 			return
@@ -507,18 +527,21 @@ func dec_health():
 		#deadFalling = true
 
 		#triggers var that prevents other anims in set_anim function
-		PreInitDeathLoop()
+		preDeath = true
 		
 		
-
-func PreInitDeathLoop():
-	if(groundedBubble):
-		InitDeath()
-		return
-	
-	PreInitDeathLoop()
-
+		global.newTimer(0.5, funcref(self, "checkIfDeathGrounded"))
+		
+		
+func checkIfDeathGrounded():
+	if (groundedBubble):
+			InitDeath()
+			preDeath = false
+		
 func InitDeath():
+	
+	$"ASTRO_ANIM2".set_animation("DEATH")
+	
 	#used to control and stop all other anims in set_anim
 	dead = true
 	
@@ -532,9 +555,9 @@ func InitDeath():
 	global.newTween(hurtTintNode, "modulate", Color(r, g, b, a), Color(r, g, b, 1), 3, 0)
 	
 	set_collision_layer_bit( 0, false )
-	global.set("astroDead", true)
+	global.astroDead = true
 	
-	$"ASTRO_ANIM2".set_animation("DEATH")
+	
 	
 	#activate blackscreen ending for death (false indicated did not win)
 	get_node("/root/lvl01/EndOfDemo/Blackness").startEndDemoBlacknessTween(false)
@@ -542,9 +565,9 @@ func InitDeath():
 	FadeOutSound()
 
 func FadeOutSound():
-	var breathingScared = $"breathingScared"
-	var breathingCalm = $"breathingCalm"
-	var suitBeep = $"suitBeep"
+	var breathingScared = audio.sound("breathingScared")
+	var breathingCalm = audio.sound("breathingCalm")
+	var suitBeep = audio.sound("suitBeep")
 	
 	global.newTween(breathingScared, "volume_db", breathingScared.get_volume_db(), -80, 2, 0)
 	global.newTween(breathingCalm, "volume_db", breathingCalm.get_volume_db(), -80, 2, 0)
@@ -581,13 +604,13 @@ func TakeDamage():
 	
 	if(!immune && !dead):
 		#so astro can go through nora
-		NORA_NODE.set_collision_layer_bit( 0, false )
+		global.lvl(01).noraNode.set_collision_layer_bit( 0, false )
 		audio.sound("breathingHurt").play()
 		immune = true
 
 		dec_health()
 		var astroPos = self.get_global_position()
-		var noraPos = NORA_NODE.get_global_position()
+		var noraPos = global.lvl(01).noraNode.get_global_position()
 
 		if (astroPos.x < noraPos.x):
 			#launch right
@@ -604,12 +627,13 @@ func TakeDamage():
 		
 		#TODO: make timer take in object and method of object so don't
 		#need to remember
-		var ref = funcref(self, 'ImmuneToFalse')
-		global.newTimer(IMMUNE_TIME, ref)
+		global.newTimer(IMMUNE_TIME, funcref(self, 'ImmuneToFalse'))
 		#immune = false
 		
 func ImmuneToFalse():
 	immune = false
+	if (touchingNora):
+		TakeDamage()
 
 func TakeDamageImpactLaunch(direction):
 	vel = Vector2(500 * direction, -500)
@@ -626,7 +650,7 @@ func TakeDamageFlash():
 	#last numbre is delay for starting tween
 	global.newTween(self, "modulate", Color(r, g, b), Color(r, 0, 0), 0.5, 0, funcref(self, "TakeDamageFlashReverse"))
 
-func TakeDamageFlashReverse(object, key):
+func TakeDamageFlashReverse():
 	
 	var hurtTintNode = CAMERA_NODE.get_node("hurtTint")
 	var cur_color = hurtTintNode.get_modulate()
@@ -643,11 +667,21 @@ func TakeDamageFlashReverse(object, key):
 
 func _on_groundBubble_body_entered(body):
 	if (body.get_groups().has("solid")):
+		solidBodyCount += 1
+		
 		groundedBubble = true
+		
+		if (preDeath):
+			InitDeath()
 
 func _on_groundBubble_body_exited(body):
 	if (body.get_groups().has("solid")):
+		solidBodyCount -= 1
+	
+	if (solidBodyCount == 0):
 		groundedBubble = false
+		
+	
 
 func _on_Item_check_area_entered(area):
 	#print("astoooo: shit entered")
@@ -663,6 +697,10 @@ func _on_Item_check_area_entered(area):
 		
 		#Execute autoInteract just once, upon entering
 		currItem.AutoInteract()
+	
+	if (area.get_groups().has("nora")):
+		touchingNora = true
+		TakeDamage()
 
 
 func _on_Item_check_area_exited(area):
@@ -671,3 +709,6 @@ func _on_Item_check_area_exited(area):
 		global.InteractInterfaceCheck(currItem)
 		currItem.AutoCloseInteract()
 		currItem = null
+		
+	if (area.get_groups().has("nora")):
+		touchingNora = false
