@@ -18,8 +18,6 @@ extends Node
 
 var interactNode #$"/root/Control/astro/InteractFont"
 
-var current_scene
-var new_scene
 
 var current_interact
 var pressing_e 
@@ -33,8 +31,6 @@ func _ready():
 	init()
 	
 func init():
-	current_scene = null
-	new_scene = null
 	current_interact = null
 	pressing_e = false
 	controls_enabled = true
@@ -42,20 +38,22 @@ func init():
 	astroDead = false
 	
 
-	playTest = false
+	playTest = true
 	
 	
 
 
 func replay():
 	init()
-	get_tree().change_scene("res://MainMenu.tscn")
-	current_scene = get_tree().get_current_scene()
+	goto_scene("res://SCENES/MainMenu.tscn")
+
+func loadLevel(lvlNum):
+	goto_scene(str("res://SCENES/lvl", "%0*d" % [2, lvlNum], ".tscn"))
 
 	
 func goto_scene(path):
+	DestroyAllChildren()
 	get_tree().change_scene(path)
-	current_scene = get_tree().get_current_scene()
 	
 	
 #used to get the specific level variables, funcs, and attributes
@@ -121,7 +119,13 @@ func DestroyTimer(timer, ref):
 	#refered method
 	if (ref != null):
 		ref.call_func()
-	
+		
+#to clean up shit before switching scenes to not cause scene / node ref errors
+func DestroyAllChildren():
+	for i in range(0, get_child_count()):
+		print("childcount")
+		print(get_child_count())
+		get_child(i).call_deferred('free')
 
 #these are functions that any interact node must have (acts as an interface enforcer)
 #ALSO, the interact node MUST have "interact" in node area group to work

@@ -14,10 +14,13 @@ var spawn_key
 var spawnNora
 var doorOpened
 
+
+
 export (NodePath) var noraNodePath = null
 var noraNode = null
 var doorShadowTscn= preload("res://SCENES/doorShadow.tscn")
 
+export (bool) var demoVersionOfLevel1 = false
 
 func _ready():
 		
@@ -40,7 +43,7 @@ func _ready():
 	astroNode.set_health(ASTRO_HEALTH)
 
 	#settings for playtest
-	if(global.get("playtest")):
+	if(global.playTest):
 		initAstro()
 		
 
@@ -53,6 +56,7 @@ func initLevel():
 	doorOpened = false
 	
 	audio.loadLevelSounds("lvl01")
+	astroNode.CAMERA_NODE.FadeOutOfBlack()
 	
 	
 	if (global.playTest):
@@ -60,7 +64,23 @@ func initLevel():
 		has_key = false
 		spawn_key = true
 		doorOpened = false
+		
+		astroNode.CAMERA_NODE.FadeOutOfBlack()
 	
 
+func loadNextLevel():
+	#all level scenes need to be named via format lvl##
+	#this assumes all levels are consecutive
+	if (demoVersionOfLevel1):
+		var demoVidNode = get_node("DemoOutro")
+		demoVidNode.show()
+		#demoVidNode.set_global_position(Vector2(0, 0))
+		demoVidNode.get_node("DemoOutroCam").make_current()
+		demoVidNode.play()
+		return
 	
+	.loadNextLevel()
 
+
+func _on_DemoOutro_finished():
+	global.replay()

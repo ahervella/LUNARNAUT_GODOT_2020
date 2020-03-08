@@ -21,7 +21,7 @@ func _ready():
 	self.show()
 	
 	
-	if (global.get("playtest") == true):
+	if (global.playTest):
 		var tweenyy = Tween.new()
 		add_child(tweenyy)
 		

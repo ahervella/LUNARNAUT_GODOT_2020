@@ -20,7 +20,7 @@ func _ready():
 	self.show()
 	
 	#if in playtest mode, do nice tweens, else ignore, just instant alpha
-	if (global.get("playtest")):
+	if (global.playTest):
 	
 		var tweeny = Tween.new()
 		add_child(tweeny)

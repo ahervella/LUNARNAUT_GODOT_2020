@@ -47,7 +47,11 @@ const MAX_AIR_TIME = 0.6
 const DEFAULT_JUMP_FORCE = -150
 var jumpForce = DEFAULT_JUMP_FORCE
 
+#once on the ground and health depleted, goes true
 var dead = false
+#used just to know if astro was still on the ground
+#after being killed (incase getting launched did not
+#put them in the air). Set true when health is depleted in dec_health
 var preDeath = false
 var immune = false
 const IMMUNE_TIME = 2.5
@@ -176,6 +180,9 @@ func ApplyInput():
 	if(Input.is_action_pressed("ui_left")): #or vJoy == -1):
 		directional_force += DIRECTION.LEFT
 
+	if(Input.is_action_pressed("ui_down") && !global.playTest):
+		InitDeath()
+		
 func Move():
 	var cullMode
 	var dirMulti
@@ -545,33 +552,23 @@ func InitDeath():
 	#used to control and stop all other anims in set_anim
 	dead = true
 	
-	var hurtTintNode = CAMERA_NODE.get_node("hurtTint")
-	var cur_color = hurtTintNode.get_modulate()#$"/root/Control/Cam2D/hurtTint".get_modulate()
-	var g = cur_color.g
-	var r = cur_color.r
-	var b = cur_color.b
-	var a = cur_color.a
-	
-	global.newTween(hurtTintNode, "modulate", Color(r, g, b, a), Color(r, g, b, 1), 3, 0)
 	
 	set_collision_layer_bit( 0, false )
 	global.astroDead = true
 	
+	global.newTimer(2, funcref(global.lvl(), "gameLost"))
+	#get_node("/root/lvl01/Cam2D/EndOfDemo/Blackness").startEndDemoBlacknessTween(false)
 	
 	
-	#activate blackscreen ending for death (false indicated did not win)
-	get_node("/root/lvl01/EndOfDemo/Blackness").startEndDemoBlacknessTween(false)
-	
-	FadeOutSound()
 
-func FadeOutSound():
+func fadeOutSound():
 	var breathingScared = audio.sound("breathingScared")
 	var breathingCalm = audio.sound("breathingCalm")
 	var suitBeep = audio.sound("suitBeep")
 	
-	global.newTween(breathingScared, "volume_db", breathingScared.get_volume_db(), -80, 2, 0)
-	global.newTween(breathingCalm, "volume_db", breathingCalm.get_volume_db(), -80, 2, 0)
-	global.newTween(suitBeep, "volume_db", suitBeep.get_volume_db(), -80, 2, 0)
+	global.newTween(breathingScared, "volume_db", breathingScared.get_volume_db(), -80, 4, 0)
+	global.newTween(breathingCalm, "volume_db", breathingCalm.get_volume_db(), -80, 4, 0)
+	global.newTween(suitBeep, "volume_db", suitBeep.get_volume_db(), -80, 4, 0)
 
 #***********END OF HEALTH SHIT***************
 
@@ -588,47 +585,53 @@ func _on_ASTRO_ANIM_animation_finished():
 	# triggers the run end animatino after completing the landing animation
 	if get_anim() == "LAND":
 		if groundedBubble:
-			#if (directional_force==DIRECTION.ZERO):
 			set_anim("END")
 			get_node("ASTRO_ANIM2").set_frame(10)
-			#else:
-				#set_anim("START")
-			
-	#see previous .gd bug fix for skimming ground
-	#if needed for timmer for setting fall anim
 
 	
 	$"ASTRO_ANIM2"._set_playing(true)
 
 func TakeDamage():
 	
-	if(!immune && !dead):
-		#so astro can go through nora
-		global.lvl(01).noraNode.set_collision_layer_bit( 0, false )
-		audio.sound("breathingHurt").play()
-		immune = true
-
-		dec_health()
-		var astroPos = self.get_global_position()
-		var noraPos = global.lvl(01).noraNode.get_global_position()
-
-		if (astroPos.x < noraPos.x):
-			#launch right
-			TakeDamageImpactLaunch(-1)
-		else:
-			#launch left
-			TakeDamageImpactLaunch(1)
-
-		#flyCount = 0
-		set_anim("JUMP2")
-		$"ASTRO_ANIM2".set_frame(14)
+	if(immune || dead || preDeath):
+		return
 		
-		TakeDamageFlash()
+	#so astro can go through nora
+	global.lvl(01).noraNode.set_collision_layer_bit( 0, false )
+	
+	audio.sound("breathingHurt").play()
+	
+	immune = true
+	
+	#this is where death logic happens too (and sets preDeath)
+	dec_health()
+	
+	var astroPos = self.get_global_position()
+	var noraPos = global.lvl(01).noraNode.get_global_position()
+
+	if (astroPos.x < noraPos.x):
+		#launch right
+		TakeDamageImpactLaunch(-1)
+	else:
+		#launch left
+		TakeDamageImpactLaunch(1)
 		
-		#TODO: make timer take in object and method of object so don't
-		#need to remember
-		global.newTimer(IMMUNE_TIME, funcref(self, 'ImmuneToFalse'))
-		#immune = false
+	
+	set_anim("JUMP2")
+	
+	$"ASTRO_ANIM2".set_frame(14)
+	
+	#if now dead after dec_health, trigger proper red effects
+	if (preDeath || dead):
+		CAMERA_NODE.deathRedness()
+	else:
+		CAMERA_NODE.TakeDamageFlash()
+		
+		
+	#TODO: make timer take in object and method of object so don't
+	#need to remember
+	global.newTimer(IMMUNE_TIME, funcref(self, 'ImmuneToFalse'))
+	#immune = false
 		
 func ImmuneToFalse():
 	immune = false
@@ -637,31 +640,6 @@ func ImmuneToFalse():
 
 func TakeDamageImpactLaunch(direction):
 	vel = Vector2(500 * direction, -500)
-func TakeDamageFlash():
-
-	var hurtTintNode = CAMERA_NODE.get_node("hurtTint")
-	var cur_color = hurtTintNode.get_modulate()
-	var g = cur_color.g
-	var r = cur_color.r
-	var b = cur_color.b
-	var a = cur_color.a
-	
-	global.newTween(hurtTintNode, "modulate", Color(r, g, b, a), Color(r, g, b, 0.7), 0.5, 0)
-	#last numbre is delay for starting tween
-	global.newTween(self, "modulate", Color(r, g, b), Color(r, 0, 0), 0.5, 0, funcref(self, "TakeDamageFlashReverse"))
-
-func TakeDamageFlashReverse():
-	
-	var hurtTintNode = CAMERA_NODE.get_node("hurtTint")
-	var cur_color = hurtTintNode.get_modulate()
-	var g = cur_color.g
-	var r = cur_color.r
-	var b = cur_color.b
-	var a = cur_color.a
-	
-	global.newTween(hurtTintNode, "modulate", Color(r, g, b, a), Color(r, g, b, 0), 0.5, 0)
-	
-	global.newTween(self, "modulate", Color(r, 0, 0), Color(r, g, b), 0.5, 0.5)
 
 
 
