@@ -11,8 +11,8 @@ extends "res://SCRIPTS/intr_default.gd"
 #ALEJANDRO (Mar-03-2020)
 #Threw out all of old door shit, started door scene and script from scratch,
 #feeling really good about using the default to extend functionality
-export (String) var LOCKED_DOOR_TEXT = null
-export (String) var UNLOCKED_DOOR_TEXT = null
+export (Resource) var TC_LOCKED = null
+export (Resource) var TC_UNLOCKED = null
 
 export (float) var DOOR_TIME = 1
 export (float) var DOOR_OPEN_RANGE = 19
@@ -145,7 +145,7 @@ func Interact():
 	if (dependantBool):
 		DOOR_LOCKED = false
 		openDoor()
-		global.interactNode.animateText(UNLOCKED_DOOR_TEXT, InteractAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
+		global.interactNode.animateText(TC_UNLOCKED, InteractAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
 		return
 		
 		
@@ -156,7 +156,7 @@ func Interact():
 		
 		timer = global.newTimer(T_I_DISPLAY_TIME, funcref(self, 'AutoInteract'))	
 	
-	global.interactNode.animateText(LOCKED_DOOR_TEXT, ShowAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
+	global.interactNode.animateText(TC_LOCKED, ShowAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
 	
 	
 func AutoCloseInteract():

@@ -6,7 +6,7 @@ extends AnimatedSprite
 # having to do with the canister
 
 var canUseO2 : bool = true;
-const O2_TEXT = "OXYGEN"
+export (Resource) var TEXT_INTERACT
 
 func _ready():
 	self.set_animation("GREEN")
@@ -29,7 +29,7 @@ func AutoCloseInteract():
 	
 func TextInteract():
 	if (canUseO2):
-		global.interactNode.animateText(O2_TEXT)
+		global.interactNode.animateText(TEXT_INTERACT)
 	
 
 func use_o2():

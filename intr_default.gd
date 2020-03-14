@@ -12,8 +12,8 @@ extends Sprite
 #decided to switch this to a general sound and text interact node
 enum TEXT_SIDE {LEFT = -1, RIGHT = 1, DYNAMIC = 0}
 
-export (String) var AUTO_TEXT = null
-export (String) var TEXT_INTERACT = null
+export (Resource) var TC_AUTO = null
+export (Resource) var TC_INTERACT = null
 export (float) var T_I_DISPLAY_TIME = 0
 
 export (Vector2) var CUSTOM_POSITION_OFFSET = Vector2(0, 0)
@@ -43,7 +43,7 @@ func Interact():
 		
 		timer = global.newTimer(T_I_DISPLAY_TIME, funcref(self, 'AutoInteract'))
 		
-	global.interactNode.animateText(TEXT_INTERACT, InteractAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
+	global.interactNode.animateText(TC_INTERACT, InteractAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
 	can_interact = false
 
 func AutoInteract():
@@ -60,7 +60,9 @@ func AutoCloseInteract():
 
 	
 func TextInteract():
-	global.interactNode.animateText(AUTO_TEXT, ShowAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
+	if (TC_AUTO == null):
+		return	
+	global.interactNode.animateText(TC_AUTO, ShowAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
 	
 
 func ShowAudioNode() -> AudioStream:

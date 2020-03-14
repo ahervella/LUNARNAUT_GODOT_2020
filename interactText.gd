@@ -125,7 +125,7 @@ func animateText(text, soundNode = null, customPosOffset = Vector2(0,0),
 				fixedText = false, textSide : int = 0, textTime = null):
 	#optional time for tween
 	#need to store locally to add blinking underscore affect in timers above
-	currentText = text
+	currentText = text.text
 	
 	#used for checking things are properly cleaning up
 #	print("animating")
@@ -138,6 +138,7 @@ func animateText(text, soundNode = null, customPosOffset = Vector2(0,0),
 	timer_reset(currentText)
 	
 	#assign text to text box
+	self.set("custom_colors/default_color", text._getColor())
 	self.set_text(currentText)
 	
 	#set the text position
