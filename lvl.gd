@@ -16,6 +16,8 @@ var CAM_GLOBAL_START_POS : Vector2
 
 var levelNodes : Dictionary
 
+var Inventory = {}
+
 func _ready():
 	global.playTest = playTest
 	astroNode = get_node(astroNodePath)
@@ -63,9 +65,22 @@ func reloadLevelLastSave():
 	#place astro at save point spawn pint
 	#initAstro(customSpawnPoint)....
 	_ready()
-	
-	
-	
 
+func AddInventoryItem(iq):
+	if (!Inventory.keys().has(iq.item)):
+		Inventory[iq.item] = 0
+		print("Added ", iq.item, " to dictionary")
+	Inventory[iq.item] += iq.quantity;
+	print("Set quantity of ",iq.item," to ",Inventory[iq.item], " by adding ",iq.quantity)
 
-	
+func CheckHasInventoryItem(iq, eatit):
+	if (!Inventory.keys().has(iq.item)):
+		print("Do not have any ", iq.item)
+		return false
+	if (Inventory[iq.item] < iq.quantity):
+		print("Do not have enough ", iq.item, "have ", Inventory[iq.item], " need ", iq.quantity)
+		return false
+	if (eatit):
+		print ("Eating ",iq.quantity, " of ", iq.item)
+		Inventory[iq.item] -= iq.quantity
+	return true
