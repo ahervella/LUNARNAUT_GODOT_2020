@@ -4,6 +4,8 @@ extends "res://SCRIPTS/intr_default.gd"
 #found in the default interact script (intr_default.gd) to do specific
 #things for the key logic
 
+export(Resource) var itemQuantity
+
 #need to override to not have can_interact to true again
 func AutoInteract():
 	if (can_interact):
@@ -33,4 +35,4 @@ func Interact():
 		
 	PostTextInteract()
 	can_interact = false
-	get_tree().get_current_scene().has_key = true
+	get_tree().get_current_scene().AddInventoryItem(itemQuantity)
