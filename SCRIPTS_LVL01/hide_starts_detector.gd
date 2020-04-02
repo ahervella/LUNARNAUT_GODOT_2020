@@ -9,21 +9,27 @@ extends Area2D
 #rendering once the player reaches the bubble at which point it would be safe to hide them
 
 
-var hideStars = true
-# class member variables go here, for example:
-# var a = 2
-# var b = "textvar"
+func _ready():
+	call_deferred('readyDeferred')
+
+func readyDeferred():
+	if (global.playTest):
+		starsVisible(false)
+	else:
+		starsVisible(true)
+
 
 func _on_hide_stars_detector_body_entered(body):
-	
-	#print("we're in")
+		
 	var groups = body.get_groups()
 	if (groups.has("astro")):
-		hideStars = global.lvl().trigChunkNode.onRightSide(body, get_node("shape"))
-	
+		var visibility = global.lvl().trigChunkNode.onRightSide(body, get_node("shape"))
+		starsVisible(visibility)
+		
+func starsVisible(visibility):
 		var bg_nodes = (get_tree().get_nodes_in_group("bg"))
 		for i in bg_nodes:
-			i.set_visible(hideStars)
+			i.set_visible(visibility)
 
 
 

@@ -56,7 +56,6 @@ func initLevel():
 	doorOpened = false
 	
 	audio.loadLevelSounds("lvl01")
-	astroNode.CAMERA_NODE.FadeOutOfBlack()
 	
 	
 	if (global.playTest):

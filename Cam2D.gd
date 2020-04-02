@@ -1,5 +1,8 @@
 extends Camera2D
 
+#used so astro can grab this
+export (NodePath) var TOUCH_CONTROL_PATH = null
+
 const RED_FLASH_TIME = 1
 const BLACK_FADE_TIME = 3
 onready var blackOverlayNode = get_node("blackOverlay")

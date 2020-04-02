@@ -14,12 +14,16 @@ extends Area2D
 var in_inner_node = false
 var in_outer_node = false
 
+
 func _ready():
-	#In case astro starts inside ship (need to fix to be immediate)
+	call_deferred('readyDeferred')
+
+func readyDeferred():
 	if (global.playTest):
 		out_ship_visibility(false)
 	else:
 		out_ship_visibility(true)
+	
 
 #Signal : When astro enters first detector
 func _on_ship_out_detector_body_entered(body):
@@ -63,7 +67,7 @@ func out_ship_visibility(thing):
 	var out_ship_nodes = global.lvl(01).get_tree().get_nodes_in_group("out-ship")
 	var bg_nodes = global.lvl(01).get_tree().get_nodes_in_group("bg")
 	var moon_nodes = global.lvl(01).get_tree().get_nodes_in_group("moon_node")
-	#var black_node = get_tree().get_nodes_in_group("black")
+	var black_node = get_tree().get_nodes_in_group("black")
 	#var out_floor = get_node("/root/Control/stage/stage_floor")
 	
 	#if astro just jumped in or just jumped out
@@ -81,6 +85,7 @@ func out_ship_visibility(thing):
 		for i in (out_ship_nodes):
 			tween_exec(i,  0)
 		
+		#tween_exec(get_node(BLACK_NODE_PATH), 1)
 		#disables moon ground floor so astro can go into ship
 		#out_floor.set_disabled(true)
 		
@@ -98,6 +103,7 @@ func out_ship_visibility(thing):
 		for i in (bg_nodes):
 			tween_exec(i, 1)
 			
+		#tween_exec(get_node(BLACK_NODE_PATH), 0)
 		#disables moon ground floor so astro can go into ship
 		#out_floor.set_disabled(false)
 		

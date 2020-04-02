@@ -15,6 +15,8 @@ export (NodePath) var CAMERA_NODE_PATH = null
 onready var CAMERA_NODE = get_node(CAMERA_NODE_PATH)
 const CAMERA_OFFSET = 200
 
+onready var TOUCH_CONTROL_NODE = CAMERA_NODE.get_node(CAMERA_NODE.TOUCH_CONTROL_PATH)
+
 export (NodePath) var INTERACT_TEXT_NODE_PATH = null
 onready var INTERACT_TEXT_NODE = get_node(INTERACT_TEXT_NODE_PATH)
 
@@ -118,7 +120,6 @@ func _physics_process(delta):
 		jumpForce = DEFAULT_JUMP_FORCE
 		currMaxAirTime = DEFAULT_MAX_AIR_TIME
 
-
 	ApplyMovement(delta)
 	
 	vel.y += delta * 60 * GRAVITY
@@ -173,13 +174,14 @@ func ApplyInput():
 	if(!global.controls_enabled):
 		return
 	
-
-	if(Input.is_action_pressed("ui_right")): #or vJoy == 1):
+	
+	if(Input.is_action_pressed("ui_right") || TOUCH_CONTROL_NODE.stickDir.x > 0): #or vJoy == 1):
 		directional_force += DIRECTION.RIGHT
 
-	if(Input.is_action_pressed("ui_left")): #or vJoy == -1):
+	if(Input.is_action_pressed("ui_left") || TOUCH_CONTROL_NODE.stickDir.x < 0): #or vJoy == -1):
 		directional_force += DIRECTION.LEFT
 
+	#For testing astro death
 	if(Input.is_action_pressed("ui_down") && !global.playTest):
 		InitDeath()
 		
@@ -251,9 +253,14 @@ func MoveJump(delta):
 	if (!global.controls_enabled):
 		return
 
-	var jumpJustPressed = Input.is_action_just_pressed("ui_accept") || Input.is_action_just_pressed("ui_up") || vButton == 2
-	var jumpPressed = Input.is_action_pressed("ui_accept") or Input.is_action_pressed("ui_up") or vButton >= 1
-	var jumpJustReleased = Input.is_action_just_released("ui_accept") or Input.is_action_just_released("ui_up") or vButton == 0
+	
+	var touchJumpJustPressed = TOUCH_CONTROL_NODE.touchStateDict["jump"] == TOUCH_CONTROL_NODE.TOUCH_STATE.JUST_TOUCHED
+	var touchJumpPressed = TOUCH_CONTROL_NODE.touchStateDict["jump"] == TOUCH_CONTROL_NODE.TOUCH_STATE.TOUCHING
+	var touchJumpJustReleased = TOUCH_CONTROL_NODE.touchStateDict["jump"] == TOUCH_CONTROL_NODE.TOUCH_STATE.JUST_RELEASED
+	
+	var jumpJustPressed = Input.is_action_just_pressed("ui_accept") || Input.is_action_just_pressed("ui_up") || touchJumpJustPressed
+	var jumpPressed = Input.is_action_pressed("ui_accept") or Input.is_action_pressed("ui_up") or touchJumpPressed
+	var jumpJustReleased = Input.is_action_just_released("ui_accept") or Input.is_action_just_released("ui_up") or touchJumpJustReleased
 		#is just pressed or released
 	
 	
@@ -287,11 +294,12 @@ func MoveJump(delta):
 func InteractCheck():
 	if (currItem == null):
 		return
-	if (Input.is_action_just_pressed("ui_interact")):
+	
+	var touchInteractJustPressed = TOUCH_CONTROL_NODE.touchStateDict["interact"] == TOUCH_CONTROL_NODE.TOUCH_STATE.JUST_TOUCHED
+	
+	if (Input.is_action_just_pressed("ui_interact") || touchInteractJustPressed):
 			currItem.Interact()
 
-	
-	#currItem.TextInteract()
 
 func MoveCameraAndInteracText():
 	

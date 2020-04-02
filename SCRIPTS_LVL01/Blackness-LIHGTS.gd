@@ -8,9 +8,10 @@ extends Sprite
 # Declare member variables here. Examples:
 # var a = 2
 # var b = "text"
-
-# Called when the node enters the scene tree for the first time.
 func _ready():
+	call_deferred('readyDeferred')
+# Called when the node enters the scene tree for the first time.
+func readyDeferred():
 	
 	var cur_color = self.get_modulate()
 	var cur_g = cur_color.g

@@ -20,7 +20,6 @@ var interactNode #$"/root/Control/astro/InteractFont"
 
 
 var current_interact
-var pressing_e 
 var controls_enabled
 var can_reset
 var playTest
@@ -32,7 +31,6 @@ func _ready():
 	
 func init():
 	current_interact = null
-	pressing_e = false
 	controls_enabled = true
 	can_reset = false
 	astroDead = false
