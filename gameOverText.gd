@@ -77,7 +77,6 @@ func startDelayTimer():
 	
 func continueGame():
 	if gameWon:
-		print("sfdf")
 		global.lvl().loadNextLevel()
 		return
 		

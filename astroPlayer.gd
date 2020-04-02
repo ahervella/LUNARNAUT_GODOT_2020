@@ -192,11 +192,11 @@ func Move():
 	#if movement is going right 
 	if (directional_force.x > 0):
 		#directional_force += DIRECTION.RIGHT
-		cullMode = 2
+		cullMode = OccluderPolygon2D.CULL_CLOCKWISE
 		dirMulti = 1
 	elif(directional_force.x < 0):
 		#directional_force += DIRECTION.LEFT
-		cullMode = 1
+		cullMode = OccluderPolygon2D.CULL_COUNTER_CLOCKWISE
 		dirMulti = -1
 
 	#no movement? do nothing

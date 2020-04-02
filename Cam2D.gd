@@ -2,6 +2,8 @@ extends Camera2D
 
 #used so astro can grab this
 export (NodePath) var TOUCH_CONTROL_PATH = null
+onready var TOUCH_CONTROL_NODE = get_node(TOUCH_CONTROL_PATH)
+export (bool) var touchControlsOn = false
 
 const RED_FLASH_TIME = 1
 const BLACK_FADE_TIME = 3
@@ -17,6 +19,10 @@ func _ready():
 	var a = cur_color.a
 	blackOverlayNode.set_modulate( Color(r, g, b, 0))
 
+	if touchControlsOn:
+		TOUCH_CONTROL_NODE.activate()
+	else:
+		TOUCH_CONTROL_NODE.deactivate()
 
 func deathRedness():
 	var cur_color = hurtTintNode.get_modulate()#$"/root/Control/Cam2D/hurtTint".get_modulate()

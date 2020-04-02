@@ -50,9 +50,10 @@ onready var touchStickInner = touchStick.get_children()[0]
 
 
 func _ready():
+	touchButton.set_modulate(Color(1, 1, 1, 0))
+	touchStick.set_modulate(Color(1, 1, 1, 0))
 	#turn on for mobile exports
-	if(not visible):
-		deactivate()
+	deactivate()
 	
 	
 	#buttonTween = Tween.new()
@@ -62,11 +63,10 @@ func _ready():
 	add_child(stickTween)
 	stickTween.interpolate_property(touchStick, "modulate", Color(1, 1, 1, 1), Color(1, 1, 1, 0), 1 , 0, Tween.EASE_OUT, 0)
 	
-	showStick(false)
-	showButton(false, false)
 	
 func deactivate():
 	hide()
+	
 	set_process(false)
 	set_physics_process(false)
 	set_process_unhandled_input(false)
@@ -74,6 +74,7 @@ func deactivate():
 	
 func activate():
 	show()
+	
 	set_process_unhandled_input(true)
 	set_process_input(true)
 
