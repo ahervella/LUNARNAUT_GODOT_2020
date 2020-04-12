@@ -1,7 +1,7 @@
 extends Camera2D
 
 #used so astro can grab this
-export (NodePath) var TOUCH_CONTROL_PATH = null
+export (NodePath) var TOUCH_CONTROL_PATH = "CanvasLayer/touchControls"
 onready var TOUCH_CONTROL_NODE = get_node(TOUCH_CONTROL_PATH)
 export (bool) var touchControlsOn = false
 

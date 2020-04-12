@@ -14,8 +14,6 @@ func _ready():
 
 func readyDeferred():
 	if (global.playTest):
-		starsVisible(false)
-	else:
 		starsVisible(true)
 
 

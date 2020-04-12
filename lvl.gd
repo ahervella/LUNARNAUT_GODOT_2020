@@ -22,6 +22,7 @@ func _ready():
 	trigChunkNode = get_node(trigChunkNodePath)
 	global.interactNode = astroNode.INTERACT_TEXT_NODE
 	
+	
 #initAstro is not called here but in the extended gd scripts
 func initAstro(customSpawnPoint = null):
 	

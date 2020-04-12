@@ -1,3 +1,4 @@
+tool
 extends KinematicBody2D
 
 #ALEJANDRO (Feb-14-2020)
@@ -19,6 +20,11 @@ onready var TOUCH_CONTROL_NODE = CAMERA_NODE.get_node(CAMERA_NODE.TOUCH_CONTROL_
 
 export (NodePath) var INTERACT_TEXT_NODE_PATH = null
 onready var INTERACT_TEXT_NODE = get_node(INTERACT_TEXT_NODE_PATH)
+
+
+export (bool) var showMoonBG =  true setget showMoonBGSetter
+export (bool) var showBlackBG = true setget showBlackBGSetter
+export (bool) var enableShadows = true setget enableShadowsSetter
 
 
 const AIR_HORZ_SPEED = 160
@@ -65,7 +71,6 @@ var currItemGlobalPos : Vector2
 
 
 #touch controls
-export (NodePath) var vControllerPath = null
 var vJoy = -5 # -5 has no specific functionality, but can't be null or shit breaks
 var vButton = -5
 
@@ -85,6 +90,10 @@ const DIRECTION = {
 }
 
 func _ready():
+	#only execute in game
+	if Engine.editor_hint:
+		return
+		
 	#need this so that anywhere an interact references the interactNode,
 	#the location is based off only one place here in the astro node
 	global.interactNode = INTERACT_TEXT_NODE
@@ -94,21 +103,69 @@ func _ready():
 	#this ready should take place before the text ready and not cause problems
 	INTERACT_TEXT_NODE.ASTRO_NODE_PATH = get_path()
 	
-	if (vControllerPath != null):
-		var vController = get_node(vControllerPath)
-		if (vController != null && vController.is_visible()):
-			vJoy = vController.moving()
-			vButton = vController.jumping()
 
 	#suit sound:
 	audio.sound("suitBeep").play()
 
 	$"ASTRO_ANIM2"._set_playing(true)
 
+	#need to do this for anything that is doing global.playTest
+	#because children readys happen before parent ready (and lvl node
+	#is always parent and setting playTest variable)
+	call_deferred('readyDeferred')
+	#readyDeferred()
+	
+func readyDeferred():
+	
+	#These visible options are soley for the editor to be able to switch
+	#these views on and off to make development easier. The backgrounds
+	#and shadows will ALWAYS be on in game, and should be made invisible
+	#by making their alpha values zero
+	if (global.playTest):
+		showMoonBGSetter(true)
+		enableShadowsSetter(true)
+		showBlackBGSetter(true)
+		
+	else:
+		#set to what ever inspector bools are
+		showMoonBGSetter(showMoonBG)
+		enableShadowsSetter(enableShadows)
+		showBlackBGSetter(showBlackBG)
+	
+
+func showMoonBGSetter(val):
+	showMoonBG = val
+	
+	#prevent errors with trying to get_tree in early calls to setting value
+	#when saving or just starting (don't understand why its called before scene tree loads)
+	if (get_tree() == null):
+		print("Error above from checking null tree^^ in astro moonBG setter, this is fine lol :/")
+		return
+		
+	var bg_nodes = (get_tree().get_nodes_in_group("bg"))
+	for i in bg_nodes:
+		i.set_visible(showMoonBG) 
+
+
+func showBlackBGSetter(val):
+	showBlackBG = val
+	get_node("para/para-stars/black").set_visible(val)
+	
+	
+func enableShadowsSetter(val):
+	#enable light and shadow effects
+	enableShadows = val
+	get_node("Light2D").set_enabled(val)
+	get_node("Light2D/LightDarker").set_enabled(val)
+
 
 
 
 func _physics_process(delta):
+	#only execute in game
+	if Engine.editor_hint:
+		return
+		
 	#here may at somepoint choose to have landing ground bool by if_on_ground again so that
 	#shit snaps and doesn't skip past platform?
 	if (groundedBubble):
@@ -186,17 +243,14 @@ func ApplyInput():
 		InitDeath()
 		
 func Move():
-	var cullMode
+	#direction multiplier (right = 1, left = -1)
 	var dirMulti
 
 	#if movement is going right 
 	if (directional_force.x > 0):
-		#directional_force += DIRECTION.RIGHT
-		cullMode = OccluderPolygon2D.CULL_CLOCKWISE
 		dirMulti = 1
+		
 	elif(directional_force.x < 0):
-		#directional_force += DIRECTION.LEFT
-		cullMode = OccluderPolygon2D.CULL_COUNTER_CLOCKWISE
 		dirMulti = -1
 
 	#no movement? do nothing
@@ -222,16 +276,8 @@ func Move():
 		
 	astro_o2_change(curr_anim_code)
 		
-	#changes direction of all shadows to right or left
-	
-	for p in range (get_shadows.size()):
 		
-		get_shadows[p].get_occluder_polygon().set_cull_mode(cullMode)
-	
 
-
-	#get_node("RayCast2D").set_cast_to(Vector2(dirMulti * ray_dis,0))
-	
 	#set light and camera face right
 	get_node("Light2D").set_scale(Vector2 (dirMulti * light2DScale.x, light2DScale.x))
 	get_node("Light2D").set_position(Vector2(dirMulti * light2DPosition.x, light2DPosition.y))
