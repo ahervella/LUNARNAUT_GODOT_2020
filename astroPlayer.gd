@@ -181,7 +181,6 @@ func _physics_process(delta):
 	
 	vel.y += delta * 60 * GRAVITY
 
-
 	#this method allows for proper physics feel when launched in air
 	#and for different max speeds & accels on ground and in air
 	var speed = AIR_HORZ_SPEED
