@@ -8,6 +8,8 @@ export (float) var friction = 0.9
 export (bool) var start_pin = true
 export (bool) var end_pin = true
 
+var blah = 0
+
 var pos: PoolVector2Array
 var pos_ex: PoolVector2Array
 var earthImg = []
@@ -116,6 +118,8 @@ func getRopeLength():
 	return length
 
 func update_points(delta):
+	blah += 1
+	
 	for i in range (count):
 		# not first and last || first if not pinned || last if not pinned
 		if (i!=0 && i!=count-1) || (i==0 && !start_pin) || (i==count-1 && !end_pin):
@@ -123,31 +127,43 @@ func update_points(delta):
 			#print(vec2)
 			pos_ex[i] = pos[i]
 			pos[i] += vec2 + (gravity * delta)
-			if (i < count):
-				
-				var target = pos[i]
-				var positionb = earthImg[i].get_global_position()
-				var dir = (target - positionb).normalized()
-				#var move_amount = Vector2(move_toward(positionb.x, target.x, dir.x * speed  * delta), move_toward(positionb.y, target.y, dir.y * speed * delta))
-				var moveVel = move_vel(positionb, target, i)
-				earthImg[i].move_and_slide(moveVel) # or move_and_slide(move_amount / delta)
+		#if (i < count):
+			
+			var target = pos[i]
+			var positionb = earthImg[i].get_global_position()
+			var dir = (target - positionb).normalized()
+			#var move_amount = Vector2(move_toward(positionb.x, target.x, dir.x * speed  * delta), move_toward(positionb.y, target.y, dir.y * speed * delta))
+			#var moveVel = move_vel(positionb, target, i)
+			var newVec = earthImg[i].move_and_slide((target-positionb)/delta) # or move_and_slide(move_amount / delta)
+			
+			var newPoint = positionb + newVec
+			
+			if blah > 100 && newPoint != earthImg[i].get_global_position():
+				print(" ")
+				print (positionb)
+				print(earthImg[i].get_global_position())
+				print (newPoint)
+				print(target)
+				print(" ")
+				pos[i] = earthImg[i].get_global_position()
+			
 				
 				#earthImg[i].move_and_slide(pos[i+1] + pos[i])
 		
-
-
-func move_vel(orig : Vector2, target : Vector2, index : int):
-	var dist = orig.distance_to(target)
-	
-	if (abs (dist) < 150):
-		earthImgSpeed[index] =20 * (dist)#0.2 * pow(1.02, dist + 370) - 190#0.1 * pow(1.025, dist + 300) - 150#0.1 * pow(1.04, dist + 200) - 260# 0.1 * pow(1.04, dist + 160) - 50#1000 * pow(0.0415 * dist, 0.5)#50 * pow(1.025,dist) - 50
-		
-	else:
-		earthImgSpeed[index] = 2000
-		
-	if (abs (dist) > 1):
-		return (target - orig).normalized() * earthImgSpeed[index]
-	return Vector2.ZERO
+#
+#
+#func move_vel(orig : Vector2, target : Vector2, index : int):
+#	var dist = orig.distance_to(target)
+#
+#	if (abs (dist) < 150):
+#		earthImgSpeed[index] =20 * (dist)#0.2 * pow(1.02, dist + 370) - 190#0.1 * pow(1.025, dist + 300) - 150#0.1 * pow(1.04, dist + 200) - 260# 0.1 * pow(1.04, dist + 160) - 50#1000 * pow(0.0415 * dist, 0.5)#50 * pow(1.025,dist) - 50
+#
+#	else:
+#		earthImgSpeed[index] = 2000
+#
+#	if (abs (dist) > 1):
+#		return (target - orig).normalized() * earthImgSpeed[index]
+#	return Vector2.ZERO
 
 func update_distance():
 	for i in range(count):
