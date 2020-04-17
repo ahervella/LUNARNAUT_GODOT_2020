@@ -4,6 +4,7 @@ extends Node2D
 export (PackedScene) var CABLE_NODE = null#preload("res://cablePoint.tscn")
 export (PackedScene) var CABLE_NODE_SPRITE = null#preload("res://cablePointSprite.tscn")
 
+
 export (NodePath) var START_PIN_PATH = null
 var START_PIN = null
 export (NodePath) var END_PIN_PATH = null
@@ -16,10 +17,12 @@ var CABLE_LINE2D = null
 
 export (int) var ROPE_TAUGHTNESS = 1 
 export (int) var NODE_COUNT = 30
-export (float) var CONSTRAIN = 1
-export (float) var CABLE_LENGTH = 1
+export (float) var CONSTRAIN = 20
+export (float) var EXTRA_SPRITE_THRESHOLD = 35
+export (float) var CABLE_LENGTH = 1000
 export (Vector2) var GRAVITY = Vector2(0,9.8)
 export (float) var FRICTON = 0.9
+export (float) var ROT_DIST_THRESHOLD = 28
 
 export (bool) var reloadEditorCable = false setget reload
 export (bool) var activeInEditor = true setget activateEditor
@@ -29,12 +32,17 @@ var extraRenderingSprites = []
 var pos: PoolVector2Array
 var posOld: PoolVector2Array
 var cableNodes = []
+var cableNodesAcc = []
 
 func reload(val):
 	if (val):
 		_ready()
 		
 func activateEditor(val):
+	
+	if !Engine.editor_hint:# && !activeInEditor:
+		return
+	
 	activeInEditor = val
 	
 	if(val):
@@ -81,6 +89,8 @@ func initShapes():
 		#need to add child to make active
 		add_child(cableNodes[n])
 		setCNPos(n, pos[n])
+		
+		cableNodesAcc.append(0)
 		
 	#prevent parts of cable from colliding with eachother
 	for n in range (NODE_COUNT):
@@ -248,11 +258,25 @@ func applyCollisionRestraint(i, delta):
 	var dir2 = (target2 - ogPos2).normalized()
 	cableNodes[i+1].move_and_slide((target2-ogPos2)/delta)
 	
+	var touchingGround = false
 	
+	for k in cableNodes[i].get_slide_count():
+		var body = cableNodes[i].get_slide_collision(k).collider
+		if (body.get_groups().has("solid")):
+			touchingGround = true
+			print("touching ground")
+			break
+			
+			
+			
+	var dist = getCNPos(i-1).distance_to(getCNPos(i+1))
 	var prevDifVec = getCNPos(i) - getCNPos(i-1)
 	var nextDifVec = getCNPos(i+1) - getCNPos(i)
-
 	var avgVect = (prevDifVec + nextDifVec) / 2
+	
+	var acc = dist/ROT_DIST_THRESHOLD
+	if (acc > 1):
+		acc = 1
 	
 	#rotation for first node
 	if (i == 0):
@@ -262,22 +286,34 @@ func applyCollisionRestraint(i, delta):
 	
 
 	var radAngle = atan2(avgVect.y, avgVect.x)
-	cableNodes[i].set_rotation(radAngle)
-		
+	
+	#if (abs(cableNodes[i].get_rotation() - radAngle) > (3.14/4)):
+	#	radAngle =  cableNodes[i].get_rotation() + (3.14/4) * radAngle/abs(radAngle)
+	
+	cableNodes[i].set_rotation(radAngle * acc)
+			
 	pos[i] = getCNPos(i)
 	pos[i+1] = getCNPos(i+1)
 		
 func addExtraSprites():
 	# adds a sprite in between nodes if they are more than EXTRA_SPRITE_THRESHHOLD apart
 	for i in range (NODE_COUNT-1):
-		if getCNPos(i).distance_to(getCNPos(i+1)) > 20:
+		var dist = getCNPos(i).distance_to(getCNPos(i+1))
+		if dist > EXTRA_SPRITE_THRESHOLD:
 			var avgPos = (getCNPos(i) + getCNPos(i+1))/2
 			var sprite = CABLE_NODE_SPRITE.instance()
 			add_child(sprite)
 			sprite.set_global_position(avgPos)
 			
 			var avgRot = (cableNodes[i].get_rotation() + cableNodes[i+1].get_rotation())/2
-			sprite.set_rotation(avgRot)
+			
+			
+			
+			var acc = dist/ROT_DIST_THRESHOLD
+			if (acc > 1):
+				acc = 1
+			
+			sprite.set_rotation(avgRot * acc)
 			extraRenderingSprites.append(sprite)
 			
 		#adjust node's sprite so that they wrap around curves a bit nicer:
