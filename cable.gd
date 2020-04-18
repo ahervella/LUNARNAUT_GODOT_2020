@@ -15,17 +15,17 @@ export (NodePath) var CABLE_LINE2D_PATH = null
 var CABLE_LINE2D = null
 
 
-export (int) var ROPE_TAUGHTNESS = 1 
-export (int) var NODE_COUNT = 30
-export (float) var CONSTRAIN = 20
+export (int, 1, 10, 1) var ROPE_TAUGHTNESS = 1
+export (int) var NODE_COUNT = 60
+export (float) var CONSTRAIN = 10
 export (float) var EXTRA_SPRITE_THRESHOLD = 35
-export (float) var CABLE_LENGTH = 1000
+export (float) var CABLE_LENGTH = 4000
 export (Vector2) var GRAVITY = Vector2(0,9.8)
-export (float) var FRICTON = 0.9
+export (float, 0.6, 1.0, 0.01) var FRICTON = 0.95
 export (float) var ROT_DIST_THRESHOLD = 28
 
 export (bool) var reloadEditorCable = false setget reload
-export (bool) var activeInEditor = true setget activateEditor
+export (bool) var activeInEditor = false setget activateEditor
 
 
 var extraRenderingSprites = []
@@ -33,6 +33,7 @@ var pos: PoolVector2Array
 var posOld: PoolVector2Array
 var cableNodes = []
 var cableNodesAcc = []
+
 
 func reload(val):
 	if (val):
@@ -147,8 +148,10 @@ func init_position():
 			
 		position = Vector2.ZERO
 	
-
-func _process(delta):
+	
+#supposedly need to to this instead of _process in order for move_and_slide
+#to work alright, but I didn't really notice a difference with just _proccess
+func _physics_process(delta):
 	#execute in editor if activeInEditor (will execute in game regardless)
 	if Engine.editor_hint && !activeInEditor:
 		return
@@ -162,8 +165,6 @@ func _process(delta):
 	extraRenderingSprites.resize(0)
 	
 	
-	
-		
 	update_points(delta)
 	
 	for i in range(ROPE_TAUGHTNESS):
@@ -209,7 +210,12 @@ func update_points(delta):
 			continue
 	
 	
-		var vec2 = (pos[i] - posOld[i]) * FRICTON
+		#var dist = getCNPos(i).distance_to(getCNPos(i+1))
+		#var acc = dist/ROT_DIST_THRESHOLD
+		#if (acc > 1-FRICTON):
+		#	acc = 1-FRICTON
+	
+		var vec2 = (pos[i] - posOld[i]) * (FRICTON) #+ acc)
 		posOld[i] = pos[i]
 		pos[i] += vec2 + (GRAVITY * delta)
 
@@ -247,28 +253,7 @@ func update_distance(delta):
 				
 		
 func applyCollisionRestraint(i, delta):
-	var target = pos[i]
-	var ogPos = getCNPos(i)
-	var dir = (target - ogPos).normalized()
-	cableNodes[i].move_and_slide((target-ogPos)/delta)
-
 	
-	var target2 = pos[i+1]
-	var ogPos2 = getCNPos(i+1)
-	var dir2 = (target2 - ogPos2).normalized()
-	cableNodes[i+1].move_and_slide((target2-ogPos2)/delta)
-	
-	var touchingGround = false
-	
-	for k in cableNodes[i].get_slide_count():
-		var body = cableNodes[i].get_slide_collision(k).collider
-		if (body.get_groups().has("solid")):
-			touchingGround = true
-			print("touching ground")
-			break
-			
-			
-			
 	var dist = getCNPos(i-1).distance_to(getCNPos(i+1))
 	var prevDifVec = getCNPos(i) - getCNPos(i-1)
 	var nextDifVec = getCNPos(i+1) - getCNPos(i)
@@ -291,6 +276,24 @@ func applyCollisionRestraint(i, delta):
 	#	radAngle =  cableNodes[i].get_rotation() + (3.14/4) * radAngle/abs(radAngle)
 	
 	cableNodes[i].set_rotation(radAngle * acc)
+	
+	
+	var target = pos[i]
+	var ogPos = getCNPos(i)
+	var dir = (target - ogPos).normalized()
+	cableNodes[i].move_and_slide((target-ogPos)/delta, Vector2( 0, 0 ), false, 16)
+	
+
+	
+	var target2 = pos[i+1]
+	var ogPos2 = getCNPos(i+1)
+	var dir2 = (target2 - ogPos2).normalized()
+	cableNodes[i+1].move_and_slide((target2-ogPos2)/delta)
+	
+			
+			
+			
+	
 			
 	pos[i] = getCNPos(i)
 	pos[i+1] = getCNPos(i+1)
