@@ -82,6 +82,17 @@ func AddInventoryItem(iq):
 	Inventory[iq.item] += iq.quantity;
 	print("Set quantity of ",iq.item," to ",Inventory[iq.item], " by adding ",iq.quantity)
 
+func CheckHasInventoryItems(iqs, eatit):
+	var canEat = true
+	for iq in iqs:
+		if !CheckHasInventoryItem(iq, false):
+			canEat = false
+	if !canEat:
+		return false
+	for iq in iqs:
+		CheckHasInventoryItem(iq, eatit)
+	return true	
+
 func CheckHasInventoryItem(iq, eatit):
 	if (!Inventory.keys().has(iq.item)):
 		print("Do not have any ", iq.item)
