@@ -31,7 +31,10 @@ export (String) var showSoundGroup = null
 export (String) var hideSoundNode = null
 export (String) var hideSoundGroup = null
 
+export (Array, Resource) var itemQuantity
+
 var can_interact : bool = true
+export (bool) var oneshot = false
 var timer : Timer
 
 
@@ -39,15 +42,26 @@ var timer : Timer
 func Interact():
 	if (!can_interact):
 		return
-	if (T_I_DISPLAY_TIME != 0):
-		
+
+	if (T_I_DISPLAY_TIME != 0):		
 		timer = global.newTimer(T_I_DISPLAY_TIME, funcref(self, 'AutoInteract'))
 		
+	if (itemQuantity != null && itemQuantity.size() > 0):
+		for iq in itemQuantity:
+			TC_INTERACT.text = "%s\nGained %d %s" % [TC_INTERACT.text,iq.quantity, iq.item.Name]
+
 	global.interactNode.animateText(TC_INTERACT, InteractAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
-	can_interact = false
+
+	if (oneshot):
+		can_interact = false
+
+	get_tree().get_current_scene().AddInventoryItems(itemQuantity)
 
 func AutoInteract():
-	can_interact = true
+	if (!oneshot):
+		can_interact = true
+	if (!can_interact):
+		return
 	TextInteract()
 
 func AutoCloseInteract():
@@ -55,7 +69,9 @@ func AutoCloseInteract():
 		timer.stop()
 		timer.call_deferred('free')
 	
-	can_interact = true
+	if (!oneshot):
+		can_interact = true
+		
 	global.interactNode.closeText(HideAudioNode())
 
 	

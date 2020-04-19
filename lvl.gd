@@ -5,6 +5,7 @@ extends Node
 #requirments needed to start the level properly. 
 export (bool) var playTest = false
 export (NodePath) var astroNodePath = null
+export (Array, Resource) var startingInventory
 var astroNode
 export (NodePath) var trigChunkNodePath = null
 var trigChunkNode
@@ -16,7 +17,7 @@ var CAM_GLOBAL_START_POS : Vector2
 
 var levelNodes : Dictionary
 
-var Inventory = {}
+var Inventory : Dictionary
 
 func _ready():
 	global.playTest = playTest
@@ -24,9 +25,13 @@ func _ready():
 	trigChunkNode = get_node(trigChunkNodePath)
 	global.interactNode = astroNode.INTERACT_TEXT_NODE
 	
+func initLevel():
+	if (startingInventory != null):
+		for iq in startingInventory:
+			AddInventoryItem(iq)
+
 #initAstro is not called here but in the extended gd scripts
 func initAstro(customSpawnPoint = null):
-	
 	var camNode = astroNode.CAMERA_NODE
 	
 	
@@ -65,6 +70,10 @@ func reloadLevelLastSave():
 	#place astro at save point spawn pint
 	#initAstro(customSpawnPoint)....
 	_ready()
+
+func AddInventoryItems(iqs):
+	for iq in iqs:
+		AddInventoryItem(iq);
 
 func AddInventoryItem(iq):
 	if (!Inventory.keys().has(iq.item)):

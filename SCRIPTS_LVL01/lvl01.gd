@@ -8,9 +8,6 @@ extends "res://SCRIPTS/lvl.gd"
 
 #ALEJANDRO (Feb-23-2020)
 #Set this to extend the new lvl.gd to keep things more organized in terms of what a lvl nodes needs and does
-
-var has_key
-var spawn_key
 var spawnNora
 var doorOpened
 
@@ -23,7 +20,6 @@ var doorShadowTscn= preload("res://SCENES/doorShadow.tscn")
 export (bool) var demoVersionOfLevel1 = false
 
 func _ready():
-		
 	._ready()
 	
 	noraNode = get_node(noraNodePath)
@@ -49,9 +45,7 @@ func _ready():
 
 	
 func initLevel():
-		
-	has_key = true
-	spawn_key = true
+	.initLevel()
 	spawnNora = false
 	doorOpened = false
 	
@@ -61,8 +55,6 @@ func initLevel():
 	
 	if (global.playTest):
 		spawnNora = false
-		has_key = false
-		spawn_key = true
 		doorOpened = false
 		
 		astroNode.CAMERA_NODE.FadeOutOfBlack()
