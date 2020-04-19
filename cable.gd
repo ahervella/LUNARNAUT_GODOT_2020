@@ -3,17 +3,20 @@ extends Node2D
 
 export (PackedScene) var CABLE_NODE = null#preload("res://cablePoint.tscn")
 export (PackedScene) var CABLE_NODE_SPRITE = null#preload("res://cablePointSprite.tscn")
-
-
 export (NodePath) var START_PIN_PATH = null
 var START_PIN = null
 export (NodePath) var END_PIN_PATH = null
 var END_PIN = null
 
+export (Resource) var START_PLUG = null
+export (Resource) var END_PLUG = null
+
 export (bool) var DRAW_CABLE_LINE2D = false
 export (NodePath) var CABLE_LINE2D_PATH = null
 var CABLE_LINE2D = null
 
+var START_SPRITE = null
+var END_SPRITE = null
 
 export (int, 1, 10, 1) var ROPE_TAUGHTNESS = 1
 export (int) var NODE_COUNT = 60
@@ -32,8 +35,9 @@ var extraRenderingSprites = []
 var pos: PoolVector2Array
 var posOld: PoolVector2Array
 var cableNodes = []
-var cableNodesAcc = []
 
+var startArea = null
+var endArea = null
 
 func reload(val):
 	if (val):
@@ -41,7 +45,7 @@ func reload(val):
 		
 func activateEditor(val):
 	
-	if !Engine.editor_hint:# && !activeInEditor:
+	if !Engine.editor_hint:
 		return
 	
 	activeInEditor = val
@@ -49,31 +53,39 @@ func activateEditor(val):
 	if(val):
 		_ready()
 	else:
-		if (self.get_children().size() > 0):
-			for n in self.get_children():
-				self.remove_child(n)
+		removeAllChildren()
 
 		resize_arrays()
 		
 	
+func removeAllChildren():
+	startArea = get_node("startPinArea")
+	endArea = get_node("endPinArea")
+		
+	if (self.get_children().size() > 0):
+		for n in self.get_children():
+			if n != startArea && n != endArea && n != CABLE_LINE2D:
+				self.remove_child(n)
 
 func _ready():
 	#execute in editor if activeInEditor (will execute in game regardless)
 	if Engine.editor_hint && !activeInEditor:
 		return
 		
-	if (self.get_children().size() > 0):
-		for n in self.get_children():
-			self.remove_child(n)
+	
+	removeAllChildren()
 	
 	if (START_PIN_PATH != null):
 		START_PIN = get_node(START_PIN_PATH)
-	
+		
 	if (END_PIN_PATH != null):
 		END_PIN = get_node(END_PIN_PATH)
+		
 	
 	if (CABLE_LINE2D_PATH != null):
 		CABLE_LINE2D = get_node(CABLE_LINE2D_PATH)
+	
+	
 	
 	resize_arrays()
 	
@@ -91,7 +103,25 @@ func initShapes():
 		add_child(cableNodes[n])
 		setCNPos(n, pos[n])
 		
-		cableNodesAcc.append(0)
+		
+		if (n == 0):
+			if START_PLUG != null:
+				if START_PLUG.plugSprite != null:
+					print(START_PLUG.plugSprite)
+					START_SPRITE = Sprite.new()
+					START_SPRITE.set_texture(START_PLUG.plugSprite)
+					START_SPRITE.set_scale(Vector2(4, 4))
+					cableNodes[n].add_child(START_SPRITE)
+			
+		if (n == NODE_COUNT - 1):
+			if END_PLUG != null:
+				if END_PLUG.plugSprite != null:
+					
+					END_SPRITE = Sprite.new()
+					END_SPRITE.set_texture(END_PLUG.plugSprite)
+					#END_SPRITE.set_flip_h(true)
+					END_SPRITE.set_scale(Vector2(4, 4))
+					cableNodes[n].add_child(END_SPRITE)
 		
 	#prevent parts of cable from colliding with eachother
 	for n in range (NODE_COUNT):
@@ -100,10 +130,12 @@ func initShapes():
 				pass
 			cableNodes[n].add_collision_exception_with(cableNodes[k])
 		if (START_PIN_PATH != null):
-			cableNodes[n].add_collision_exception_with(START_PIN)
+			if (START_PIN is PhysicsBody2D):
+				cableNodes[n].add_collision_exception_with(START_PIN)
 			
 		if (END_PIN_PATH != null):
-			cableNodes[n].add_collision_exception_with(END_PIN)	
+				if (END_PIN is PhysicsBody2D):
+					cableNodes[n].add_collision_exception_with(END_PIN)	
 	
 	
 func getCNPos(index):
@@ -146,6 +178,10 @@ func init_position():
 			pos[i] = position + Vector2(CONSTRAIN *i, 0) + pos[0]
 			posOld[i] = position + Vector2(CONSTRAIN *i, 0) + posOld[0]
 			
+			
+		startArea.set_global_position(pos[i])
+		endArea.set_global_position(pos[NODE_COUNT-1])
+		
 		position = Vector2.ZERO
 	
 	
@@ -170,6 +206,7 @@ func _physics_process(delta):
 	for i in range(ROPE_TAUGHTNESS):
 		update_distance(delta)
 	
+	updateAreaNodes()
 	
 	if (getRopeLength() > CABLE_LENGTH):
 		pos = prevPos
@@ -223,6 +260,7 @@ func update_distance(delta):
 	
 	for i in range (NODE_COUNT):
 		if i == NODE_COUNT-1:
+			applyRotation(i)
 			return
 			
 		var distance = pos[i].distance_to(pos[i+1])
@@ -251,8 +289,36 @@ func update_distance(delta):
 				
 		applyCollisionRestraint(i, delta)
 				
-		
+	
+	
 func applyCollisionRestraint(i, delta):
+	
+	
+	applyRotation(i)
+	
+	var target = pos[i]
+	var ogPos = getCNPos(i)
+	var dir = (target - ogPos).normalized()
+	cableNodes[i].move_and_slide((target-ogPos)/delta, Vector2( 0, 0 ), false, 16)
+	
+
+	
+	var target2 = pos[i+1]
+	var ogPos2 = getCNPos(i+1)
+	var dir2 = (target2 - ogPos2).normalized()
+	cableNodes[i+1].move_and_slide((target2-ogPos2)/delta)
+	
+	pos[i] = getCNPos(i)
+	pos[i+1] = getCNPos(i+1)
+	
+func applyRotation(i):
+	if (i == 0):
+		cableNodes[i].look_at(getCNPos(i+1))
+		return
+	
+	if (i == NODE_COUNT-1):
+		cableNodes[i].look_at(getCNPos(i-1))
+		return
 	
 	var dist = getCNPos(i-1).distance_to(getCNPos(i+1))
 	var prevDifVec = getCNPos(i) - getCNPos(i-1)
@@ -278,25 +344,9 @@ func applyCollisionRestraint(i, delta):
 	cableNodes[i].set_rotation(radAngle * acc)
 	
 	
-	var target = pos[i]
-	var ogPos = getCNPos(i)
-	var dir = (target - ogPos).normalized()
-	cableNodes[i].move_and_slide((target-ogPos)/delta, Vector2( 0, 0 ), false, 16)
-	
-
-	
-	var target2 = pos[i+1]
-	var ogPos2 = getCNPos(i+1)
-	var dir2 = (target2 - ogPos2).normalized()
-	cableNodes[i+1].move_and_slide((target2-ogPos2)/delta)
-	
-			
-			
-			
-	
-			
-	pos[i] = getCNPos(i)
-	pos[i+1] = getCNPos(i+1)
+func updateAreaNodes():
+	startArea.set_global_position(pos[0])
+	endArea.set_global_position(pos[NODE_COUNT-1])
 		
 func addExtraSprites():
 	# adds a sprite in between nodes if they are more than EXTRA_SPRITE_THRESHHOLD apart
@@ -325,6 +375,18 @@ func addExtraSprites():
 			middlePos = (middlePos + getCNPos(i))/2
 			
 			cableNodes[i].SPRITE.set_global_position(middlePos)
+			
+			
+#this part is still in progress
+func attemptCableConnection(startPlug, plugPinPath, conn):
+	var plug = START_PLUG if startPlug else END_PLUG
+	plug.connPlug = conn
+	
+	if plug.connPlug != null:
+		if startPlug:
+			pass
+			
+	
 			
 			
 #left over function from original code I got for NODE_COUNT
