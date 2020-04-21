@@ -8,15 +8,14 @@ var START_PIN = null
 export (NodePath) var END_PIN_PATH = null
 var END_PIN = null
 
-export (Resource) var START_PLUG = null
-export (Resource) var END_PLUG = null
+export (PackedScene) var START_PLUG_SCENE = null setget startPlug
+var START_PLUG = null
+export (PackedScene) var END_PLUG_SCENE = null setget endPlug
+var END_PLUG = null
 
 export (bool) var DRAW_CABLE_LINE2D = false
 export (NodePath) var CABLE_LINE2D_PATH = null
 var CABLE_LINE2D = null
-
-var START_SPRITE = null
-var END_SPRITE = null
 
 export (int, 1, 10, 1) var ROPE_TAUGHTNESS = 1
 export (int) var NODE_COUNT = 60
@@ -30,14 +29,24 @@ export (float) var ROT_DIST_THRESHOLD = 28
 export (bool) var reloadEditorCable = false setget reload
 export (bool) var activeInEditor = false setget activateEditor
 
+export(PackedScene) var test
 
 var extraRenderingSprites = []
 var pos: PoolVector2Array
 var posOld: PoolVector2Array
 var cableNodes = []
 
-var startArea = null
-var endArea = null
+
+func startPlug(val):
+	START_PLUG_SCENE = val
+	if START_PLUG_SCENE != null:
+		START_PLUG = START_PLUG_SCENE.instance()
+
+func endPlug(val):
+	END_PLUG_SCENE = val
+	if END_PLUG_SCENE != null:
+		END_PLUG = END_PLUG_SCENE.instance()
+		END_PLUG.setSpriteFlip(true)
 
 func reload(val):
 	if (val):
@@ -59,12 +68,11 @@ func activateEditor(val):
 		
 	
 func removeAllChildren():
-	startArea = get_node("startPinArea")
-	endArea = get_node("endPinArea")
-		
+	CABLE_LINE2D = get_node(CABLE_LINE2D_PATH)
+	
 	if (self.get_children().size() > 0):
 		for n in self.get_children():
-			if n != startArea && n != endArea && n != CABLE_LINE2D:
+			if n != CABLE_LINE2D:
 				self.remove_child(n)
 
 func _ready():
@@ -86,19 +94,24 @@ func _ready():
 		CABLE_LINE2D = get_node(CABLE_LINE2D_PATH)
 	
 	
-	
 	resize_arrays()
 	
-	
 	init_position()
+	
 	initShapes()
 	
+	if START_PLUG != null:
+		print(attemptCableConnection(true))
+		
+	if END_PLUG != null:
+		print(attemptCableConnection(false))
 		
 	
 func initShapes():
 	for n in range(NODE_COUNT):
 		cableNodes.append(CABLE_NODE.instance())
-		cableNodes[n].setCableNodeSprite(CABLE_NODE_SPRITE)
+		if (!CABLE_NODE_SPRITE):
+			cableNodes[n].setCableNodeSprite(CABLE_NODE_SPRITE)
 		#need to add child to make active
 		add_child(cableNodes[n])
 		setCNPos(n, pos[n])
@@ -106,22 +119,11 @@ func initShapes():
 		
 		if (n == 0):
 			if START_PLUG != null:
-				if START_PLUG.plugSprite != null:
-					print(START_PLUG.plugSprite)
-					START_SPRITE = Sprite.new()
-					START_SPRITE.set_texture(START_PLUG.plugSprite)
-					START_SPRITE.set_scale(Vector2(4, 4))
-					cableNodes[n].add_child(START_SPRITE)
+				cableNodes[n].add_child(START_PLUG)
 			
 		if (n == NODE_COUNT - 1):
 			if END_PLUG != null:
-				if END_PLUG.plugSprite != null:
-					
-					END_SPRITE = Sprite.new()
-					END_SPRITE.set_texture(END_PLUG.plugSprite)
-					#END_SPRITE.set_flip_h(true)
-					END_SPRITE.set_scale(Vector2(4, 4))
-					cableNodes[n].add_child(END_SPRITE)
+				cableNodes[n].add_child(END_PLUG)
 		
 	#prevent parts of cable from colliding with eachother
 	for n in range (NODE_COUNT):
@@ -179,8 +181,6 @@ func init_position():
 			posOld[i] = position + Vector2(CONSTRAIN *i, 0) + posOld[0]
 			
 			
-		startArea.set_global_position(pos[i])
-		endArea.set_global_position(pos[NODE_COUNT-1])
 		
 		position = Vector2.ZERO
 	
@@ -206,7 +206,6 @@ func _physics_process(delta):
 	for i in range(ROPE_TAUGHTNESS):
 		update_distance(delta)
 	
-	updateAreaNodes()
 	
 	if (getRopeLength() > CABLE_LENGTH):
 		pos = prevPos
@@ -216,7 +215,8 @@ func _physics_process(delta):
 			setCNPos(i, pos[i])
 	
 	
-	addExtraSprites()
+	
+	#addExtraSprites()
 	
 	
 	if (DRAW_CABLE_LINE2D && CABLE_LINE2D_PATH != null):
@@ -344,9 +344,7 @@ func applyRotation(i):
 	cableNodes[i].set_rotation(radAngle * acc)
 	
 	
-func updateAreaNodes():
-	startArea.set_global_position(pos[0])
-	endArea.set_global_position(pos[NODE_COUNT-1])
+	
 		
 func addExtraSprites():
 	# adds a sprite in between nodes if they are more than EXTRA_SPRITE_THRESHHOLD apart
@@ -370,22 +368,18 @@ func addExtraSprites():
 			extraRenderingSprites.append(sprite)
 			
 		#adjust node's sprite so that they wrap around curves a bit nicer:
-		if (i != 0):
-			var middlePos = (getCNPos(i-1) + getCNPos(i+1))/2
-			middlePos = (middlePos + getCNPos(i))/2
-			
-			cableNodes[i].SPRITE.set_global_position(middlePos)
+#		if (i != 0 && cableNodes[i].SPRITE != null):
+#			var middlePos = (getCNPos(i-1) + getCNPos(i+1))/2
+#			middlePos = (middlePos + getCNPos(i))/2
+#
+#			cableNodes[i].SPRITE.set_global_position(middlePos)
 			
 			
 #this part is still in progress
-func attemptCableConnection(startPlug, plugPinPath, conn):
+func attemptCableConnection(startPlug):
 	var plug = START_PLUG if startPlug else END_PLUG
-	plug.connPlug = conn
 	
-	if plug.connPlug != null:
-		if startPlug:
-			pass
-			
+	plug.attemptConnection()
 	
 			
 			
