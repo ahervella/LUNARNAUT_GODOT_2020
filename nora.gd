@@ -42,11 +42,11 @@ func noraFaceRight(right):
 	#$"noraShapeGroundRight2".set_disabled(!right)
 	#$"noraShapeGroundLeft".set_disabled(right)
 	#$"noraShapeGroundLeft2".set_disabled(right)
-	#if(global.lvl(01).has_key):
-	#	$"noraRayAttackRightTop".set_enabled(right)
-	#	$"noraRayAttackRightBottom".set_enabled(right)
-	#	$"noraRayAttackLeftTop".set_enabled(!right)
-	#	$"noraRayAttackLeftBottom".set_enabled(!right)
+	if(global.lvl(01).has_key):
+		$"noraRayAttackRightTop".set_enabled(right)
+		$"noraRayAttackRightBottom".set_enabled(right)
+		$"noraRayAttackLeftTop".set_enabled(!right)
+		$"noraRayAttackLeftBottom".set_enabled(!right)
 	
 	$"noraRayGroundRight".set_enabled(right)
 	$"noraRayGroundLeft".set_enabled(!right)
