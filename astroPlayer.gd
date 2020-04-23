@@ -48,7 +48,8 @@ var currMaxAirTime = 0
 const DEFAULT_MAX_AIR_TIME = 0.1
 const MAX_AIR_TIME = 0.6
 const DEFAULT_JUMP_FORCE = -150
-var jumpForce = CharacterRes.baseJump
+# var jumpForce = CharacterRes.baseJump
+var jumpForce = 0
 
 #once on the ground and health depleted, goes true
 var dead = false
