@@ -12,6 +12,7 @@ extends KinematicBody2D
 #ALEJANDRO (Feb-24-2020)
 #renamed from astrooo to astroPlayer.gd!
 
+export (Resource) var CHARACTER_RES = null
 export (NodePath) var CAMERA_NODE_PATH = null
 onready var CAMERA_NODE = get_node(CAMERA_NODE_PATH)
 const CAMERA_OFFSET = 200
@@ -25,12 +26,6 @@ onready var INTERACT_TEXT_NODE = get_node(INTERACT_TEXT_NODE_PATH)
 export (bool) var showMoonBG =  true setget showMoonBGSetter
 export (bool) var showBlackBG = true setget showBlackBGSetter
 export (bool) var enableShadows = true setget enableShadowsSetter
-
-
-const AIR_HORZ_SPEED = 160
-const GROUND_HORZ_SPEED = 160
-const AIR_HORZ_ACCEL = 0.025
-const GROUND_HORZ_ACCEL = 0.1
 
 var vel = Vector2()
 var max_move_speed = 200
@@ -53,7 +48,7 @@ var currMaxAirTime = 0
 const DEFAULT_MAX_AIR_TIME = 0.1
 const MAX_AIR_TIME = 0.6
 const DEFAULT_JUMP_FORCE = -150
-var jumpForce = DEFAULT_JUMP_FORCE
+var jumpForce = CharacterRes.baseJump
 
 #once on the ground and health depleted, goes true
 var dead = false
@@ -174,7 +169,7 @@ func _physics_process(delta):
 		if(get_anim()=="FALL" || get_anim()=="JUMP"):
 			set_anim("LAND")
 		airTime = 0
-		jumpForce = DEFAULT_JUMP_FORCE
+		jumpForce = CHARACTER_RES.baseJump
 		currMaxAirTime = DEFAULT_MAX_AIR_TIME
 
 	ApplyMovement(delta)
@@ -183,18 +178,12 @@ func _physics_process(delta):
 
 	#this method allows for proper physics feel when launched in air
 	#and for different max speeds & accels on ground and in air
-	var speed = AIR_HORZ_SPEED
-	var accel = AIR_HORZ_ACCEL
-	
-	if(groundedBubble):
-		speed = GROUND_HORZ_SPEED
-		accel = GROUND_HORZ_ACCEL
+	var speed = CHARACTER_RES.baseAirSpeed if groundedBubble else CHARACTER_RES.baseGroundSpeed
+	var accel = CHARACTER_RES.baseAirAcceleration if groundedBubble else CHARACTER_RES.baseGroundAcceleration
 		
 	var dirSign = directional_force.x * vel.x
 	if(dirSign <= 0 || (dirSign > 0 && speed > vel.x)):
 		vel.x = lerp(vel.x, (directional_force.x * speed), accel)
-	
-	
 	
 	max_move_speed = max(abs(vel.x), speed)
 	
