@@ -18,6 +18,7 @@ extends Node
 
 var interactNode #$"/root/Control/astro/InteractFont"
 
+export (Resource) var CharacterRes = null
 
 var current_interact
 var controls_enabled

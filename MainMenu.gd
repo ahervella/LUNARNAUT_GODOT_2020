@@ -178,7 +178,8 @@ func TransFin():
 	
 
 func _on_Start_finished():
-	global.loadLevel(1)
+	global.goto_scene("res://SCENES/CharSelect.tscn")
+	#global.loadLevel(1)
 
 
 func missionTimeOut():
