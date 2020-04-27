@@ -62,8 +62,8 @@ const IMMUNE_TIME = 2.5
 var touchingNora = false
 
 #the current item astro is in
-var currItem = null
-var currItemGlobalPos : Vector2
+var currItems = []
+var currItemsGlobalPosDict = {}
 
 
 #touch controls
@@ -330,13 +330,19 @@ func MoveJump(delta):
 		holdDownCanJump = false
 	
 func InteractCheck():
-	if (currItem == null):
+	var anyItem = null
+	for item in currItems:
+		if item != null:
+			anyItem = item
+			
+	if anyItem == null:
 		return
 	
 	var touchInteractJustPressed = TOUCH_CONTROL_NODE.touchStateDict["interact"] == TOUCH_CONTROL_NODE.TOUCH_STATE.JUST_TOUCHED
 	
 	if (Input.is_action_just_pressed("ui_interact") || touchInteractJustPressed):
-			currItem.Interact()
+		for item in currItems:
+			item.Interact()
 
 
 func MoveCameraAndInteracText():
@@ -347,7 +353,8 @@ func MoveCameraAndInteracText():
 	CAMERA_NODE.set_global_position(Vector2(astroPos.x + (CAMERA_OFFSET * directional_force.x), astroPos.y))
 	
 	if (INTERACT_TEXT_NODE.fixedOffset):
-		INTERACT_TEXT_NODE.set_global_position(currItemGlobalPos + textOffset)
+		var lastItemFoundPos = currItemsGlobalPosDict[currItems[currItems.size()-1]]
+		INTERACT_TEXT_NODE.set_global_position(lastItemFoundPos + textOffset)
 		return
 		
 	INTERACT_TEXT_NODE.set_global_position(astroPos + textOffset)
@@ -711,16 +718,17 @@ func _on_Item_check_area_entered(area):
 	#print("astoooo: shit entered")
 	#print(get_groups())
 	if (area.get_groups().has("interact")):
-		currItem = area.get_parent()
+		var newItem = area.get_parent()
+		currItems.append(newItem)
 		#do virtual interface check
-		global.InteractInterfaceCheck(currItem)
+		global.InteractInterfaceCheck(newItem)
 		
 		#need to store global pos for when it leaves astro
 		#in case it is fixed text
-		currItemGlobalPos = currItem.get_global_position()
+		currItemsGlobalPosDict[newItem] = newItem.get_global_position()
 		
 		#Execute autoInteract just once, upon entering
-		currItem.AutoInteract()
+		newItem.AutoInteract()
 	
 	if (area.get_groups().has("nora")):
 		touchingNora = true
@@ -729,10 +737,12 @@ func _on_Item_check_area_entered(area):
 
 func _on_Item_check_area_exited(area):
 	if(area.get_groups().has("interact")):
+		var exitingItem = area.get_parent()
 		#do virtual interface check
-		global.InteractInterfaceCheck(currItem)
-		currItem.AutoCloseInteract()
-		currItem = null
+		global.InteractInterfaceCheck(exitingItem)
+		exitingItem.AutoCloseInteract()
+		currItems.erase(exitingItem)
+		#currItem = null
 		
 	if (area.get_groups().has("nora")):
 		touchingNora = false

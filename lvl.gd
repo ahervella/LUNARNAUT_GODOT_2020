@@ -22,7 +22,8 @@ var Inventory : Dictionary
 func _ready():
 	global.playTest = playTest
 	astroNode = get_node(astroNodePath)
-	trigChunkNode = get_node(trigChunkNodePath)
+	if (trigChunkNodePath != null):
+		trigChunkNode = get_node(trigChunkNodePath)
 	global.interactNode = astroNode.INTERACT_TEXT_NODE
 	
 	
