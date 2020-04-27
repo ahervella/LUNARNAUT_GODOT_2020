@@ -94,7 +94,8 @@ func _ready():
 	#the location is based off only one place here in the astro node
 	global.interactNode = INTERACT_TEXT_NODE
 	
-	CHARACTER_RES = global.CharacterRes
+	if (global.CharacterRes != null):
+		CHARACTER_RES = global.CharacterRes
 	
 	#need to do this as well here because the interact text node needs
 	#an astro node reference. Because asto is always below text in scene tree,
