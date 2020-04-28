@@ -21,6 +21,8 @@ export (bool) var DRAW_CABLE_LINE2D = false
 export (NodePath) var CABLE_LINE2D_PATH = null
 var CABLE_LINE2D = null
 
+export (Array, NodePath) var PHYS_EXCEP = []
+
 export (int, 1, 10, 1) var ROPE_TAUGHTNESS = 1
 export (int) var NODE_COUNT = 60
 export (float) var CONSTRAIN = 10
@@ -113,11 +115,11 @@ func readyDeferred():
 	initShapes()
 	
 	#executes on first frame after ready, seems to only work then
-	if START_PLUG != null:
-		call_deferred("attemptCableConnection", true)
+	#if START_PLUG != null:
+	#	call_deferred("attemptCableConnection", true)
 	
-	if END_PLUG != null:
-		call_deferred("attemptCableConnection", false)
+	#if END_PLUG != null:
+	#	call_deferred("attemptCableConnection", false)
 		
 	readyDone = true
 	
@@ -154,6 +156,20 @@ func initShapes():
 				cableNodes[n].add_collision_exception_with(END_PIN)	
 		
 		cableNodes[n].add_collision_exception_with(global.lvl().astroNode)
+		for nodePath in PHYS_EXCEP:
+			var node = get_node(nodePath)
+			if node is PhysicsBody2D:
+				cableNodes[n].add_collision_exception_with(node)
+			collisionExcep(node, cableNodes[n])
+			
+#recursive function for getting all children to also be applied as an exception
+func collisionExcep(node, collideNode):
+	if node.get_child_count() > 0:
+		for child in node.get_children():
+			if child is PhysicsBody2D:
+				collideNode.add_collision_exception_with(child)
+				collisionExcep(child, collideNode)
+	
 	
 func getCNPos(index):
 	return cableNodes[index].get_global_position()
@@ -424,3 +440,13 @@ func attemptCableConnection(startPlug):
 #func get_count(distance: float):
 #	var new_count = ceil(distance / CONSTRAIN)
 #	return distance
+func setFixPlug(plug):
+	var newVect = plug.get_global_position()
+	var isStartPlug = START_PLUG == plug
+			
+	if (isStartPlug):
+		cableNodes[0].set_global_position(newVect)
+		plug.set_global_position(newVect)
+	else:
+		cableNodes[cableNodes.size()-1].set_global_position(newVect)
+		plug.set_global_position(newVect)

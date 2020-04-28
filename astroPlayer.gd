@@ -182,8 +182,8 @@ func _physics_process(delta):
 
 	#this method allows for proper physics feel when launched in air
 	#and for different max speeds & accels on ground and in air
-	var speed = CHARACTER_RES.baseAirSpeed if groundedBubble else CHARACTER_RES.baseGroundSpeed
-	var accel = CHARACTER_RES.baseAirAcceleration if groundedBubble else CHARACTER_RES.baseGroundAcceleration
+	var speed = CHARACTER_RES.baseGroundSpeed if groundedBubble else CHARACTER_RES.baseAirSpeed
+	var accel = CHARACTER_RES.baseGroundAcceleration if groundedBubble else CHARACTER_RES.baseAirAcceleration
 		
 	var dirSign = directional_force.x * vel.x
 	if(dirSign <= 0 || (dirSign > 0 && speed > vel.x)):

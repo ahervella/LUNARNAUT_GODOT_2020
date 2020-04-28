@@ -24,12 +24,14 @@ enum CONN_RESULT {
 	OTHER_NOT_PLUG
 	SUCCESS
 	NO_PLUG_FOUND
+	PART_OF_SAME_CABLE
 }
 
 const DIST_BETWEEN_PLUGS = 12
 
 export (bool) var male = false
-export (bool) var canGrab = true
+#fixed port implies whether the plug can be grabbed and whether it has a parentCable
+export (bool) var isFixedPort = false setget setIsFixedPort
 export (bool) var fixed = false
 export (PLUG_REGION) var plugRegion = PLUG_TYPE.AUX
 export (PLUG_TYPE) var plugType = PLUG_REGION.USA
@@ -47,15 +49,13 @@ var connArea = null
 #export (NodePath) var plugSpritePath = null setget setPlugSpritePath
 var plugSprite = null
 
-#func setPlugSpritePath(val):
-#	plugSpritePath = val
-#	if (plugSpritePath != null):
-#		plugSprite = get_node(plugSpritePath)
-#
-#func setConnAreaPath(val):
-#	connAreaPath = val
-#	if (connAreaPath != null):
-#		connArea = get_node(connAreaPath)
+var processed = false
+
+func setIsFixedPort(val):
+	if val:
+		fixed = true
+	isFixedPort = val
+	
 func setParentCable(parentCableNode):
 	parentCable = null
 	if parentCableNode.has_method("attemptCableConnection"):
@@ -78,12 +78,10 @@ func setConnection(plugNode):
 		&& (plugNode.plugRegion == plugRegion || plugNode.plugRegion == PLUG_REGION.UNI)
 		&& (plugNode.plugType == plugType)):
 			connPlug = plugNode
-			
-			
-				#print(self.get_global_position())
-				
-			return
-	#	return
+		
+	
+	
+	
 	
 func _ready():
 	for node in get_children():
@@ -93,24 +91,120 @@ func _ready():
 			plugSprite = node
 
 	
+
+
+
+
+func Interact():
+	
+	if (processed):
+		processed = false
+		return
+	
+	if (isFixedPort):
+		return
+	
+	var astro = global.lvl().astroNode
+	#var isStartPlug = null
+	
+	var result = attemptConnection()
+	var grabbed = currentlyGrabbed()
+	print(result)
+	match result:
+		CONN_RESULT.INCOMPATIBLE, CONN_RESULT.WRONG_TYPE:
+			if grabbed:
+				grabPlug()
+			return
+			
+		CONN_RESULT.SELF_ALREADY_CONN:
+			connPlug.processed = true
+			
+			if grabbed:
+				dropPlug()
+				connPlug.dropPlug()
+			else:
+				if !isFixedPort:
+					disconnectPlug()
+					grabPlug()
+				else: #if its a fixed port
+					connPlug.grabPlug()
+					disconnectPlug()
+			return
+					
+		CONN_RESULT.OTHER_ALREADY_CONN, CONN_RESULT.OTHER_NOT_PLUG, CONN_RESULT.NO_PLUG_FOUND, CONN_RESULT.PART_OF_SAME_CABLE:
+			print("trred")
+			if !grabbed:
+				grabPlug()
+			else:
+				dropPlug()
+			return
+			
+		CONN_RESULT.SUCCESS:
+			
+			if connPlug.isFixedPort:
+				if grabbed:
+					dropPlug()
+				else:
+					disconnectPlug()
+					grabPlug()
+			
+			
+			elif !grabbed && !connPlug.currentlyGrabbed():
+				disconnectPlug()
+				grabPlug()
+				
+			else:
+				if !grabbed:
+					grabPlug()
+				if !connPlug.currentlyGrabbed():
+					connPlug.grabPlug()
+					connPlug.processed = true
+			
+			return
+
+
+
 func attemptConnection():
 	if connPlug != null:
 		return CONN_RESULT.SELF_ALREADY_CONN
-	for area in connArea.get_overlapping_areas():
+		
+	var totalOverlappingAreas = connArea.get_overlapping_areas()
+	
+	
+	#if grabbed, use astro's area to be able to find other near by plugs
+	if currentlyGrabbed():
+		var astro = global.lvl().astroNode
+		for area in astro.get_node("Item_check").get_overlapping_areas():
+			if area.get_groups().has("plug"):
+				if area.get_parent() != self:
+					totalOverlappingAreas.append(area)
+	
+	
+	#check areas until a plug is found
+	for area in totalOverlappingAreas:
 		if area.get_groups().has("plug"):
 			var otherPlug = area.get_parent()
 			
 			if otherPlug.connPlug != null:
 				return CONN_RESULT.OTHER_ALREADY_CONN
 			
+			#check they are not part of the same cable
+			if parentCable != null && otherPlug.parentCable != null:
+				if parentCable == otherPlug.parentCable:
+					return CONN_RESULT.PART_OF_SAME_CABLE
+			
+			
 			connPlug = otherPlug
 			otherPlug.connPlug = self
 			
-			if connPlug == null || otherPlug == null:
+			#if either rejected the other, both are set to null
+			if connPlug == null || otherPlug.connPlug == null:
+				connPlug = null
+				otherPlug.connPlug = null
 				return CONN_RESULT.INCOMPATIBLE
 				
-			#print(self.get_global_position())
-			if (connPlug.fixed):
+			#connection worked, so allign plugs properly
+			if (connPlug.fixed || connPlug.isFixedPort):
 				
 				self.fixed = true
 				var connPlugRot = connPlug.get_global_rotation()
@@ -118,74 +212,18 @@ func attemptConnection():
 				
 				self.look_at(connPlug.get_global_position())
 				
+				if !isFixedPort:
+					parentCable.setFixPlug(self)
+				
 			return CONN_RESULT.SUCCESS
 	
 	return CONN_RESULT.NO_PLUG_FOUND
+	
 
-func Interact():
-	
-	var astro = global.lvl().astroNode
-	
-	#attempt to connect plug if currently grabbed
-	#if no connection found or connection successful, let go of plug
-	if currentlyGrabbed():
-		var startPlug = true
-		
-		#if parentCable.START_PLUG == self:
-			#parentCable.START_PIN = null
-		if parentCable.END_PLUG == self:
-			#parentCable.END_PIN = null
-			startPlug = false
-			print("endPlug")
-		else:
-			print("startPlug")
-			
-		var result = parentCable.attemptCableConnection(startPlug)
-		print(result)
-		if result == CONN_RESULT.NO_PLUG_FOUND:
-			if startPlug:
-				parentCable.START_PIN = null
-			else:
-				parentCable.END_PIN = null
-		return
-		
-		
-	
-	
-	
-	#pick up plug if possible
-	#check null before further checking parent cable
-	if (canGrab):
-		if (parentCable != null):
-			#if either end of the cable already does not equal astto
-			if (parentCable.START_PIN != astro && parentCable.END_PIN != astro):
-				if parentCable.START_PLUG == self:
-					parentCable.START_PIN = astro
-				elif parentCable.END_PLUG == self:
-					parentCable.END_PIN = astro
-					
-			else:
-				return
-				
-		else:
-			return
-			
-	else:
-		return
-		
-	if (connPlug != null):
-		if (connPlug.canGrab):
-			if (connPlug.parentCable != null):
-				if (connPlug.parentCable.START_PIN != astro && connPlug.parentCable.END_PIN != astro):
-					if connPlug.parentCable.START_PLUG == self:
-						connPlug.parentCable.START_PIN = astro
-					elif connPlug.parentCable.END_PLUG == self:
-						connPlug.parentCable.END_PIN = astro
-		else:
-			disconnectPlug()
-			
+
+
 func currentlyGrabbed():
-	if canGrab == false:
+	if isFixedPort:
 		return false
 		
 	if parentCable != null:
@@ -201,12 +239,74 @@ func currentlyGrabbed():
 	return false
 				
 
+func dropPlug(isStartPlug = null):
+	print("trredDROP")
+	
+	if connPlug != null:
+		if !connPlug.isFixedPort && !connPlug.fixed:
+			if connPlug.parentCable.START_PLUG == connPlug:
+				parentCable.START_PIN = self
+			else:
+				parentCable.END_PIN = self
+			return
+	
+	
+	if isFixedPort:
+		return
+	
+	
+	
+	
+	if isStartPlug == null:
+		isStartPlug = parentCable.START_PLUG == self
+	
+	if isStartPlug:
+		parentCable.START_PIN = null
+	else:
+		parentCable.END_PIN = null
+	
+	if connPlug != null:
+		if connPlug.isFixedPort || connPlug.fixed:
+			if isStartPlug:
+				parentCable.START_PIN = self
+			else:
+				parentCable.END_PIN = self
+				
+		
+	
+	
+
+
+
+func grabPlug(isStartPlug = null):
+	print("trred33")
+	if isFixedPort:
+		return
+	if isStartPlug == null:
+		isStartPlug = parentCable.START_PLUG == self
+	
+	
+	
+	var astro = global.lvl().astroNode
+	if isStartPlug && parentCable.END_PIN != astro:
+		parentCable.START_PIN = astro
+	elif (parentCable.START_PIN != astro):
+		parentCable.END_PIN = astro
+
+
+
 func disconnectPlug():
 	print("disconn")
 	if connPlug == null:
 		return
 	connPlug.connPlug = null
 	fixed = false
+	if (connPlug.parentCable != null):
+		if connPlug.parentCable.START_PLUG == self:
+			connPlug.parentCable.START_PIN = null
+		elif connPlug.parentCable.END_PLUG == self:
+			connPlug.parentCable.END_PIN = null
+			
 	connPlug = null
 
 func recievedEntity(entity):
