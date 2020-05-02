@@ -110,6 +110,7 @@ func Interact():
 	var result = attemptConnection()
 	var grabbed = currentlyGrabbed()
 	print(result)
+	print(self)
 	match result:
 		CONN_RESULT.INCOMPATIBLE, CONN_RESULT.WRONG_TYPE:
 			if grabbed:
@@ -122,6 +123,8 @@ func Interact():
 			if grabbed:
 				dropPlug()
 				connPlug.dropPlug()
+				if (!connPlug.isFixedPort && !isFixedPort):
+					parentCable.addCableChild(connPlug.parentCable)
 			else:
 				if !isFixedPort:
 					disconnectPlug()
@@ -132,10 +135,12 @@ func Interact():
 			return
 					
 		CONN_RESULT.OTHER_ALREADY_CONN, CONN_RESULT.OTHER_NOT_PLUG, CONN_RESULT.NO_PLUG_FOUND, CONN_RESULT.PART_OF_SAME_CABLE:
-			print("trred")
+			#print("trred")
 			if !grabbed:
+				print("grabbed")
 				grabPlug()
 			else:
+				print("dropped")
 				dropPlug()
 			return
 			
@@ -203,7 +208,9 @@ func attemptConnection():
 				otherPlug.connPlug = null
 				return CONN_RESULT.INCOMPATIBLE
 				
+				
 			#connection worked, so allign plugs properly
+			
 			if (connPlug.fixed || connPlug.isFixedPort):
 				
 				self.fixed = true
@@ -231,16 +238,16 @@ func currentlyGrabbed():
 		var astro = global.lvl().astroNode
 		
 		if parentCable.START_PLUG == self && parentCable.START_PIN == astro:
-			print("start grabbed")
+			#print("start grabbed")
 			return true
 		elif parentCable.END_PLUG == self && parentCable.END_PIN == astro:
-			print("end grabbed")
+			#print("end grabbed")
 			return true
 	return false
 				
 
 func dropPlug(isStartPlug = null):
-	print("trredDROP")
+	#print("trredDROP")
 	
 	if connPlug != null:
 		if !connPlug.isFixedPort && !connPlug.fixed:
@@ -279,7 +286,7 @@ func dropPlug(isStartPlug = null):
 
 
 func grabPlug(isStartPlug = null):
-	print("trred33")
+	#print("trred33")
 	if isFixedPort:
 		return
 	if isStartPlug == null:
@@ -289,9 +296,16 @@ func grabPlug(isStartPlug = null):
 	
 	var astro = global.lvl().astroNode
 	if isStartPlug && parentCable.END_PIN != astro:
-		parentCable.START_PIN = astro
+		
+		parentCable.setgetTotalCableStartPlugPin(true, false, astro)
+		
+		#parentCable.START_PIN = astro
+		print("astro set to start pin")
 	elif (parentCable.START_PIN != astro):
-		parentCable.END_PIN = astro
+		
+		parentCable.setgetTotalCableEndPlugPin(true, false, astro)
+		#parentCable.END_PIN = astro
+		print("astro set to end pin")
 
 
 
@@ -308,6 +322,7 @@ func disconnectPlug():
 			connPlug.parentCable.END_PIN = null
 			
 	connPlug = null
+	
 
 func recievedEntity(entity):
 	return sourcePlug.transmitEntity(entity)
