@@ -109,12 +109,19 @@ func Interact():
 	
 	var result = attemptConnection()
 	var grabbed = currentlyGrabbed()
+	var astroHasPlug = astroIsHoldingPlug()
 	print(result)
 	print(self)
+	#print(self)
 	match result:
 		CONN_RESULT.INCOMPATIBLE, CONN_RESULT.WRONG_TYPE:
-			if grabbed:
+			print("blahhhhh")
+			print(astroHasPlug)
+			#check if one is already grabbed
+			if !grabbed && !astroHasPlug:
 				grabPlug()
+			else:
+				dropPlug()
 			return
 			
 		CONN_RESULT.SELF_ALREADY_CONN:
@@ -135,8 +142,9 @@ func Interact():
 			return
 					
 		CONN_RESULT.OTHER_ALREADY_CONN, CONN_RESULT.OTHER_NOT_PLUG, CONN_RESULT.NO_PLUG_FOUND, CONN_RESULT.PART_OF_SAME_CABLE:
-			#print("trred")
-			if !grabbed:
+			print("trred")
+			if !grabbed && !astroHasPlug:
+				print(astroHasPlug)
 				print("grabbed")
 				grabPlug()
 			else:
@@ -246,12 +254,39 @@ func currentlyGrabbed():
 	return false
 				
 
+func astroIsHoldingPlug():
+	var astro = global.lvl().astroNode
+	var areas = astro.get_node("Item_check").get_overlapping_areas()
+	#print("areas sizevvv")
+	#print(areas.size())
+	for area in areas:
+		if (area.get_groups().has("plug")):
+			var plug = area.get_parent()
+			if !plug.isFixedPort:
+				#print("yeeee")
+				#print(plug.parentCable.START_PIN)
+				#print(plug.parentCable.END_PIN)
+				#print(astro)
+				if plug.parentCable.START_PLUG == plug:
+					#print("got here")
+					#print(plug.parentCable.START_PIN)
+					if plug.parentCable.START_PIN == astro:
+						return true
+				if plug.parentCable.END_PLUG == plug:
+					#print("got hereeee")
+					#print(plug.parentCable.END_PIN)
+					#print("got her22222e")
+					if plug.parentCable.END_PIN == astro:
+						return true
+	return false
+		
+
 func dropPlug(isStartPlug = null):
 	#print("trredDROP")
 	
 	if connPlug != null:
 		if !connPlug.isFixedPort && !connPlug.fixed:
-			if connPlug.parentCable.START_PLUG == connPlug:
+			if parentCable.START_PLUG == self:
 				parentCable.START_PIN = self
 			else:
 				parentCable.END_PIN = self
@@ -295,17 +330,24 @@ func grabPlug(isStartPlug = null):
 	
 	
 	var astro = global.lvl().astroNode
+	
 	if isStartPlug && parentCable.END_PIN != astro:
 		
-		parentCable.setgetTotalCableStartPlugPin(true, false, astro)
+		#parentCable.setgetTotalCableStartPlugPin(true, false, astro)
 		
-		#parentCable.START_PIN = astro
+		parentCable.START_PIN = astro
 		print("astro set to start pin")
+		#print(parentCable.START_PIN)
+		print(astroIsHoldingPlug())
+		
 	elif (parentCable.START_PIN != astro):
 		
-		parentCable.setgetTotalCableEndPlugPin(true, false, astro)
-		#parentCable.END_PIN = astro
+		#parentCable.setgetTotalCableEndPlugPin(true, false, astro)
+		parentCable.END_PIN = astro
 		print("astro set to end pin")
+		print(parentCable.START_PIN)
+		print(parentCable.END_PIN)
+		print(astroIsHoldingPlug())
 
 
 
@@ -313,6 +355,13 @@ func disconnectPlug():
 	print("disconn")
 	if connPlug == null:
 		return
+		
+	if parentCable.childLinkCable != null:
+		print("nada found")
+		parentCable.removeChildCable()
+	else: #if connPlug.parentCable.childLinkCable != null
+		connPlug.parentCable.removeChildCable()
+		
 	connPlug.connPlug = null
 	fixed = false
 	if (connPlug.parentCable != null):
