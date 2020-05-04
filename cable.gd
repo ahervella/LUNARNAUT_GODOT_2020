@@ -697,14 +697,11 @@ func setgetTotalCableEndPlugPin(getPin, getter, val = null):
 	
 	
 func removeChildCable():
+	print("removedChildCable")
 	var blah = newChild.get_global_position()
 	parNode.remove_child(newChild)
 	newChild.set_global_position(blah)
 	childLinkCable.add_child(newChild)
-	#if childLinkCable.parentLinkCableIsStart:
-		#childLinkCable.cableNodes.push_front(newChild)
-	#else:
-	#	childLinkCable.cableNodes.push_back(newChild)
 		
 	parNode = null
 	newChild = null
@@ -751,6 +748,10 @@ func removeChildCable():
 	#(aka, if each was OG 60 nodes, connected total was 119)
 	nodeCount -= childLinkCable.cableNodes.size() - 1
 	cableNodePosDict.erase(childLinkCable)
+				
+	for i in childLinkCable.cableNodes.size():
+		childLinkCable.pos[i] = childLinkCable.cableNodes[i].get_global_position()
+		childLinkCable.posOld[i] = childLinkCable.cableNodes[i].get_global_position()
 				
 	if (childLinkCableIsStart):
 		START_PIN = null

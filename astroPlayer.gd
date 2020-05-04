@@ -343,6 +343,9 @@ func InteractCheck():
 	if (Input.is_action_just_pressed("ui_interact") || touchInteractJustPressed):
 		for item in currItems:
 			item.Interact()
+			
+		for item in currItems:
+			item.processed = false
 
 
 func MoveCameraAndInteracText():

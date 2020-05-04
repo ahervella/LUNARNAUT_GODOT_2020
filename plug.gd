@@ -49,7 +49,6 @@ var connArea = null
 #export (NodePath) var plugSpritePath = null setget setPlugSpritePath
 var plugSprite = null
 
-var processed = false
 
 func setIsFixedPort(val):
 	if val:
@@ -98,7 +97,6 @@ func _ready():
 func Interact():
 	
 	if (processed):
-		processed = false
 		return
 	
 	if (isFixedPort):
@@ -112,7 +110,7 @@ func Interact():
 	var astroHasPlug = astroIsHoldingPlug()
 	print(result)
 	print(self)
-	#print(self)
+	
 	match result:
 		CONN_RESULT.INCOMPATIBLE, CONN_RESULT.WRONG_TYPE:
 			print("blahhhhh")
@@ -198,13 +196,18 @@ func attemptConnection():
 		if area.get_groups().has("plug"):
 			var otherPlug = area.get_parent()
 			
+			#only interact with plugs that haven't been processed
+			if otherPlug.processed: continue
+			
 			if otherPlug.connPlug != null:
 				return CONN_RESULT.OTHER_ALREADY_CONN
 			
 			#check they are not part of the same cable
 			if parentCable != null && otherPlug.parentCable != null:
-				if parentCable == otherPlug.parentCable:
-					return CONN_RESULT.PART_OF_SAME_CABLE
+				if (parentCable == otherPlug.parentCable
+					|| parentCable.setgetTotalCableEndPlugPin(false, true) == otherPlug.parentCable.setgetTotalCableEndPlugPin(false, true)
+					|| parentCable.setgetTotalCableStartPlugPin(false, true) == otherPlug.parentCable.setgetTotalCableStartPlugPin(false, true)):
+						return CONN_RESULT.PART_OF_SAME_CABLE
 			
 			
 			connPlug = otherPlug
@@ -356,11 +359,13 @@ func disconnectPlug():
 	if connPlug == null:
 		return
 		
-	if parentCable.childLinkCable != null:
-		print("nada found")
-		parentCable.removeChildCable()
-	else: #if connPlug.parentCable.childLinkCable != null
-		connPlug.parentCable.removeChildCable()
+	#disconnect cables if cables are connected
+	if parentCable != null:
+		if parentCable.childLinkCable != null:
+			parentCable.removeChildCable()
+	elif connPlug.parentCable != null:
+		if connPlug.parentCable.childLinkCable != null:
+			connPlug.parentCable.removeChildCable()
 		
 	connPlug.connPlug = null
 	fixed = false

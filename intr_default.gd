@@ -39,7 +39,9 @@ var can_interact : bool = true
 export (bool) var oneshot = false
 var timer : Timer
 
-
+#used in case multiple items that interact with eachother at once
+#such as with plugs/cables
+var processed = false
 
 func Interact():
 	# If we can't interact, bail
