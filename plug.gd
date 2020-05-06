@@ -111,6 +111,8 @@ func Interact():
 	print(result)
 	print(self)
 	
+	processed = true
+	
 	match result:
 		CONN_RESULT.INCOMPATIBLE, CONN_RESULT.WRONG_TYPE:
 			print("blahhhhh")
@@ -129,7 +131,10 @@ func Interact():
 				dropPlug()
 				connPlug.dropPlug()
 				if (!connPlug.isFixedPort && !isFixedPort):
-					parentCable.addCableChild(connPlug.parentCable)
+					if connPlug.parentCable.parentLinkCable == null:
+						parentCable.addCableChainChild(connPlug.parentCable)
+					elif connPlug.parentCable.childLinkCable == null:
+						connPlug.parentCable.addCableChainChild(parentCable)
 			else:
 				if !isFixedPort:
 					disconnectPlug()
@@ -362,10 +367,9 @@ func disconnectPlug():
 	#disconnect cables if cables are connected
 	if parentCable != null:
 		if parentCable.childLinkCable != null:
-			parentCable.removeChildCable()
-	elif connPlug.parentCable != null:
-		if connPlug.parentCable.childLinkCable != null:
-			connPlug.parentCable.removeChildCable()
+			if connPlug.parentCable != null:
+				if parentCable.childLinkCable == connPlug.parentCable:
+					parentCable.removeChildCable()
 		
 	connPlug.connPlug = null
 	fixed = false
