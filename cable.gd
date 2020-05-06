@@ -459,6 +459,10 @@ func setFixPlug(plug):
 func addCableChainChild(cableNode):
 	for individualCableChain in getUltimateParentCable().cableNodePosDict.keys():
 		individualCableChain.addCableChild(cableNode)
+		individualCableChain.headCable = individualCableChain.redefineHeadCable()
+		individualCableChain.footCable = individualCableChain.redefineFootCable()
+		print("chainloop")
+		print(individualCableChain)
 
 
 func addCableChild(cableNode):
@@ -475,42 +479,49 @@ func addCableChild(cableNode):
 		cableNodePosDict[cnKey] = (cableNode.cableNodePosDict[cnKey])
 	
 	#change this to get th
-	
-	if START_PLUG.connPlug == cableNode.END_PLUG:
+	#print(setgetTotalCableStartPlugPin(false, true, null, true))
+	#print(cableNode.END_PLUG)
+	if setgetTotalCableStartPlugPin(false, true, null, true).connPlug == cableNode.END_PLUG:#START_PLUG.connPlug == cableNode.END_PLUG:
 		print("opt 1")
 		#flip both
+		
+		setgetTotalCableStartPlugPin(true, false, null, true)
+		
 		childLinkCableIsStart = true
 		cableNode.parentLinkCableIsStart = false
 		
+		
+		
 		headCable = cableNode
 		
-		#setgetTotalCableStartPlugPin(true, false, null, true)
-		START_PIN = null
+		
+		#START_PIN = null
 		cableNode.END_PIN = null
 		print(cableNode.pos[0])
 		invertArrays(true, cableNode)
-		#invertPoolVectorArray(cableNode)
-		#print(cableNode.cableNodes[0])
+		
 		appendCableNode(cableNode)
-		#cableNode.pos.invert()
-		#cableNode.posOld.invert()
-		#cableNode.cableNodes.invert()
 			
 		invertArrays(true, cableNode)
 		
 		print(pos[0])
 		#print(cableNode.cableNodes[0].get_global_position())
 		
-	elif START_PLUG.connPlug == cableNode.START_PLUG:
+	elif setgetTotalCableStartPlugPin(false, true, null, true).connPlug == cableNode.START_PLUG:#START_PLUG.connPlug == cableNode.START_PLUG:
 		print("opt 2")
 		#flip this
+		
+		setgetTotalCableStartPlugPin(true, false, null, true)
+		
 		childLinkCableIsStart = true
 		cableNode.parentLinkCableIsStart = true
+		
+		
 		
 		headCable = cableNode
 		
 		#setgetTotalCableStartPlugPin(true, false, null, true)
-		START_PIN = null
+		#START_PIN = null
 		cableNode.START_PIN = null
 		
 		invertArrays(true)
@@ -519,16 +530,20 @@ func addCableChild(cableNode):
 			
 		invertArrays(true)
 	
-	elif END_PLUG.connPlug == cableNode.END_PLUG:
+	elif setgetTotalCableEndPlugPin(false, true, null, true).connPlug == cableNode.END_PLUG:#END_PLUG.connPlug == cableNode.END_PLUG:
 		print("opt 3")
 		#flip cableNode
+		setgetTotalCableEndPlugPin(true, false, null, true)
+		
 		childLinkCableIsStart = false
 		cableNode.parentLinkCableIsStart = false
+		
+		
 		
 		footCable = cableNode
 		
 		#setgetTotalCableEndPlugPin(true, false, null, true)
-		END_PIN = null
+		#END_PIN = null
 		cableNode.END_PIN = null
 		
 		invertArrays(false, cableNode)
@@ -540,16 +555,20 @@ func addCableChild(cableNode):
 		invertArrays(false, cableNode)
 		
 		
-	elif END_PLUG.connPlug == cableNode.START_PLUG:
+	elif setgetTotalCableEndPlugPin(false, true, null, true).connPlug == cableNode.START_PLUG:#END_PLUG.connPlug == cableNode.START_PLUG:
 		print("opt 4")
 		#dont flip
+		setgetTotalCableEndPlugPin(true, false, null, true)
+		
 		childLinkCableIsStart = false
 		cableNode.parentLinkCableIsStart = true
+		
+		
 		
 		footCable = cableNode
 		
 		#setgetTotalCableEndPlugPin(true, false, null, true)
-		END_PIN = null
+		#END_PIN = null
 		cableNode.START_PIN = null
 		
 		appendCableNode(cableNode)
@@ -623,14 +642,14 @@ func setgetTotalCableStartPlugPin(getPin, getter, val = null, forceThisAsHead = 
 	
 	var head = headCable
 	
-	if forceThisAsHead:
-		head = self
+	#if forceThisAsHead:
+	#	head = redefineHeadCable()
 	
 	if head.childLinkCableIsStart != null:
 		if getter:
 			if getPin:
 				return head.END_PIN if head.childLinkCableIsStart else head.START_PIN
-			else: return head.END_PLUG if head.childLinkCableIsStart else head.START_PIN 
+			else: return head.END_PLUG if head.childLinkCableIsStart else head.START_PULG 
 		else:
 			if getPin:
 				if head.childLinkCableIsStart:
@@ -647,7 +666,7 @@ func setgetTotalCableStartPlugPin(getPin, getter, val = null, forceThisAsHead = 
 		if getter:
 			if getPin:
 				return head.END_PIN if head.parentLinkCableIsStart else head.START_PIN
-			else: return head.END_PLUG if head.parentLinkCableIsStart else head.START_PIN 
+			else: return head.END_PLUG if head.parentLinkCableIsStart else head.START_PLUG 
 		else:
 			if getPin:
 				if head.parentLinkCableIsStart:
@@ -674,14 +693,14 @@ func setgetTotalCableEndPlugPin(getPin, getter, val = null, forceThisAsHead = fa
 	
 	var foot = footCable
 	
-	if forceThisAsHead:
-		foot = self
+	#if forceThisAsHead:
+	#	foot = redefineFootCable()
 	
 	if foot.childLinkCableIsStart != null:
 		if getter:
 			if getPin:
 				return foot.END_PIN if foot.childLinkCableIsStart else foot.START_PIN
-			else: return foot.END_PLUG if foot.childLinkCableIsStart else foot.START_PIN 
+			else: return foot.END_PLUG if foot.childLinkCableIsStart else foot.START_PLUG 
 		else:
 			if getPin:
 				if foot.childLinkCableIsStart:
@@ -698,7 +717,7 @@ func setgetTotalCableEndPlugPin(getPin, getter, val = null, forceThisAsHead = fa
 		if getter:
 			if getPin:
 				return foot.END_PIN if foot.parentLinkCableIsStart else foot.START_PIN
-			else: return foot.END_PLUG if foot.parentLinkCableIsStart else foot.START_PIN 
+			else: return foot.END_PLUG if foot.parentLinkCableIsStart else foot.START_PLUG 
 		else:
 			if getPin:
 				if foot.parentLinkCableIsStart:
@@ -799,23 +818,32 @@ func removeChildCable():
 	else:
 		childLinkCable.END_PIN = null
 	
-	headCable = redefineHeadCable()
-	footCable = redefineFootCable()
+
 	
-	childLinkCable.headCable = childLinkCable.redefineHeadCable()
-	childLinkCable.footCable = childLinkCable.redefineFootCable()
+	var childLinkCableTEMP = childLinkCable
 	
 	childLinkCable.parentLinkCableIsStart = null
 	childLinkCable.parentLinkCable = null
 	childLinkCableIsStart = null
 	childLinkCable = null
+	
+	headCable = redefineHeadCable()
+	footCable = redefineFootCable()
+	
+	childLinkCableTEMP.headCable = childLinkCableTEMP.redefineHeadCable()
+	childLinkCableTEMP.footCable = childLinkCableTEMP.redefineFootCable()
 		
 func redefineHeadCable():
 	var posToCompare = pos[0]
 	
 	for c in cableNodePosDict.keys():
-		for i in c.pos.size():
-			if posToCompare == c.cableNodes[i].get_global_position():
+		for i in cableNodePosDict[c].size():
+			if posToCompare == cableNodePosDict[c][i].get_global_position():
+				print("new headCable")
+				print(c.cableNodes[i])
+				print(i)
+				print(c)
+				print(posToCompare)
 				#headCable = c
 				return c
 				
@@ -823,8 +851,13 @@ func redefineFootCable():
 	var posToCompare = pos[pos.size() - 1]
 	
 	for c in cableNodePosDict.keys():
-		for i in c.cableNodes.size():
-			if posToCompare == c.cableNodes[i].get_global_position():
+		for i in cableNodePosDict[c].size():
+			if posToCompare == cableNodePosDict[c][i].get_global_position():
+				print("new footCable")
+				print(c.cableNodes[i])
+				print(i)
+				print(c)
+				print(posToCompare)
 				#footCable = c
 				return c
 	
