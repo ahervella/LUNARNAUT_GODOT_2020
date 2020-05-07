@@ -350,6 +350,7 @@ func disconnectPlug():
 		
 	#disconnect cables if cables are connected
 	if parentCable != null:
+		set_rotation(deg2rad(180))
 		if connPlug.parentCable != null:
 			if parentCable.childLinkCable != null:
 				if parentCable.childLinkCable == connPlug.parentCable:
@@ -362,10 +363,13 @@ func disconnectPlug():
 	connPlug.connPlug = null
 	fixed = false
 	if (connPlug.parentCable != null):
+		connPlug.set_rotation(deg2rad(180))
 		if connPlug.parentCable.START_PLUG == self:
 			connPlug.parentCable.START_PIN = null
 		elif connPlug.parentCable.END_PLUG == self:
 			connPlug.parentCable.END_PIN = null
+		
+		
 			
 	connPlug = null
 	

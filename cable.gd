@@ -60,6 +60,7 @@ func endPlug(val):
 	END_PLUG_SCENE = val
 	if END_PLUG_SCENE != null:
 		END_PLUG = END_PLUG_SCENE.instance()
+		END_PLUG.set_rotation(deg2rad(180))
 		END_PLUG.parentCable = self
 		
 
@@ -303,7 +304,7 @@ func update_distance(delta):
 			pos[i] = parentLinkCable.pos[parentLinkCable.NODE_COUNT -1]
 			pos[i] = parentLinkCable.pos[parentLinkCable.NODE_COUNT -1]
 			cableNodes[i].set_global_position(parentLinkCable.cableNodes[parentLinkCable.NODE_COUNT-1].get_global_position())
-			cableNodes[i].set_rotation(parentLinkCable.cableNodes[parentLinkCable.NODE_COUNT-1].get_rotation())
+			cableNodes[i].look_at(parentLinkCable.cableNodes[parentLinkCable.NODE_COUNT-1].get_global_position())
 			continue
 		
 		if i == NODE_COUNT-1 && childLinkCable == null:
@@ -384,7 +385,7 @@ func applyRotation(i):
 			cableNodes[i].look_at(getCNPos(i+1))
 		return
 	
-	if (i == nodeCount-1 && childLinkCable == null):
+	if (i == NODE_COUNT-1 && childLinkCable == null):
 		if (END_PIN == null):
 			cableNodes[i].look_at(getCNPos(i-1))
 		return
@@ -496,6 +497,13 @@ func addCableChild(cableNode):
 	cableNode.parentLinkCable = self
 	childLinkCable = cableNode
 	
+	cableNode.cableNodes[0].remove_child(cableNode.START_PLUG)
+	cableNodes[NODE_COUNT-1].add_child(cableNode.START_PLUG)
+	cableNode.START_PLUG.set_rotation(deg2rad(180))
+	END_PLUG.set_rotation(0)
+	END_PLUG.set_position(END_PLUG.get_position() - Vector2(END_PLUG.DIST_BETWEEN_PLUGS/2, 0))
+	cableNode.START_PLUG.set_position(cableNode.START_PLUG.get_position() + Vector2(cableNode.START_PLUG.DIST_BETWEEN_PLUGS/2, 0))
+	
 	
 	
 func getUltimateParentCable():
@@ -575,8 +583,17 @@ func reverseSingleCable():
 		posOld[i] = tempPosOld[NODE_COUNT -1 -i]
 	
 func removeChildCable():
+	cableNodes[NODE_COUNT -1].remove_child(childLinkCable.START_PLUG)
+	childLinkCable.cableNodes[0].add_child(childLinkCable.START_PLUG)
+	childLinkCable.START_PLUG.set_rotation(deg2rad(180))
+	childLinkCable.START_PLUG.set_position(Vector2(0, 0))
+	
+	END_PLUG.set_rotation(deg2rad(180))
+	END_PLUG.set_position(Vector2(0, 0))
+	
 	childLinkCable.parentLinkCable = null
 	childLinkCable = null
+
 	
 
 		
