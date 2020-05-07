@@ -27,7 +27,6 @@ export (int, 1, 10, 1) var ROPE_TAUGHTNESS = 1
 export (int) var NODE_COUNT = 60
 var nodeCount = 0
 export (float) var CONSTRAIN = 10
-export (float) var EXTRA_SPRITE_THRESHOLD = 35
 export (float) var CABLE_LENGTH = 4000
 export (Vector2) var GRAVITY = Vector2(0,9.8)
 export (float, 0.6, 1.0, 0.01) var FRICTON = 0.95
@@ -39,22 +38,16 @@ export (bool) var activeInEditor = false setget activateEditor
 export(PackedScene) var test
 
 var parentLinkCable = null
-var parentLinkCableIsStart = null
 var childLinkCable = null
-var childLinkCableIsStart = null
 
-var headCable = self
-var footCable = self
 
-var cableNodePosDict = {}
-
-var extraRenderingSprites = []
 var pos: PoolVector2Array
 var posOld: PoolVector2Array
 var cableNodes = []
 
-var newChild = null
-var parNode = null
+
+var endMonitor = null
+var startMonitor = null
 
 func startPlug(val):
 	START_PLUG_SCENE = val
@@ -128,13 +121,6 @@ func readyDeferred():
 	
 	initShapes()
 	
-	#executes on first frame after ready, seems to only work then
-	#if START_PLUG != null:
-	#	call_deferred("attemptCableConnection", true)
-	
-	#if END_PLUG != null:
-	#	call_deferred("attemptCableConnection", false)
-		
 	readyDone = true
 	
 func initShapes():
@@ -176,9 +162,6 @@ func initShapes():
 				cableNodes[n].add_collision_exception_with(node)
 			collisionExcep(node, cableNodes[n])
 	
-	cableNodePosDict[self] = []
-	for cn in cableNodes:
-		cableNodePosDict[self].append(cn)
 #recursive function for getting all children to also be applied as an exception
 func collisionExcep(node, collideNode):
 	if node.get_child_count() > 0:
@@ -251,10 +234,6 @@ func _physics_process(delta):
 	var prevPos = pos
 	var prevPosOld = posOld
 	
-	#for i in range (extraRenderingSprites.size()):
-	#	remove_child(extraRenderingSprites[i])
-	
-	#extraRenderingSprites.resize(0)
 	
 	
 	update_points(delta)
@@ -272,16 +251,10 @@ func _physics_process(delta):
 	
 	
 	
-	#addExtraSprites()
-	
 	
 	renderLines()
-	#if childLinkCable != null || parentLinkCable != null:
-		#print(setgetTotalCableStartPlugPin(true, true))
-		#print(setgetTotalCableEndPlugPin(true, true))
-		#print(setgetTotalCableStartPlugPin(true, true) == setgetTotalCableEndPlugPin(true, true))
-	#attemptCableConnection(true)
-	#attemptCableConnection(false)
+	#startMonitor = setgetTotalCableStartPlugPin(true, true)
+	#endMonitor = setgetTotalCableEndPlugPin(true, true)
 func getRopeLength():
 	var length = 0
 	for i in range(nodeCount-1):
@@ -292,16 +265,21 @@ func getRopeLength():
 
 func update_points(delta):
 	
-	for i in range (nodeCount):
+	for i in range (NODE_COUNT):
 		
-		if (i == 0 && setgetTotalCableStartPlugPin(true, true) != null):
-			pos[0] = setgetTotalCableStartPlugPin(true, true).get_global_position()
-			posOld[0] = setgetTotalCableStartPlugPin(true, true).get_global_position()
+		if (i == 0 && parentLinkCable != null):
+			pos[0] = parentLinkCable.pos[parentLinkCable.pos.size() -1 ]
+			posOld[0] = parentLinkCable.posOld[parentLinkCable.posOld.size() -1 ]
 			continue
 			
-		if (i==nodeCount-1 && setgetTotalCableEndPlugPin(true, true) != null):
-			pos[nodeCount -1] = setgetTotalCableEndPlugPin(true, true).get_global_position()
-			posOld[nodeCount -1] = setgetTotalCableEndPlugPin(true, true).get_global_position()
+		if (i == 0 && START_PIN != null):
+			pos[0] = START_PIN.get_global_position()
+			posOld[0] = START_PIN.get_global_position()
+			continue
+			
+		if (i==NODE_COUNT-1 && END_PIN != null):
+			pos[NODE_COUNT -1] = END_PIN.get_global_position()
+			posOld[NODE_COUNT -1] = END_PIN.get_global_position()
 			continue
 	
 	
@@ -313,23 +291,42 @@ func update_points(delta):
 		var vec2 = (pos[i] - posOld[i]) * (FRICTON) #+ acc)
 		posOld[i] = pos[i]
 		pos[i] += vec2 + (GRAVITY * delta)
+	
+	if childLinkCable != null:
+		childLinkCable.update_points(delta)
 
 func update_distance(delta):
 	
-	for i in range (nodeCount):
-		if i == nodeCount-1:
+	
+	for i in range (NODE_COUNT):
+		if i == 0 && parentLinkCable != null:
+			pos[i] = parentLinkCable.pos[parentLinkCable.NODE_COUNT -1]
+			pos[i] = parentLinkCable.pos[parentLinkCable.NODE_COUNT -1]
+			cableNodes[i].set_global_position(parentLinkCable.cableNodes[parentLinkCable.NODE_COUNT-1].get_global_position())
+			cableNodes[i].set_rotation(parentLinkCable.cableNodes[parentLinkCable.NODE_COUNT-1].get_rotation())
+			continue
+		
+		if i == NODE_COUNT-1 && childLinkCable == null:
 			applyRotation(i)
 			return
 			
-		var distance = pos[i].distance_to(pos[i+1])
+		var distance = 0
+		if (i == NODE_COUNT -1 && childLinkCable != null):
+			distance = pos[i].distance_to(childLinkCable.pos[1])
+		else:
+			distance = pos[i].distance_to(pos[i+1])
 		if (distance == 0):
 			distance = 0.0001
 		var difference = CONSTRAIN - distance
 		var percent = difference / distance
-		var vec2 = pos[i+1] - pos[i]
+		var vec2 = 0
+		if (i == NODE_COUNT -1 && childLinkCable != null):
+			vec2 = childLinkCable.pos[1] - pos[i]
+		else:
+			vec2 = pos[i+1] - pos[i]
 		
 		if i == 0:
-			if setgetTotalCableStartPlugPin(true, true) != null:
+			if START_PIN != null:
 				pos[i+1] += vec2 * percent
 				applyRotation(i)
 				#continue
@@ -337,15 +334,19 @@ func update_distance(delta):
 				pos[i] -= vec2 * (percent/2)
 				pos[i+1] += vec2 * (percent/2)
 		else:
-			if i+1 == nodeCount-1 && setgetTotalCableEndPlugPin(true, true) != null:
+			if i+1 == nodeCount-1 && END_PIN != null && childLinkCable== null:
 				pos[i] -= vec2 * percent
 			else:
 				pos[i] -= vec2 * (percent/2)
-				pos[i+1] += vec2 * (percent/2)
+				if (i == nodeCount-1 && childLinkCable != null):
+					childLinkCable.pos[1] += vec2 * (percent/2)
+				else:
+					pos[i+1] += vec2 * (percent/2)
 				
 		applyCollisionRestraint(i, delta)
 				
-	
+	if childLinkCable != null:
+		childLinkCable.update_distance(delta)
 	
 func applyCollisionRestraint(i, delta):
 	
@@ -358,30 +359,53 @@ func applyCollisionRestraint(i, delta):
 	cableNodes[i].move_and_slide((target-ogPos)/delta, Vector2( 0, 0 ), false, 16)
 	
 
-	
-	var target2 = pos[i+1]
-	var ogPos2 = getCNPos(i+1)
-	#if ((target2 - ogPos2) != Vector2(0, 0)):
-	var dir2 = (target2 - ogPos2).normalized()
-	cableNodes[i+1].move_and_slide((target2-ogPos2)/delta)
+	if (i == NODE_COUNT -1 && childLinkCable != null):
+		var target2 = childLinkCable.pos[1]
+		var ogPos2 = childLinkCable.getCNPos(1)
+		#if ((target2 - ogPos2) != Vector2(0, 0)):
+		var dir2 = (target2 - ogPos2).normalized()
+		childLinkCable.cableNodes[1].move_and_slide((target2-ogPos2)/delta)
+	else:
+		var target2 = pos[i+1]
+		var ogPos2 = getCNPos(i+1)
+		#if ((target2 - ogPos2) != Vector2(0, 0)):
+		var dir2 = (target2 - ogPos2).normalized()
+		cableNodes[i+1].move_and_slide((target2-ogPos2)/delta)
 	
 	pos[i] = getCNPos(i)
-	pos[i+1] = getCNPos(i+1)
+	if (i == NODE_COUNT-1 && childLinkCable != null):
+		childLinkCable.pos[1] = childLinkCable.getCNPos(1)
+	else:
+		pos[i+1] = getCNPos(i+1)
 	
 func applyRotation(i):
 	if (i == 0):
-		if (setgetTotalCableStartPlugPin(true, true) == null):
+		if (START_PIN == null):
 			cableNodes[i].look_at(getCNPos(i+1))
 		return
 	
-	if (i == nodeCount-1):
-		if (setgetTotalCableEndPlugPin(true, true) == null):
+	if (i == nodeCount-1 && childLinkCable == null):
+		if (END_PIN == null):
 			cableNodes[i].look_at(getCNPos(i-1))
 		return
 	
-	var dist = getCNPos(i-1).distance_to(getCNPos(i+1))
+	var dist = 0
+	if i == NODE_COUNT - 1 && childLinkCable != null:
+		dist = getCNPos(i-1).distance_to(childLinkCable.getCNPos(1))
+	else:
+		dist = getCNPos(i-1).distance_to(getCNPos(i+1))
+		
+	
 	var prevDifVec = getCNPos(i) - getCNPos(i-1)
-	var nextDifVec = getCNPos(i+1) - getCNPos(i)
+	
+	
+	var nextDifVec = 0
+	if i == NODE_COUNT - 1 && childLinkCable != null:
+		nextDifVec = childLinkCable.getCNPos(1) - getCNPos(i)
+	else:
+		nextDifVec = getCNPos(i+1) - getCNPos(i)
+		
+		
 	var avgVect = (prevDifVec + nextDifVec) / 2
 	
 	var acc = dist/ROT_DIST_THRESHOLD
@@ -406,16 +430,15 @@ func applyRotation(i):
 	
 			
 func renderLines():
-	for cn in cableNodePosDict.keys():
-		cn.CABLE_LINE2D.points = []
-		
-		if (cn.DRAW_CABLE_LINE2D && cn.CABLE_LINE2D_PATH != null):
-			var pnts = []
-			for cableNode in cableNodePosDict[cn]:
-				pnts.append(cableNode.get_global_position())
-			cn.CABLE_LINE2D.points = pnts
-		else:
-			cn.CABLE_LINE2D.points = []
+	if (DRAW_CABLE_LINE2D && CABLE_LINE2D != null):
+		CABLE_LINE2D.points = pos
+	else:
+		CABLE_LINE2D.points = []
+	
+	if childLinkCable != null:
+		childLinkCable.renderLines()
+	
+	
 			
 #this part is still in progress
 func attemptCableConnection(startPlug):
@@ -439,10 +462,9 @@ func attemptCableConnection(startPlug):
 				plug.set_global_position(newVect)
 				END_PIN = plug
 	return result
-#left over function from original code I got for nodeCount
-#func get_count(distance: float):
-#	var new_count = ceil(distance / CONSTRAIN)
-#	return distance
+	
+	
+	
 func setFixPlug(plug):
 	var newVect = plug.get_global_position()
 	var isStartPlug = START_PLUG == plug
@@ -456,288 +478,67 @@ func setFixPlug(plug):
 
 
 
-func addCableChainChild(cableNode):
-	for individualCableChain in getUltimateParentCable().cableNodePosDict.keys():
-		individualCableChain.addCableChild(cableNode)
-		individualCableChain.headCable = individualCableChain.redefineHeadCable()
-		individualCableChain.footCable = individualCableChain.redefineFootCable()
-		print("chainloop")
-		print(individualCableChain)
-
 
 func addCableChild(cableNode):
-	print("addCableChild")
+	if START_PLUG.connPlug == cableNode.END_PLUG || START_PLUG.connPlug == cableNode.START_PLUG:
+		
+		cableNode.addCableChild(self)
+		return
+		
+	
+	if END_PLUG.connPlug == cableNode.END_PLUG:
+		cableNode.reverseCable()
+		#cableNode.addCableChild(self)
+				
+	END_PIN = null
+	cableNode.START_PIN = null
+		
 	cableNode.parentLinkCable = self
 	childLinkCable = cableNode
 	
-	print(parentLinkCable)
-	print(childLinkCable)
-	#var ultimatePLC = getUltimateParentCable()
 	
-	#cableNodePosDict[cableNode] = []
-	for cnKey in cableNode.cableNodePosDict.keys():
-		cableNodePosDict[cnKey] = (cableNode.cableNodePosDict[cnKey])
-	
-	#change this to get th
-	#print(setgetTotalCableStartPlugPin(false, true, null, true))
-	#print(cableNode.END_PLUG)
-	if setgetTotalCableStartPlugPin(false, true, null, true).connPlug == cableNode.END_PLUG:#START_PLUG.connPlug == cableNode.END_PLUG:
-		print("opt 1")
-		#flip both
-		
-		setgetTotalCableStartPlugPin(true, false, null, true)
-		
-		childLinkCableIsStart = true
-		cableNode.parentLinkCableIsStart = false
-		
-		
-		
-		headCable = cableNode
-		
-		
-		#START_PIN = null
-		cableNode.END_PIN = null
-		print(cableNode.pos[0])
-		invertArrays(true, cableNode)
-		
-		appendCableNode(cableNode)
-			
-		invertArrays(true, cableNode)
-		
-		print(pos[0])
-		#print(cableNode.cableNodes[0].get_global_position())
-		
-	elif setgetTotalCableStartPlugPin(false, true, null, true).connPlug == cableNode.START_PLUG:#START_PLUG.connPlug == cableNode.START_PLUG:
-		print("opt 2")
-		#flip this
-		
-		setgetTotalCableStartPlugPin(true, false, null, true)
-		
-		childLinkCableIsStart = true
-		cableNode.parentLinkCableIsStart = true
-		
-		
-		
-		headCable = cableNode
-		
-		#setgetTotalCableStartPlugPin(true, false, null, true)
-		#START_PIN = null
-		cableNode.START_PIN = null
-		
-		invertArrays(true)
-		
-		appendCableNode(cableNode)
-			
-		invertArrays(true)
-	
-	elif setgetTotalCableEndPlugPin(false, true, null, true).connPlug == cableNode.END_PLUG:#END_PLUG.connPlug == cableNode.END_PLUG:
-		print("opt 3")
-		#flip cableNode
-		setgetTotalCableEndPlugPin(true, false, null, true)
-		
-		childLinkCableIsStart = false
-		cableNode.parentLinkCableIsStart = false
-		
-		
-		
-		footCable = cableNode
-		
-		#setgetTotalCableEndPlugPin(true, false, null, true)
-		#END_PIN = null
-		cableNode.END_PIN = null
-		
-		invertArrays(false, cableNode)
-		
-		appendCableNode(cableNode)
-		#cableNode.pos.invert()
-		#cableNode.posOld.invert()
-		#cableNode.cableNodes.invert()
-		invertArrays(false, cableNode)
-		
-		
-	elif setgetTotalCableEndPlugPin(false, true, null, true).connPlug == cableNode.START_PLUG:#END_PLUG.connPlug == cableNode.START_PLUG:
-		print("opt 4")
-		#dont flip
-		setgetTotalCableEndPlugPin(true, false, null, true)
-		
-		childLinkCableIsStart = false
-		cableNode.parentLinkCableIsStart = true
-		
-		
-		
-		footCable = cableNode
-		
-		#setgetTotalCableEndPlugPin(true, false, null, true)
-		#END_PIN = null
-		cableNode.START_PIN = null
-		
-		appendCableNode(cableNode)
-		
-	nodeCount = cableNodes.size()
 	
 func getUltimateParentCable():
 	if parentLinkCable != null:
 		return parentLinkCable.getUltimateParentCable()
 	return self
 	
-	
-func invertArrays(invertSelf, cableNode = null):
-	
-	print("invertArrays")
-	if (invertSelf):
-		#pos.invert()
-		#posOld.invert()
-		invertPoolVector2Arrays(self)
-		cableNodes.invert()
-	
-	if (cableNode != null):
-		#cableNode.pos.invert()
-		#cableNode.posOld.invert()
-		invertPoolVector2Arrays(cableNode)
-		cableNode.cableNodes.invert()
-		
-		
-#for what ever reason, invert() does not work on poolVector2Arrays, made my own
-func invertPoolVector2Arrays(cableN):
-	var ogPool = cableN.pos
-	var ogPool2 = cableN.posOld
-	for i in ogPool.size():
-		cableN.pos[i] = ogPool[ogPool.size() - 1 - i]
-		
-	for i in ogPool2.size():
-		cableN.posOld[i] = ogPool2[ogPool2.size() - 1 - i] 
-
-
-
-func appendCableNode(cableNode):
-	#var ultimatePLC = getUltimateParentCable()
-	
-	print("appendCableNode")
-	for i in cableNode.pos.size():
-		if i == 0: continue
-		pos.append(cableNode.pos[i])
-			
-	for j in cableNode.posOld.size():
-		if j == 0: continue
-		posOld.append(cableNode.posOld[j])
-		
-	for k in cableNode.cableNodes.size():
-		if k == 0:
-			newChild = cableNode.cableNodes[k]
-			cableNode.remove_child(cableNode.cableNodes[k])
-			parNode = cableNodes[cableNodes.size() - 1]
-			#newChild.set_global_position(parNode.get_global_position())
-			parNode.add_child(newChild)
-			newChild.set_position(Vector2(0, 0))
-			continue
-		cableNodes.append(cableNode.cableNodes[k])
-	
 
 
 #below are two functions that are custom getters and setters for the plugs or pins
 #which are needed inorder to get the correct plug or pin when cables are connected
-#need to optimize using this in process in the cables so it only sets a new plug or pin
-#for the overall cable when things connect or disconnect
-func setgetTotalCableStartPlugPin(getPin, getter, val = null, forceThisAsHead = false):
+func setgetTotalCableStartPlugPin(getPin, getter, val = null):
 	
-	var head = headCable
 	
-	#if forceThisAsHead:
-	#	head = redefineHeadCable()
+	var ultimatePLC = getUltimateParentCable()
 	
-	if head.childLinkCableIsStart != null:
-		if getter:
-			if getPin:
-				return head.END_PIN if head.childLinkCableIsStart else head.START_PIN
-			else: return head.END_PLUG if head.childLinkCableIsStart else head.START_PULG 
-		else:
-			if getPin:
-				if head.childLinkCableIsStart:
-					head.END_PIN = val
-				else: head.START_PIN = val
-				return
-			else:
-				if head.childLinkCableIsStart:
-					head.END_PLUG = val
-				else: head.START_PLUG = val
-				return
-				
-	if head.parentLinkCableIsStart != null:
-		if getter:
-			if getPin:
-				return head.END_PIN if head.parentLinkCableIsStart else head.START_PIN
-			else: return head.END_PLUG if head.parentLinkCableIsStart else head.START_PLUG 
-		else:
-			if getPin:
-				if head.parentLinkCableIsStart:
-					head.END_PIN = val
-				else: head.START_PIN = val
-				return
-			else:
-				if head.parentLinkCableIsStart:
-					head.END_PLUG = val
-				else: head.START_PLUG = val
-				return
-				
-	# if only one cable entire cable chain, just get the start pin/plug
+	
 	if getter:
-		if getPin: return head.START_PIN
-		else: return head.START_PLUG
-		
+		return ultimatePLC.START_PIN if getPin else ultimatePLC.START_PLUG
 	else:
-		if getPin: head.START_PIN = val
-		else: head.START_PLUG = val
-	
-	
-func setgetTotalCableEndPlugPin(getPin, getter, val = null, forceThisAsHead = false):
-	
-	var foot = footCable
-	
-	#if forceThisAsHead:
-	#	foot = redefineFootCable()
-	
-	if foot.childLinkCableIsStart != null:
-		if getter:
-			if getPin:
-				return foot.END_PIN if foot.childLinkCableIsStart else foot.START_PIN
-			else: return foot.END_PLUG if foot.childLinkCableIsStart else foot.START_PLUG 
+		if getPin:
+			ultimatePLC.START_PIN = val
 		else:
-			if getPin:
-				if foot.childLinkCableIsStart:
-					foot.END_PIN = val
-				else: foot.START_PIN = val
-				return
-			else:
-				if foot.childLinkCableIsStart:
-					foot.END_PLUG = val
-				else: foot.START_PLUG = val
-				return
-				
-	if foot.parentLinkCableIsStart != null:
-		if getter:
-			if getPin:
-				return foot.END_PIN if foot.parentLinkCableIsStart else foot.START_PIN
-			else: return foot.END_PLUG if foot.parentLinkCableIsStart else foot.START_PLUG 
-		else:
-			if getPin:
-				if foot.parentLinkCableIsStart:
-					foot.END_PIN = val
-				else: foot.START_PIN = val
-				return
-			else:
-				if foot.parentLinkCableIsStart:
-					foot.END_PLUG = val
-				else: foot.START_PLUG = val
-				return
-				
-	# if only one cable entire cable chain, just get the end pin/plug
+			ultimatePLC.START_PLUG = val
+		return
+	
+	
+	
+	
+func setgetTotalCableEndPlugPin(getPin, getter, val = null):
+	
+	var ultimateCLC = getUltimateChildCable()
+	
 	if getter:
-		if getPin: return foot.END_PIN
-		else: return foot.END_PLUG
-		
+		return ultimateCLC.END_PIN if getPin else ultimateCLC.END_PLUG
 	else:
-		if getPin: foot.END_PIN = val
-		else: foot.END_PLUG = val
+		if getPin:
+			ultimateCLC.END_PIN = val
+		else:
+			ultimateCLC.END_PLUG = val
+		return
+	
+	
 	
 	
 func getUltimateChildCable():
@@ -746,118 +547,45 @@ func getUltimateChildCable():
 		
 	return self
 	
+#func removeChildCableFromChain():
+func reverseCable():
+	getUltimateParentCable().reverseSingleCable()
+	
+func reverseSingleCable():
+	var tempSTART_PLUG = START_PLUG
+	var tempSTART_PIN = START_PIN
+	
+	START_PLUG = END_PLUG
+	START_PIN = END_PIN
+	END_PLUG = tempSTART_PLUG
+	END_PIN = tempSTART_PIN
+	
+	var tempChildLinkCable = childLinkCable
+	childLinkCable = parentLinkCable
+	parentLinkCable = tempChildLinkCable
+	
+	if parentLinkCable != null:
+		parentLinkCable.reverseSingleCable()
+		
+	cableNodes.invert()
+	var tempPos = pos
+	var tempPosOld = posOld
+	for i in NODE_COUNT:
+		pos[i] = tempPos[NODE_COUNT -1 -i]
+		posOld[i] = tempPosOld[NODE_COUNT -1 -i]
+	
 func removeChildCable():
-	#var ultimatePLC = getUltimateParentCable()
-	
-	print("removedChildCable")
-	var blah = newChild.get_global_position()
-	parNode.remove_child(newChild)
-	newChild.set_global_position(blah)
-	childLinkCable.add_child(newChild)
-		
-	parNode = null
-	newChild = null
-	
-	
-	for i in childLinkCable.cableNodes.size():
-		
-		if childLinkCable.parentLinkCableIsStart:
-			if i == 0: continue
-		else:
-			if i == childLinkCable.pos.size() - 1: continue
-			
-		for ii in pos.size():
-			if pos[ii] == childLinkCable.cableNodes[i].get_global_position():
-				pos.remove(ii)
-				posOld.remove(ii)
-				break
-			
-#	for j in childLinkCable.cableNodes.size():
-#
-#		if childLinkCable.parentLinkCableIsStart:
-#			if j == 0: continue
-#		else:
-#			if j == childLinkCable.posOld.size() - 1: continue
-#
-#
-#		for jj in posOld.size():
-#			if posOld[jj] == childLinkCable.cableNodes[j].get_global_position():
-#				posOld.remove(jj)
-#				break
-		
-	for k in childLinkCable.cableNodes.size():
-		
-		if childLinkCable.parentLinkCableIsStart:
-			if k == 0: continue
-		else:
-			if k == childLinkCable.cableNodes.size() - 1: continue
-		
-		for kk in cableNodes.size():
-			if cableNodes[kk] == childLinkCable.cableNodes[k]:
-				cableNodes.remove(kk)
-				break
-				
-	#minus 1 here because they shared one point when they were connected
-	#(aka, if each was OG 60 nodes, connected total was 119)
-	nodeCount -= childLinkCable.cableNodes.size() - 1
-	
-	for cnKey in childLinkCable.cableNodePosDict.keys():
-		cableNodePosDict.erase(cnKey)
-				
-	for i in childLinkCable.cableNodes.size():
-		childLinkCable.pos[i] = childLinkCable.cableNodes[i].get_global_position()
-		childLinkCable.posOld[i] = childLinkCable.cableNodes[i].get_global_position()
-				
-	if (childLinkCableIsStart):
-		START_PIN = null
-	else:
-		END_PIN = null
-		
-	if (childLinkCable.parentLinkCableIsStart):
-		childLinkCable.START_PIN = null
-	else:
-		childLinkCable.END_PIN = null
-	
-
-	
-	var childLinkCableTEMP = childLinkCable
-	
-	childLinkCable.parentLinkCableIsStart = null
 	childLinkCable.parentLinkCable = null
-	childLinkCableIsStart = null
 	childLinkCable = null
 	
-	headCable = redefineHeadCable()
-	footCable = redefineFootCable()
-	
-	childLinkCableTEMP.headCable = childLinkCableTEMP.redefineHeadCable()
-	childLinkCableTEMP.footCable = childLinkCableTEMP.redefineFootCable()
+
 		
-func redefineHeadCable():
-	var posToCompare = pos[0]
 	
-	for c in cableNodePosDict.keys():
-		for i in cableNodePosDict[c].size():
-			if posToCompare == cableNodePosDict[c][i].get_global_position():
-				print("new headCable")
-				print(c.cableNodes[i])
-				print(i)
-				print(c)
-				print(posToCompare)
-				#headCable = c
-				return c
-				
-func redefineFootCable():
-	var posToCompare = pos[pos.size() - 1]
 	
-	for c in cableNodePosDict.keys():
-		for i in cableNodePosDict[c].size():
-			if posToCompare == cableNodePosDict[c][i].get_global_position():
-				print("new footCable")
-				print(c.cableNodes[i])
-				print(i)
-				print(c)
-				print(posToCompare)
-				#footCable = c
-				return c
+	
+	
+	
+	
+	
+	
 	
