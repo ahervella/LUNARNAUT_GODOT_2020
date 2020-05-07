@@ -25,10 +25,10 @@ export (Array, NodePath) var PHYS_EXCEP = []
 
 export (int, 1, 10, 1) var ROPE_TAUGHTNESS = 1
 export (int) var NODE_COUNT = 60
-var nodeCount = 0
 export (float) var CONSTRAIN = 10
 export (float) var CABLE_LENGTH = 4000
 export (Vector2) var GRAVITY = Vector2(0,9.8)
+var gravity = 0
 export (float, 0.6, 1.0, 0.01) var FRICTON = 0.95
 export (float) var ROT_DIST_THRESHOLD = 28
 
@@ -101,7 +101,6 @@ func readyDeferred():
 	if Engine.editor_hint && !activeInEditor:
 		return
 		
-	nodeCount = NODE_COUNT
 	
 	removeAllChildren()
 	
@@ -125,7 +124,7 @@ func readyDeferred():
 	readyDone = true
 	
 func initShapes():
-	for n in range(nodeCount):
+	for n in range(NODE_COUNT):
 		cableNodes.append(CABLE_NODE.instance())
 		if (!CABLE_NODE_SPRITE):
 			cableNodes[n].setCableNodeSprite(CABLE_NODE_SPRITE)
@@ -138,13 +137,13 @@ func initShapes():
 			if START_PLUG != null:
 				cableNodes[n].add_child(START_PLUG)
 			
-		if (n == nodeCount - 1):
+		if (n == NODE_COUNT - 1):
 			if END_PLUG != null:
 				cableNodes[n].add_child(END_PLUG)
 		
 	#prevent parts of cable from colliding with eachother
-	for n in range (nodeCount):
-		for k in range (nodeCount):
+	for n in range (NODE_COUNT):
+		for k in range (NODE_COUNT):
 			if (n == k):
 				pass
 			cableNodes[n].add_collision_exception_with(cableNodes[k])
@@ -186,12 +185,12 @@ func resize_arrays():
 	pos.resize(0)
 	
 	#resize
-	pos.resize(nodeCount)
-	posOld.resize(nodeCount)
+	pos.resize(NODE_COUNT)
+	posOld.resize(NODE_COUNT)
 
 func init_position():
 	
-	for i in range(nodeCount):
+	for i in range(NODE_COUNT):
 		if (i == 0):
 			var startPos = get_global_position()
 			if (START_PIN != null):
@@ -202,15 +201,15 @@ func init_position():
 			pos[i] = startPos
 			posOld[i] = startPos
 		
-		elif (i == nodeCount - 1):
+		elif (i == NODE_COUNT - 1):
 			var endPos = get_global_position() + Vector2(400, 0)
 			if (END_PIN != null):
 				endPos = END_PIN.get_global_position()
 				if (END_PIN_REF_ONLY && !Engine.editor_hint):
 					END_PIN = null
 				
-			pos[nodeCount - 1] = endPos
-			posOld[nodeCount - 1] = endPos
+			pos[NODE_COUNT - 1] = endPos
+			posOld[NODE_COUNT - 1] = endPos
 		
 		else:
 			pos[i] = position + Vector2(CONSTRAIN *i, 0) + pos[0]
@@ -227,6 +226,8 @@ func init_position():
 func _physics_process(delta):
 	if !readyDone || parentLinkCable != null:
 		return
+	
+	gravity = GRAVITY.rotated(global.gravRadAngFromNorm) * global.gravMag
 	
 	#execute in editor if activeInEditor (will execute in game regardless)
 	if Engine.editor_hint && !activeInEditor:
@@ -247,7 +248,7 @@ func _physics_process(delta):
 		pos = prevPos
 		posOld = prevPosOld
 		
-		for i in range(nodeCount):
+		for i in range(NODE_COUNT):
 			setCNPos(i, pos[i])
 	
 	
@@ -258,7 +259,7 @@ func _physics_process(delta):
 	#endMonitor = setgetTotalCableEndPlugPin(true, true)
 func getRopeLength():
 	var length = 0
-	for i in range(nodeCount-1):
+	for i in range(NODE_COUNT-1):
 		length += getCNPos(i).distance_to(getCNPos(i+1))
 	return length
 	
@@ -291,7 +292,7 @@ func update_points(delta):
 	
 		var vec2 = (pos[i] - posOld[i]) * (FRICTON) #+ acc)
 		posOld[i] = pos[i]
-		pos[i] += vec2 + (GRAVITY * delta)
+		pos[i] += vec2 + (gravity * delta)
 	
 	if childLinkCable != null:
 		childLinkCable.update_points(delta)
@@ -335,11 +336,11 @@ func update_distance(delta):
 				pos[i] -= vec2 * (percent/2)
 				pos[i+1] += vec2 * (percent/2)
 		else:
-			if i+1 == nodeCount-1 && END_PIN != null && childLinkCable== null:
+			if i+1 == NODE_COUNT-1 && END_PIN != null && childLinkCable== null:
 				pos[i] -= vec2 * percent
 			else:
 				pos[i] -= vec2 * (percent/2)
-				if (i == nodeCount-1 && childLinkCable != null):
+				if (i == NODE_COUNT-1 && childLinkCable != null):
 					childLinkCable.pos[1] += vec2 * (percent/2)
 				else:
 					pos[i+1] += vec2 * (percent/2)

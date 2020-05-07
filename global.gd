@@ -25,6 +25,9 @@ var controls_enabled
 var can_reset
 var playTest
 var astroDead
+var gravMag
+var gravRadAng
+var gravRadAngFromNorm
 
 #
 func _ready():
@@ -36,7 +39,10 @@ func init():
 	can_reset = false
 	astroDead = false
 	
-
+	gravMag = 1
+	#remember y is flipped
+	gravRadAng = deg2rad(90)
+	gravRadAngFromNorm = deg2rad(0)
 	playTest = true
 	
 	
@@ -139,4 +145,9 @@ func InteractInterfaceCheck(var interactObj):
 		push_error("Interact item missing 'AutoCloseInteract'")
 		
 			
-	
+func changeGrav(mag = 1, degFromNorm = 0, time = 2):
+	newTween(self, "gravMag", gravMag, mag, time, 0)
+	newTween(self, "gravRadAng", gravRadAng, deg2rad(degFromNorm + 90), time, 0)
+	newTween(self, "gravRadAngFromNorm", gravRadAngFromNorm, deg2rad(degFromNorm), time, 0)
+func gravVect():
+	return Vector2(cos(gravRadAng), sin(gravRadAng))

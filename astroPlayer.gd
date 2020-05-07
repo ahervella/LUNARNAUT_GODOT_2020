@@ -28,11 +28,12 @@ export (bool) var showBlackBG = true setget showBlackBGSetter
 export (bool) var enableShadows = true setget enableShadowsSetter
 
 var vel = Vector2()
+var velFinal = Vector2()
 var max_move_speed = 200
 var TERMINAL_VEL = 200
 var directional_force = Vector2()
 const GRAVITY = 3
-
+var gravity = 0
 var groundedBubble = true
 
 #used so that when multiple shapes enter or exit, can keep track
@@ -164,6 +165,10 @@ func _physics_process(delta):
 	#only execute in game
 	if Engine.editor_hint:
 		return
+	
+	gravity = GRAVITY * global.gravMag
+		
+	set_rotation(global.gravRadAng - deg2rad(90))
 		
 	#here may at somepoint choose to have landing ground bool by if_on_ground again so that
 	#shit snaps and doesn't skip past platform?
@@ -178,7 +183,7 @@ func _physics_process(delta):
 
 	ApplyMovement(delta)
 	
-	vel.y += delta * 60 * GRAVITY
+	vel.y += delta * 60 * gravity
 
 	#this method allows for proper physics feel when launched in air
 	#and for different max speeds & accels on ground and in air
@@ -201,8 +206,11 @@ func _physics_process(delta):
 	#	vel = move_and_slide_with_snap(vel, Vector2(0, 0), Vector2.UP, false, 4, deg2rad(120), false)
 	#else:
 		#vel = move_and_slide_with_snap(vel, Vector2(0, 1), Vector2.UP, false, 4, deg2rad(120), false)
-	vel = move_and_slide(vel, Vector2.UP, 5, 4, deg2rad(30))#(vel, Vector2(0, 1), Vector2.UP, false, 4, deg2rad(120), false)
+	velFinal = vel.rotated(global.gravRadAng - deg2rad(90))
 	
+	velFinal = move_and_slide(velFinal, global.gravVect() * -1, 5, 4, deg2rad(30))#(vel, Vector2(0, 1), Vector2.UP, false, 4, deg2rad(120), false)
+	#vel = move_and_slide(vel, Vector2.UP, 5, 4, deg2rad(30))#(vel, Vector2(0, 1), Vector2.UP, false, 4, deg2rad(120), false)
+	vel = velFinal.rotated((global.gravRadAng - deg2rad(90))* -1)
 
 func ApplyMovement(delta):
 	#governs direction of buttons being pressed. Mostly used for
@@ -353,7 +361,11 @@ func MoveCameraAndInteracText():
 	var astroPos = get_global_position() 
 	var textOffset = INTERACT_TEXT_NODE.totalOffset
 	
-	CAMERA_NODE.set_global_position(Vector2(astroPos.x + (CAMERA_OFFSET * directional_force.x), astroPos.y))
+	var rotatedDirForce = Vector2(directional_force.x, 0).rotated(global.gravRadAng - deg2rad(90))
+	
+	
+	CAMERA_NODE.set_global_position(astroPos + CAMERA_OFFSET * rotatedDirForce)
+	#CAMERA_NODE.set_global_position(Vector2(astroPos.x + (CAMERA_OFFSET * directional_force.x), astroPos.y))
 	
 	if (INTERACT_TEXT_NODE.fixedOffset):
 		var lastItemFoundPos = currItemsGlobalPosDict[currItems[currItems.size()-1]]
