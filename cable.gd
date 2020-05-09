@@ -43,8 +43,12 @@ var childLinkCable = null
 
 var pos: PoolVector2Array
 var posOld: PoolVector2Array
+var prevPos : PoolVector2Array
+var prevPosOld : PoolVector2Array
 var cableNodes = []
 
+var tempStartNodePos
+var tempEndNodePos
 
 var endMonitor = null
 var startMonitor = null
@@ -233,23 +237,24 @@ func _physics_process(delta):
 	if Engine.editor_hint && !activeInEditor:
 		return
 	
-	var prevPos = pos
-	var prevPosOld = posOld
-	
-	
+	tempStartNodePos = pos[0]
+	tempEndNodePos = getUltimateChildCable().pos[pos.size() -1]#END_PIN.get_global_position()
 	
 	update_points(delta)
 	
 	for i in range(ROPE_TAUGHTNESS):
 		update_distance(delta)
 	
+	ropeLengthLimit(delta)
 	
-	if (getRopeLength() > CABLE_LENGTH):
-		pos = prevPos
-		posOld = prevPosOld
+#	if (getRopeLength() > CABLE_LENGTH):
+#		pos = prevPos
+#		posOld = prevPosOld
+#
+#		for i in range(NODE_COUNT):
+#			setCNPos(i, pos[i])
+			
 		
-		for i in range(NODE_COUNT):
-			setCNPos(i, pos[i])
 	
 	
 	
@@ -257,15 +262,74 @@ func _physics_process(delta):
 	renderLines()
 	#startMonitor = setgetTotalCableStartPlugPin(true, true)
 	#endMonitor = setgetTotalCableEndPlugPin(true, true)
+func ropeLengthLimit(delta):
+	
+	var head = getUltimateParentCable()
+	var ropeLength = head.getRopeLength()
+	var resLength = head.getTotalRestrictedLength()
+	var ultimateCC = getUltimateChildCable()
+	if ropeLength > resLength:
+		var diff = ropeLength - resLength
+		var astro = global.lvl().astroNode
+		if START_PIN == astro:
+			#print("wooooop1111")
+			var diffVect = astro.get_global_position() - tempStartNodePos
+			diffVect = diffVect.normalized() * diff
+			astro.restrictAndMove2Point = tempStartNodePos - diffVect
+			update_points(delta)
+	
+			for i in range(ROPE_TAUGHTNESS):
+				update_distance(delta)
+			
+			
+			return
+		
+		
+		elif ultimateCC.END_PIN == astro:
+			#print("wooooop222")
+			var diffVect = astro.get_global_position() - tempEndNodePos
+			diffVect = diffVect.normalized() * diff
+			astro.restrictAndMove2Point = (tempEndNodePos - diffVect)
+			update_points(delta)
+	
+			for i in range(ROPE_TAUGHTNESS):
+				update_distance(delta)
+			return
+		#resetToPrevFrame()
+	
+func getTotalRestrictedLength():
+	var resLength = CABLE_LENGTH
+	
+	if childLinkCable != null:
+		resLength += childLinkCable.getTotalRestrictedLength()
+	
+	return resLength
+	
 func getRopeLength():
 	var length = 0
 	for i in range(NODE_COUNT-1):
 		length += getCNPos(i).distance_to(getCNPos(i+1))
+		
+	if childLinkCable != null:
+		length += childLinkCable.getRopeLength()
+	
 	return length
 	
-
+func resetToPrevFrame():
+	pos = prevPos
+	posOld = prevPosOld
+		
+	for i in range(NODE_COUNT):
+		setCNPos(i, pos[i])
+		
+	if childLinkCable != null:
+		childLinkCable.resetToPrevFrame()
 
 func update_points(delta):
+	prevPos = pos
+	prevPosOld = posOld
+	
+	
 	
 	for i in range (NODE_COUNT):
 		
@@ -482,13 +546,17 @@ func setFixPlug(plug):
 
 
 func addCableChild(cableNode):
-	if START_PLUG.connPlug == cableNode.END_PLUG || START_PLUG.connPlug == cableNode.START_PLUG:
-		
+	if START_PLUG.connPlug == cableNode.END_PLUG:# || START_PLUG.connPlug == cableNode.START_PLUG:
+		#there was a stack overflow in the code here:
 		cableNode.addCableChild(self)
 		return
 		
+	if START_PLUG.connPlug == cableNode.START_PLUG:
+		reverseCable()
+		#cableNode.reverseCable()
+		
 	
-	if END_PLUG.connPlug == cableNode.END_PLUG:
+	elif END_PLUG.connPlug == cableNode.END_PLUG:
 		cableNode.reverseCable()
 		#cableNode.addCableChild(self)
 				

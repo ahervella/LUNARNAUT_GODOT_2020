@@ -144,10 +144,13 @@ func InteractInterfaceCheck(var interactObj):
 	if (!interactObj.has_method('AutoCloseInteract')):
 		push_error("Interact item missing 'AutoCloseInteract'")
 		
-			
+		
+#this is what is used to change overall gravity
 func changeGrav(mag = 1, degFromNorm = 0, time = 2):
 	newTween(self, "gravMag", gravMag, mag, time, 0)
 	newTween(self, "gravRadAng", gravRadAng, deg2rad(degFromNorm + 90), time, 0)
 	newTween(self, "gravRadAngFromNorm", gravRadAngFromNorm, deg2rad(degFromNorm), time, 0)
+
+#returns the gravity vector
 func gravVect():
 	return Vector2(cos(gravRadAng), sin(gravRadAng))

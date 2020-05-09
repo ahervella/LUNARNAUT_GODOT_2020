@@ -52,6 +52,10 @@ const DEFAULT_JUMP_FORCE = -150
 # var jumpForce = CharacterRes.baseJump
 var jumpForce = 0
 
+#used to restrict astro horizontal movement from cables
+var restrictAndMove2Point = null
+var restrictMovingRight = null
+
 #once on the ground and health depleted, goes true
 var dead = false
 #used just to know if astro was still on the ground
@@ -183,6 +187,7 @@ func _physics_process(delta):
 
 	ApplyMovement(delta)
 	
+	
 	vel.y += delta * 60 * gravity
 
 	#this method allows for proper physics feel when launched in air
@@ -208,9 +213,24 @@ func _physics_process(delta):
 		#vel = move_and_slide_with_snap(vel, Vector2(0, 1), Vector2.UP, false, 4, deg2rad(120), false)
 	velFinal = vel.rotated(global.gravRadAng - deg2rad(90))
 	
-	velFinal = move_and_slide(velFinal, global.gravVect() * -1, 5, 4, deg2rad(30))#(vel, Vector2(0, 1), Vector2.UP, false, 4, deg2rad(120), false)
-	#vel = move_and_slide(vel, Vector2.UP, 5, 4, deg2rad(30))#(vel, Vector2(0, 1), Vector2.UP, false, 4, deg2rad(120), false)
-	vel = velFinal.rotated((global.gravRadAng - deg2rad(90))* -1)
+	var velFinal2 = velFinal
+	if restrictAndMove2Point != null:
+		velFinal2 =  restrictAndMove2Point - restrictAndMove2Point.normalized() * 20 - get_global_position()# + (restrictAndMove2Point.normalized() * 200) - get_global_position()
+		restrictAndMove2Point = null
+		if directional_force.x > 0:
+			restrictMovingRight = true
+		elif directional_force.x  < 0:
+			restrictMovingRight = false
+	
+	if (restrictAndMove2Point == null):
+		velFinal = move_and_slide(velFinal2, global.gravVect() * -1, 5, 4, deg2rad(30))#(vel, Vector2(0, 1), Vector2.UP, false, 4, deg2rad(120), false)
+		#vel = move_and_slide(vel, Vector2.UP, 5, 4, deg2rad(30))#(vel, Vector2(0, 1), Vector2.UP, false, 4, deg2rad(120), false)
+		vel = velFinal.rotated((global.gravRadAng - deg2rad(90))* -1)
+		
+	#so that restrictAndMove2Point does not get transformed by change in gravity
+	else:
+		vel = move_and_slide(velFinal2, global.gravVect() * -1, 5, 4, deg2rad(30))
+		
 
 func ApplyMovement(delta):
 	#governs direction of buttons being pressed. Mostly used for
@@ -223,6 +243,7 @@ func ApplyMovement(delta):
 	MoveJump(delta)
 	InteractCheck()
 	MoveCameraAndInteracText()
+	RestrictFromRope()
 
 func ApplyInput():
 	
@@ -231,12 +252,15 @@ func ApplyInput():
 	if(!global.controls_enabled):
 		return
 	
-	
+	#print(restrictMovingRight)
 	if(Input.is_action_pressed("ui_right") || TOUCH_CONTROL_NODE.stickDir.x > 0): #or vJoy == 1):
 		directional_force += DIRECTION.RIGHT
 
 	if(Input.is_action_pressed("ui_left") || TOUCH_CONTROL_NODE.stickDir.x < 0): #or vJoy == -1):
 		directional_force += DIRECTION.LEFT
+
+	#if directional_force.x == 0:
+		#restrictMovingRight = null
 
 	#For testing astro death
 	if(Input.is_action_pressed("ui_down") && !global.playTest):
@@ -374,6 +398,27 @@ func MoveCameraAndInteracText():
 		
 	INTERACT_TEXT_NODE.set_global_position(astroPos + textOffset)
 	
+	
+	
+func RestrictFromRope():
+	if restrictMovingRight == null: return
+	
+	
+	var dirForceTempX = directional_force.x
+	
+	if directional_force.x == 0:
+		restrictMovingRight = null
+		
+	if (directional_force.x < 0 && restrictMovingRight) || (directional_force.x > 0 && !restrictMovingRight):
+		restrictMovingRight = null
+			
+	
+	if restrictMovingRight:
+		directional_force.x = clamp(directional_force.x, -1, 0)
+	elif !restrictMovingRight:
+		directional_force.x = clamp(directional_force.x, 0, 1)
+	
+		
 #****************SUIT LIGHT / HEALTH CONTROLLER***************:
 	
 #color codes used for astro suit
@@ -716,6 +761,7 @@ func _on_groundBubble_body_entered(body):
 		solidBodyCount += 1
 		
 		groundedBubble = true
+		restrictMovingRight = null
 		
 		if (preDeath):
 			InitDeath()
