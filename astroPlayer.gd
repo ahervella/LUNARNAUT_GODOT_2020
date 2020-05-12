@@ -98,6 +98,8 @@ func _ready():
 	#need this so that anywhere an interact references the interactNode,
 	#the location is based off only one place here in the astro node
 	global.interactNode = INTERACT_TEXT_NODE
+	#global.interactNodes.clear()
+	#global.interactNodes.append(INTERACT_TEXT_NODE)
 	
 	if (global.CharacterRes != null):
 		CHARACTER_RES = global.CharacterRes
@@ -383,7 +385,7 @@ func InteractCheck():
 func MoveCameraAndInteracText():
 	
 	var astroPos = get_global_position() 
-	var textOffset = INTERACT_TEXT_NODE.totalOffset
+	#var textOffset = INTERACT_TEXT_NODE.totalOffset
 	
 	var rotatedDirForce = Vector2(directional_force.x, 0).rotated(global.gravRadAng - deg2rad(90))
 	
@@ -391,12 +393,17 @@ func MoveCameraAndInteracText():
 	CAMERA_NODE.set_global_position(astroPos + CAMERA_OFFSET * rotatedDirForce)
 	#CAMERA_NODE.set_global_position(Vector2(astroPos.x + (CAMERA_OFFSET * directional_force.x), astroPos.y))
 	
-	if (INTERACT_TEXT_NODE.fixedOffset):
-		var lastItemFoundPos = currItemsGlobalPosDict[currItems[currItems.size()-1]]
-		INTERACT_TEXT_NODE.set_global_position(lastItemFoundPos + textOffset)
-		return
-		
-	INTERACT_TEXT_NODE.set_global_position(astroPos + textOffset)
+	global.interactNode.set_global_position(astroPos + global.interactNode.totalOffset)
+	
+	for interNode in global.interactNodes:
+		if interNode == null: continue
+		#print("worked")
+		if (interNode.fixedOffset):
+			interNode.set_global_position(currItemsGlobalPosDict[interNode] + interNode.totalOffset)
+			continue
+		#print(interNode.totalOffset)
+		interNode.set_position(astroPos + interNode.totalOffset)
+		#print(interNode.get_position())
 	
 	
 	
@@ -435,6 +442,7 @@ var BLINK_FAST  = 0.5
 var blink_time = BLINK_SLOW
 
 var timer
+var timerUniqueID
 var timer_seq = true
 
 
@@ -578,7 +586,7 @@ func flipCheck(ac):
 #TODO: switch to base class timer
 func timer_reset():
 	
-	if(is_instance_valid(timer) && timer.is_class("Timer")):
+	if(is_instance_valid(timer) && timer.is_class("Timer") && timerUniqueID == timer.to_string()):
 		timer.stop()
 		timer.call_deferred('free')
 	else:
@@ -593,7 +601,7 @@ func timer_reset():
 #	timer.start()
 
 	timer = global.newTimer(blink_time, funcref(self, "on_timeout_complete"))
-	
+	timerUniqueID = timer.to_string()
 	#global.newTimer(blink_time)
 	#on_timeout_complete()
 
@@ -776,8 +784,8 @@ func _on_groundBubble_body_exited(body):
 	
 
 func _on_Item_check_area_entered(area):
-	#print("astoooo: shit entered")
-	#print(get_groups())
+	print("astoooo: shit entered")
+	print(area.get_groups())
 	if (area.get_groups().has("interact")):
 		var newItem = area.get_parent()
 		currItems.append(newItem)
@@ -797,10 +805,13 @@ func _on_Item_check_area_entered(area):
 
 
 func _on_Item_check_area_exited(area):
+	print("_on_Item_check_area_exited")
 	if(area.get_groups().has("interact")):
 		var exitingItem = area.get_parent()
 		#do virtual interface check
 		global.InteractInterfaceCheck(exitingItem)
+		#print("useNextInterNodeIfNeeded")
+		#print(exitingItem.useNextInterNodeIfNeeded)
 		exitingItem.AutoCloseInteract()
 		currItems.erase(exitingItem)
 		#currItem = null

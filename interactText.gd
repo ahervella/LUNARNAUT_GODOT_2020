@@ -24,8 +24,9 @@ extends RichTextLabel
 #have to be careful about cleaning up
 
 var blink = true
-var currentText
+var currentText = ""
 var timer
+var timerUniqueID
 
 #default time for text to type
 const TYPE_TEXT_TIME = 0.5
@@ -35,18 +36,44 @@ const REMOVE_TEXT_TIME = 0.2
 const POS_OFFSET = Vector2(44, -15)
 const LOCAL_SIZE = Vector2(125, 116)
 
+#horizontal offset used if there are multiple interactNodes
+#being used
+var multiInterNodeOffset = 0
+
+#is overriden if multiple interactNodes in use so that
+#all are aligned on one side
+var overrideFlip = null
+
+#is stored so that other interactNodes can access and set theirs accordingly
+#inorder to line up properly
+var textLength = 0
+
+#used to be able to re animate self if textLength changes
+var animateTextArgs 
+
+#store flip state to override other interactNodes in global
+#if multiple interactNodes are being used
+var flip = null
+
 #these are pulled in the astro script to know how to place text
 var totalOffset : Vector2 = Vector2(0,0)
 var fixedOffset : bool = false
 
-var textTweeen : Tween
+var textTween : Object
+var textTweenUniqueID : String
 var breakTimerLoop = false
 
-var ASTRO_NODE_PATH = null
-onready var ASTRO_NODE = get_node(ASTRO_NODE_PATH)
 
+var ASTRO_NODE_PATH = null
+var ASTRO_NODE# = get_node(ASTRO_NODE_PATH)
 
 # vvvvvvvvvvvvv ALL FOR ANIMATING PROPER TEXT vvvvvvvvvvvvv
+
+func _ready():
+	if ASTRO_NODE_PATH != null:
+		ASTRO_NODE = get_node(ASTRO_NODE_PATH)
+
+
 
 func timer_reset(text):
 	
@@ -54,7 +81,7 @@ func timer_reset(text):
 	#called to self destroy when they are done running
 	#been needing to check class due to mem reassigning bug, then make it null anyways
 	#in case it is pointing to something bogus
-	if (is_instance_valid(timer) && timer.is_class("Timer")):
+	if (is_instance_valid(timer) && timer.is_class("Timer") && timerUniqueID == timer.to_string()):
 		timer.call_deferred('free')
 	timer = null
 	
@@ -71,7 +98,7 @@ func timer_reset(text):
 		
 	
 	timer = global.newTimer(1, funcref(self, 'on_timeout_complete'))
-	
+	timerUniqueID = timer.to_string()
 #
 func on_timeout_complete():
 	blink = !blink
@@ -81,10 +108,11 @@ func on_timeout_complete():
 
 
 func set_text_pos(customOffset, fixedText, textSidePosition):
-	
+	#print("multiInterNodeOffset")
+	#print(multiInterNodeOffset)
 	fixedOffset = fixedText
 	if (fixedText):
-		totalOffset = customOffset
+		totalOffset = customOffset + Vector2(0, multiInterNodeOffset)
 		return
 	
 	
@@ -100,39 +128,65 @@ func set_text_pos(customOffset, fixedText, textSidePosition):
 	else:
 		get_flip = ASTRO_NODE.get_node("ASTRO_ANIM2").is_flipped_h()
 
-
-	if (get_flip):
+	textLength = min (get("custom_fonts/normal_font").get_wordwrap_string_size(text, get_size().x).x, get("custom_fonts/normal_font").get_string_size(text).x)
+	
+	var longestTextLength = textLength
+	
+	var reAnimateInteractNodes = []
+	
+	for interNode in global.interactNodes:
+		if interNode == null || interNode == self: continue
+		flip = interNode.flip
+		if interNode.overrideFlip != null:
+			overrideFlip = interNode.overrideFlip
+		longestTextLength = max(longestTextLength, interNode.textLength)
 		
+		if longestTextLength > interNode.textLength:
+			interNode.textLength = longestTextLength
+			reAnimateInteractNodes.append(interNode)
+			
+				
+	textLength = longestTextLength
+			
+	flip = overrideFlip if overrideFlip != null else get_flip
+
+	if (flip):
+		
+		
+		for interNode in reAnimateInteractNodes:
+			var args = interNode.animateTextArgs
+			if args != null:
+				interNode.call("animateText", args[0], args[1], args[2], args[3], args[4], args[5])
 		#little hack that adjusts the facing left offset if the text typed doesn't
 		#take up the whole width of the text box
-		var textLength = get_text().length()
-		var pixelOffSet = 12
-		if (textLength < 12):
-			pixelOffSet = fmod(textLength, 12)
-		pixelOffSet *= (LOCAL_SIZE.x / 13.0)
+		#get_text().length()
 		
-		totalOffset = Vector2(-POS_OFFSET.x - pixelOffSet -customOffset.x, POS_OFFSET.y + customOffset.y)
-		print(totalOffset)
+		#var pixelOffSet = 12
+		#if (textLength < 12):
+		#	pixelOffSet = fmod(textLength, 12)
+		#pixelOffSet *= (LOCAL_SIZE.x / 13.0)
+		
+		totalOffset = Vector2(-POS_OFFSET.x - max(longestTextLength, textLength) -customOffset.x, POS_OFFSET.y + customOffset.y + multiInterNodeOffset) 
+		
 		return
 	
-	print(totalOffset)
-	totalOffset = POS_OFFSET + customOffset
+	totalOffset = POS_OFFSET + customOffset + Vector2(0, multiInterNodeOffset)
 	
 
 
 
 func animateText(text, soundNode = null, customPosOffset = Vector2(0,0),
 				fixedText = false, textSide : int = 0, textTime = null):
+	animateTextArgs = []
+	animateTextArgs.resize(6)
+	animateTextArgs = [text, soundNode, customPosOffset, fixedText, textSide, textTime]
 	#optional time for tween
 	#need to store locally to add blinking underscore affect in timers above
+	
 	currentText = text.text
 	
-	#used for checking things are properly cleaning up
-#	print("animating")
-#	print(get_child_count())
-#	print(get_child(0))
-#	print(global.get_child_count())
-#	print(global.get_children())
+	for interNodeIndex in global.interactNodes.size():
+		global.setInterNodeVerticalOffset(interNodeIndex)
 
 	#reset the blinking timer
 	timer_reset(currentText)
@@ -150,8 +204,8 @@ func animateText(text, soundNode = null, customPosOffset = Vector2(0,0),
 		textTime = TYPE_TEXT_TIME
 		
 	
-	textTweeen = global.newTween(self, "percent_visible", 0, 1, textTime, 0)
-	
+	textTween = global.newTween(self, "percent_visible", 0, 1, textTime, 0)
+	textTweenUniqueID = textTween.to_string()
 	
 
 	if soundNode == null:
@@ -160,24 +214,23 @@ func animateText(text, soundNode = null, customPosOffset = Vector2(0,0),
 
 
 func closeText(soundNode = null):
-#
+	print("closetext")
 	var perVisibile = self.get_percent_visible()
 	
 	#if the tween hasn't been freed via the global newTween signal (as in, 
 	#it is still tweening the text to show and we need to closeText() prematurely,
 	#then stop the tween and clean up
-	if (is_instance_valid(textTweeen) && textTweeen.is_class("Tween")):
+	#added to check the unique id so it doesn't delete something random in memery
+	if (is_instance_valid(textTween) && textTween.is_class("Tween") && textTweenUniqueID == textTween.to_string()):
 		#seems to be running into a bug where it points to some random thing in mem occasionally after I queue free it,
 		#so here I check to make sure its a tween before calling stuff
-		textTweeen.stop_all()
-		textTweeen.call_deferred('free')
+		textTween.stop_all()
+		textTween.call_deferred('free')
 			
 	#make our var not point to a random thing in memory (from weird bug)
 	else:
-		textTweeen = null
-	
-	
-	global.newTween(self, "percent_visible", perVisibile, 0, REMOVE_TEXT_TIME, 0)
+		textTween = null
+	global.newTween(self, "percent_visible", perVisibile, 0, REMOVE_TEXT_TIME, 0, funcref(self, 'selfDestruct'))
 	
 	if soundNode == null:
 		soundNode = audio.sound("textHide")
@@ -185,5 +238,8 @@ func closeText(soundNode = null):
 	
 	breakTimerLoop = true
 	
+func selfDestruct():
+	print("selfDestructed")
+	global.destroyInteractNode(self)
 
 #^^^^^^^^^^^^^^ ALL FOR ANIMATING PROPER TEXT ^^^^^^^^^^^^^^

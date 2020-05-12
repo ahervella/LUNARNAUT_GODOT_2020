@@ -16,6 +16,7 @@ enum PLUG_REGION {
 	UNI
 }
 
+
 enum CONN_RESULT {
 	INCOMPATIBLE
 	WRONG_TYPE
@@ -25,6 +26,8 @@ enum CONN_RESULT {
 	SUCCESS
 	NO_PLUG_FOUND
 	PART_OF_SAME_CABLE
+	HYPO_CONNECTION_SUCCESSFUL
+	HYPO_DISCONNECT_PLUGS
 }
 
 const DIST_BETWEEN_PLUGS = 12
@@ -49,6 +52,10 @@ var connArea = null
 #export (NodePath) var plugSpritePath = null setget setPlugSpritePath
 var plugSprite = null
 
+#apparently removing a plug from a child triggers it leaving astro's
+#item area, and adding it again will trigger entering the area
+#remapping child takes place in cable script when reversing things
+var childRemovedException = false
 
 func setIsFixedPort(val):
 	if val:
@@ -80,6 +87,7 @@ func setConnection(plugNode):
 		
 	
 	
+
 	
 	
 func _ready():
@@ -88,10 +96,95 @@ func _ready():
 			connArea = node
 		if node is Sprite:
 			plugSprite = node
-
+	
+	if TC_AUTO == null:
+		TC_AUTO = TextConfig.new()
+		TC_AUTO.ColorType = TC_AUTO.colorType.info
+	
+	if (TC_AUTO.text == null || TC_AUTO.text == ""):
+		TC_AUTO.ColorType = TC_AUTO.colorType.info
+		var plugSexString = "MALE" if male else "FEMALE"
+		TC_AUTO.text = "//" + PLUG_REGION.keys()[plugRegion] + " _" + PLUG_TYPE.keys()[plugType] + " _" + plugSexString
+	
+	useNextInterNodeIfNeeded = true
 	
 
 
+func AutoInteract():
+	if childRemovedException:
+		childRemovedException = false
+		return
+
+	.AutoInteract()
+		
+	AnimateHypotheticalResult()
+		
+	
+			
+func AnimateHypotheticalResult():
+	#print("AnimateHypotheticalResult")
+	var hypotheticalResult = attemptConnection(true)
+	
+	var text = TextConfig.new()
+	text.text = ""
+	match hypotheticalResult:
+		CONN_RESULT.INCOMPATIBLE:
+			#print("CONN_RESULT.INCOMPATIBLE type")
+			text.text = "   >>_plugs _are _incompatible"
+			text.ColorType = text.colorType.alert
+		CONN_RESULT.WRONG_TYPE:
+			#print("CONN_RESULT.WRONG_TYPE")
+			text.text = "   >>_plugs _not _correct _type"
+			text.ColorType = text.colorType.alert
+			#pass#AnimateHypotheticalResult()
+		CONN_RESULT.SELF_ALREADY_CONN:
+			#print("SELF_ALREADY_CONN")
+			continue
+		CONN_RESULT.PART_OF_SAME_CABLE:
+			#print("CONN_RESULT.PART_OF_SAME_CABLE")
+			text.text = "   >>_plugs _from _same _cable"
+			text.ColorType = text.colorType.alert
+			continue
+		CONN_RESULT.OTHER_ALREADY_CONN:
+			#print("CONN_RESULT.OTHER_ALREADY_CONN")
+			continue
+		CONN_RESULT.NO_PLUG_FOUND:
+			#print("CONN_RESULT.NO_PLUG_FOUND")
+			continue
+		CONN_RESULT.OTHER_NOT_PLUG:
+			#print("CONN_RESULT.OTHER_NOT_PLUG")
+			continue
+		CONN_RESULT.HYPO_CONNECTION_SUCCESSFUL:
+			#print("CONN_HYPO_RESULT.CONNECTION_SUCCESSFUL")
+			text.text = "   <<_connection _successful"
+			text.ColorType = text.colorType.good
+			continue
+		CONN_RESULT.HYPO_DISCONNECT_PLUGS:
+			#print("CONN_HYPO_RESULT.DISCONNECT_PLUGS")
+			text.text = "   >>_disconnect _plugs"
+			text.ColorType = text.colorType.warning
+			continue
+		CONN_RESULT.SUCCESS:
+			#print("CONN_RESULT.SUCCESS")
+			text.text = "   >>_connect _plugs"
+			text.ColorType = text.colorType.good
+	
+	#print("hypotheticalResult")
+	#print(hypotheticalResult)
+	
+	#if no change
+	if (text.text != ""):
+		if global.infoInteractNode != null && is_instance_valid(global.infoInteractNode):
+			global.infoInteractNode.animateText(text, InteractAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
+
+
+func AutoCloseInteract():
+	if childRemovedException: return
+	
+	#print("autoCLosedInteractPlug")
+	.AutoCloseInteract()
+	if global.infoInteractNode != null && is_instance_valid(global.infoInteractNode):
+		global.infoInteractNode.closeText()
 
 
 func Interact():
@@ -102,12 +195,14 @@ func Interact():
 	if (isFixedPort):
 		return
 	
+	
 	var astro = global.lvl().astroNode
-	#var isStartPlug = null
+
 	
 	var result = attemptConnection()
 	var grabbed = currentlyGrabbed()
 	var astroHasPlug = astroIsHoldingPlug()
+	#print("interact_result")
 	#print(result)
 	#print(self)
 	
@@ -120,7 +215,7 @@ func Interact():
 				grabPlug()
 			else:
 				dropPlug()
-			return
+			continue
 			
 		CONN_RESULT.SELF_ALREADY_CONN:
 			connPlug.processed = true
@@ -140,17 +235,17 @@ func Interact():
 				else: #if its a fixed port
 					connPlug.grabPlug()
 					disconnectPlug()
-			return
+			continue
 					
 		CONN_RESULT.OTHER_ALREADY_CONN, CONN_RESULT.OTHER_NOT_PLUG, CONN_RESULT.NO_PLUG_FOUND, CONN_RESULT.PART_OF_SAME_CABLE:
 			if !grabbed && !astroHasPlug:
-				print(astroHasPlug)
+				#print(astroHasPlug)
 				#print("grabbed")
 				grabPlug()
 			else:
 				#print("dropped")
 				dropPlug()
-			return
+			continue
 			
 		CONN_RESULT.SUCCESS:
 			
@@ -173,25 +268,35 @@ func Interact():
 					connPlug.grabPlug()
 					connPlug.processed = true
 			
-			return
+			continue
+	
+	#need to use call deferred due to being on the same frame as 
+	#interacting and areas not detecting correctly
+	call_deferred("AnimateHypotheticalResult")
 
 
-
-func attemptConnection():
+func attemptConnection(hypothetical = false):
 	if connPlug != null:
+		if currentlyGrabbed() && connPlug.currentlyGrabbed() && hypothetical:
+			return CONN_RESULT.HYPO_CONNECTION_SUCCESSFUL
+			
+		elif (hypothetical && !currentlyGrabbed() && !connPlug.currentlyGrabbed()):
+			return CONN_RESULT.HYPO_DISCONNECT_PLUGS
+			
 		return CONN_RESULT.SELF_ALREADY_CONN
-		
+
 	var totalOverlappingAreas = connArea.get_overlapping_areas()
 	
-	
 	#if grabbed, use astro's area to be able to find other near by plugs
-	if currentlyGrabbed():
+	if currentlyGrabbed() || hypothetical:
 		var astro = global.lvl().astroNode
+		#print("astro overlapping areas")
+		#print(astro.get_node("Item_check").get_overlapping_areas())
 		for area in astro.get_node("Item_check").get_overlapping_areas():
 			if area.get_groups().has("plug"):
 				if area.get_parent() != self:
 					totalOverlappingAreas.append(area)
-	
+
 	
 	#check areas until a plug is found
 	for area in totalOverlappingAreas:
@@ -200,10 +305,9 @@ func attemptConnection():
 			
 			#only interact with plugs that haven't been processed
 			if otherPlug.processed: continue
-			
 			if otherPlug.connPlug != null:
 				return CONN_RESULT.OTHER_ALREADY_CONN
-			
+				
 			#check they are not part of the same cable
 			if parentCable != null && otherPlug.parentCable != null:
 				if (parentCable == otherPlug.parentCable
@@ -211,6 +315,8 @@ func attemptConnection():
 					|| parentCable.setgetTotalCableStartPlugPin(false, true) == otherPlug.parentCable.setgetTotalCableStartPlugPin(false, true)):
 						return CONN_RESULT.PART_OF_SAME_CABLE
 			
+			var tempConnPlug = connPlug
+			var tempOtherConnPlug = otherPlug.connPlug
 			
 			connPlug = otherPlug
 			otherPlug.connPlug = self
@@ -219,11 +325,22 @@ func attemptConnection():
 			if connPlug == null || otherPlug.connPlug == null:
 				connPlug = null
 				otherPlug.connPlug = null
+				
+				if hypothetical:
+					connPlug = tempConnPlug
+					otherPlug.connPlug  = tempOtherConnPlug
+					
+					if (connPlug != null && currentlyGrabbed() && connPlug.currentlyGrabbed()):
+						CONN_RESULT.HYPO_CONNECTION_SUCCESSFUL
+				
 				return CONN_RESULT.INCOMPATIBLE
 				
-				
+			if hypothetical:
+					connPlug = tempConnPlug
+					otherPlug.connPlug  = tempOtherConnPlug
+					return CONN_RESULT.SUCCESS
+					
 			#connection worked, so allign plugs properly
-			
 			if (connPlug.fixed || connPlug.isFixedPort):
 				
 				self.fixed = true

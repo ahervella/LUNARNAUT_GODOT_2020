@@ -6,6 +6,7 @@ extends RichTextLabel
 #of the end of demo video
 #
 var timer
+var timerUniqueID
 var breakTimerLoop = false
 var blink = true
 export (String) var gameWonText = ">> LOGGING_PROGRESS >> OXYGEN_STABLE"
@@ -26,7 +27,7 @@ func timer_reset():
 	#called to self destroy when they are done running
 	#been needing to check class due to mem reassigning bug, then make it null anyways
 	#in case it is pointing to something bogus
-	if (is_instance_valid(timer) && timer.is_class("Timer")):
+	if (is_instance_valid(timer) && timer.is_class("Timer") && timerUniqueID == timer.to_string()):
 		timer.call_deferred('free')
 	timer = null
 	
@@ -43,7 +44,7 @@ func timer_reset():
 		
 	
 	timer = global.newTimer(1, funcref(self, 'on_timeout_complete'))
-	
+	timerUniqueID = timer.to_string()
 #
 func on_timeout_complete():
 	blink = !blink

@@ -566,6 +566,7 @@ func addCableChild(cableNode):
 	cableNode.parentLinkCable = self
 	childLinkCable = cableNode
 	
+	cableNode.START_PLUG.childRemovedException = true
 	cableNode.cableNodes[0].remove_child(cableNode.START_PLUG)
 	cableNodes[NODE_COUNT-1].add_child(cableNode.START_PLUG)
 	cableNode.START_PLUG.set_rotation(deg2rad(180))
@@ -652,8 +653,10 @@ func reverseSingleCable():
 		posOld[i] = tempPosOld[NODE_COUNT -1 -i]
 	
 func removeChildCable():
+	childLinkCable.START_PLUG.childRemovedException = true
 	cableNodes[NODE_COUNT -1].remove_child(childLinkCable.START_PLUG)
 	childLinkCable.cableNodes[0].add_child(childLinkCable.START_PLUG)
+	
 	childLinkCable.START_PLUG.set_rotation(deg2rad(180))
 	childLinkCable.START_PLUG.set_position(Vector2(0, 0))
 	

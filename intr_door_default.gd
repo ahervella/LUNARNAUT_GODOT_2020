@@ -29,21 +29,25 @@ var doorShadowTop
 var doorShadowTopClosePos : Vector2
 var doorShadowTopOpenPos : Vector2
 var doorShadowTopTween : Tween
+var doorShadowTopTweenUniqueID : String
 
 var doorShadowBottom
 var doorShadowBottomClosePos : Vector2
 var doorShadowBottomOpenPos : Vector2
 var doorShadowBottomTween : Tween
+var doorShadowBottomTweenUniqueID : String
 
 var doorTop
 var doorTopClosePos : Vector2
 var doorTopOpenPos : Vector2
 var doorTopTween : Tween
+var doorTopTweenUniqueID : String
 
 var doorBottom
 var doorBottomClosePos : Vector2
 var doorBottomOpenPos : Vector2
 var doorBottomTween : Tween
+var doorBottomTweenUniqueID : String
 
 var doorBarrierShape : CollisionShape2D
 
@@ -82,11 +86,11 @@ func _ready():
 
 #
 
-func moveDoorPart(doorNode, doorStartPos, doorEndPos, doorTweenNode):
+func moveDoorPart(doorNode, doorStartPos, doorEndPos, doorTweenNode, doorTweenNodeUniqueID):
 	
 	var currentPos = doorStartPos
 	
-	if (is_instance_valid(doorTweenNode) && doorTweenNode.is_class("Tween")):
+	if (is_instance_valid(doorTweenNode) && doorTweenNode.is_class("Tween") && doorTweenNodeUniqueID == doorTweenNode.to_string()):
 		currentPos = doorNode.get_position()
 		doorTweenNode.stop_all()
 		doorTweenNode.call_deferred('free')
@@ -99,17 +103,25 @@ func moveDoorPart(doorNode, doorStartPos, doorEndPos, doorTweenNode):
 	
 func openDoor():
 	doorBarrierShape.set_disabled(true)
-	doorShadowTopTween = moveDoorPart(doorShadowTop, doorShadowTopClosePos, doorShadowTopOpenPos, doorShadowTopTween)
-	doorShadowBottomTween = moveDoorPart(doorShadowBottom, doorShadowBottomClosePos, doorShadowBottomOpenPos, doorShadowBottomTween)
-	doorTopTween = moveDoorPart(doorTop, doorTopClosePos, doorTopOpenPos, doorTopTween)
-	doorBottomTween = moveDoorPart(doorBottom, doorBottomClosePos, doorBottomOpenPos, doorBottomTween)
+	doorShadowTopTween = moveDoorPart(doorShadowTop, doorShadowTopClosePos, doorShadowTopOpenPos, doorShadowTopTween, doorShadowTopTweenUniqueID)
+	doorShadowTopTweenUniqueID = doorShadowTopTween.to_string()
+	doorShadowBottomTween = moveDoorPart(doorShadowBottom, doorShadowBottomClosePos, doorShadowBottomOpenPos, doorShadowBottomTween, doorShadowBottomTweenUniqueID)
+	doorShadowBottomTweenUniqueID = doorShadowBottomTween.to_string()
+	doorTopTween = moveDoorPart(doorTop, doorTopClosePos, doorTopOpenPos, doorTopTween, doorTopTweenUniqueID)
+	doorTopTweenUniqueID = doorTopTween.to_string()
+	doorBottomTween = moveDoorPart(doorBottom, doorBottomClosePos, doorBottomOpenPos, doorBottomTween, doorBottomTweenUniqueID)
+	doorBottomTweenUniqueID = doorBottomTween.to_string()
 	
 func closeDoor():
 	doorBarrierShape.set_disabled(false)
-	doorShadowTopTween = moveDoorPart(doorShadowTop, doorShadowTopOpenPos, doorShadowTopClosePos, doorShadowTopTween)
-	doorShadowBottomTween = moveDoorPart(doorShadowBottom, doorShadowBottomOpenPos, doorShadowBottomClosePos, doorShadowBottomTween)
-	doorTopTween = moveDoorPart(doorTop, doorTopOpenPos, doorTopClosePos, doorTopTween)
-	doorBottomTween = moveDoorPart(doorBottom, doorBottomOpenPos, doorBottomClosePos, doorBottomTween)
+	doorShadowTopTween = moveDoorPart(doorShadowTop, doorShadowTopOpenPos, doorShadowTopClosePos, doorShadowTopTween, doorShadowTopTweenUniqueID)
+	doorShadowTopTweenUniqueID = doorShadowTopTween.to_string()
+	doorShadowBottomTween = moveDoorPart(doorShadowBottom, doorShadowBottomOpenPos, doorShadowBottomClosePos, doorShadowBottomTween, doorShadowBottomTweenUniqueID)
+	doorShadowBottomTweenUniqueID = doorShadowBottomTween.to_string()
+	doorTopTween = moveDoorPart(doorTop, doorTopOpenPos, doorTopClosePos, doorTopTween, doorTopTweenUniqueID)
+	doorTopTweenUniqueID = doorTopTween.to_string()
+	doorBottomTween = moveDoorPart(doorBottom, doorBottomOpenPos, doorBottomClosePos, doorBottomTween, doorBottomTweenUniqueID)
+	doorBottomTweenUniqueID = doorBottomTween.to_string()
 	
 	
 

@@ -17,6 +17,10 @@ extends Node
 #and child array of global
 
 var interactNode #$"/root/Control/astro/InteractFont"
+var interactNodes = []
+var maxInteractNodes = 2
+#var infoInteractNodeIndex = 0
+var infoInteractNode 
 
 export (Resource) var CharacterRes = null
 
@@ -29,6 +33,114 @@ var gravMag
 var gravRadAng
 var gravRadAngFromNorm
 
+func getNextInteractNodeIndex():
+	print("gettingNexINterNode")
+	var currIndex = 0
+	var overrideFlip = null
+	
+	#var infoInteractNode = interactNodes[infoInteractNodeIndex]
+	destroyInteractNode(infoInteractNode)
+	
+	while(interactNodes[currIndex] != null):
+		overrideFlip = interactNodes[currIndex].flip
+		currIndex += 1
+		if currIndex == maxInteractNodes:
+			return null
+			
+	var infoInteractNodeIndex = currIndex + 1
+	while(interactNodes[infoInteractNodeIndex] != null):
+		infoInteractNodeIndex += 1
+		if infoInteractNodeIndex == maxInteractNodes:
+			break
+		
+		
+	
+	var newInteractNode = addNewInteractNode(currIndex, overrideFlip)
+	print("infoInteractNodeIndex")
+	print(infoInteractNodeIndex)
+	infoInteractNode = addNewInteractNode(infoInteractNodeIndex, overrideFlip)
+	
+#	if wasAbleToAdd:
+#		return interactNodes[currIndex]
+	
+	return newInteractNode
+	#print("heereee")
+	#print(temp)
+func addNewInteractNode(index, overrideFlip):
+	#if interactNodes.size() < index+1: interactNodes.resize(index+1)
+	if interactNodes.size() > index && interactNodes[index] == null:
+		var newInteractNode = interactNode.duplicate(DUPLICATE_USE_INSTANCING)
+		newInteractNode.overrideFlip = overrideFlip
+		newInteractNode.ASTRO_NODE = interactNode.ASTRO_NODE
+		interactNode.get_parent().add_child_below_node(interactNode, newInteractNode)
+		newInteractNode.set_global_position(interactNode.get_global_position())
+	
+		interactNodes[index] = newInteractNode
+		setInterNodeVerticalOffset(index)
+		return newInteractNode
+	return null
+	
+func setInterNodeVerticalOffset(interNodeIndex):
+	var interNode = interactNodes[interNodeIndex]
+	if interNode == null: return
+	if interNodeIndex > 0:
+			if interactNodes[interNodeIndex-1] != null:
+				var prevInterNode = interactNodes[interNodeIndex-1] 
+				#print("interNodeIndex")
+				#print(interNodeIndex)
+				
+				if prevInterNode.text != null && prevInterNode.text != "":
+					var actualPrevTextVect = (getRealTextVector2(prevInterNode.text, prevInterNode.get_size().x, prevInterNode.get("custom_fonts/normal_font")))
+				#	print(actualPrevTextVect)
+					interNode.multiInterNodeOffset = actualPrevTextVect.y + prevInterNode.multiInterNodeOffset#prevInterNode.normal_font.get_wordwrap_string_size()#prevInterNode.get_content_height() + prevInterNode.multiInterNodeOffset#interactNodes[temp-1].normal_font.get_string_size().y
+		
+func getRealTextVector2(string, width, font):
+	print("string length")
+	print(font.get_string_size(string))
+	var cursor = 0
+	var words = []
+	for i in string.length():
+		if string.substr(i, 1) == " ":
+			print(i)
+			words.append(string.substr(cursor, i-cursor))
+			cursor = i+1
+		elif(i == string.length() -1):
+			words.append(string.substr(cursor))
+			
+	var lines = []
+	var currLine = ""
+	
+	print(width)
+	for word in words:
+		if font.get_string_size(currLine + word).x < width || currLine == "":
+			currLine += word + " "
+		else:
+			lines.append(currLine)
+			currLine = word# + " "
+			while font.get_string_size(currLine).x > width:
+				var ogCurrLine = currLine
+				while(font.get_string_size(currLine).x > width):
+					currLine = currLine.substr(0,currLine.length()-1)
+				ogCurrLine = ogCurrLine.substr(currLine.length(), ogCurrLine.length() - currLine.length())
+				lines.append(currLine)
+				currLine = ogCurrLine
+				
+	lines.append(currLine)
+	
+	#plus one because of line spacing I believe
+	return Vector2(width, (font.get_string_size(string).y+1) * lines.size())
+
+func destroyInteractNode(interNode):
+	print("destroy node")
+	for i in interactNodes.size():
+		if interactNodes[i] != null && interactNodes[i] == interNode:
+			interactNodes[i] = null
+			#interactNode.remove_child(interNode)
+			if interNode.timer != null && interNode.timerUniqueID == interNode.timer.to_string():
+				interNode.timer.free()
+			interNode.call_deferred('free')
+			return
+	
 #
 func _ready():
 	init()
@@ -44,7 +156,8 @@ func init():
 	gravRadAng = deg2rad(90)
 	gravRadAngFromNorm = deg2rad(0)
 	playTest = true
-	
+	#+ 1 for result / report node
+	interactNodes.resize(maxInteractNodes + 1)
 	
 
 
@@ -96,12 +209,17 @@ func newTween(object, tweeningMethod, startVars, endVars, time, delay, func_ref 
 	
 #here by default func_ref is null if nothing is passed (in case called outside here)
 func DestroyTween(object, key, tweenObj, func_ref = null):
+	#if any other functions to be called were passed, do that
+	
+	print("destroyTweenFuncRef")
+	print(func_ref)
+	if (func_ref != null):
+		func_ref.call_func()
+		print("destroyTweenFuncRef was called")
 	#ensures that next frame free will be called on this tween instance
 	tweenObj.call_deferred('free')
 
-	#if any other functions to be called were passed, do that
-	if (func_ref != null):
-		func_ref.call_func()
+	
 	
 
 func newTimer(time, ref = null):
@@ -123,7 +241,8 @@ func DestroyTimer(timer, ref):
 	
 	#refered method
 	if (ref != null):
-		ref.call_func()
+		if ref.is_valid():
+			ref.call_func()
 		
 #to clean up shit before switching scenes to not cause scene / node ref errors
 func DestroyAllChildren():

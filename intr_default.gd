@@ -35,9 +35,18 @@ export (Array, Resource) var itemsGained
 export (Array, Resource) var itemsRequired
 export (bool) var eatRequirements = false
 
+#if true, will assume that there should not be multiple interactNodes
+#being used, and will wipe everything clean and only use the first one of
+#interactNodes
+export (bool) var useNextInterNodeIfNeeded = false
+
+var interactNodeIndex = null
+var interactNode = null
+
 var can_interact : bool = true
 export (bool) var oneshot = false
 var timer : Timer
+var timerUniqueID
 
 #used in case multiple items that interact with eachother at once
 #such as with plugs/cables
@@ -56,7 +65,7 @@ func Interact():
 	# Do some timer stuff
 	if (T_I_DISPLAY_TIME != 0):		
 		timer = global.newTimer(T_I_DISPLAY_TIME, funcref(self, 'AutoInteract'))
-	
+		timerUniqueID = timer.to_string()
 	# Eat the items we need if we're supposed to
 	if (itemsRequired != null && itemsRequired.size() > 0 && eatRequirements):
 		get_tree().get_current_scene().CheckhasInventoryItems(itemsRequired, true)
@@ -70,7 +79,8 @@ func Interact():
 			TC_INTERACT.text = "%s\nGained %d %s" % [TC_INTERACT.text,iq.quantity, iq.item.Name]
 
 	# Display text
-	global.interactNode.animateText(TC_INTERACT, InteractAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
+	if (interactNode != null && is_instance_valid(interactNode)):
+		interactNode.animateText(TC_INTERACT, InteractAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
 
 	# If oneshot, then we all done
 	if (oneshot):
@@ -80,6 +90,8 @@ func Interact():
 var addedItemsToAuto = false;
 
 func AutoInteract():
+	print("interactNodeIndex")
+	interactNode = global.getNextInteractNodeIndex()#interactNodeIndex = global.getNextInteractNodeIndex()
 	if (!oneshot):
 		can_interact = true
 	if (!can_interact):
@@ -95,9 +107,22 @@ func AutoInteract():
 	
 	var missing = !get_tree().get_current_scene().CheckHasInventoryItems(itemsRequired, false);
 
-	TC_AUTO.ColorType = TextConfig.colorType.alert if missing else TextConfig.colorType.info
+	#only changes TC_AUTO color from what was set if it is an item that requires shit
+	if missing:
+		TC_AUTO.ColorType = TextConfig.colorType.alert
+	elif(itemsRequired != null && itemsRequired.size() > 0):
+		TC_AUTO.ColorType = TextConfig.colorType.info
 
-	global.interactNode.animateText(TC_AUTO, InteractAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
+	if !useNextInterNodeIfNeeded:
+		for i in global.interactNodes.size():
+			if i == 0: continue
+			if global.interactNodes[i] != null && is_instance_valid(global.interactNodes[i]):
+				global.destroyInteractNode(global.interactNodes[i])#.closeText(HideAudioNode()) #because will not finish closing text before requesting on next line
+				
+		interactNode = global.getNextInteractNodeIndex()
+				
+	if (interactNode != null && is_instance_valid(interactNode)):
+		interactNode.animateText(TC_AUTO, InteractAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
 
 func TextInteract():
 	if (TC_AUTO == null):
@@ -105,14 +130,15 @@ func TextInteract():
 	global.interactNode.animateText(TC_AUTO, ShowAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
 
 func AutoCloseInteract():
-	if (is_instance_valid(timer) && timer.is_class("Timer")):
+	if (is_instance_valid(timer) && timer.is_class("Timer") && timerUniqueID == timer.to_string()):
 		timer.stop()
 		timer.call_deferred('free')
 	
 	if (!oneshot):
 		can_interact = true
 		
-	global.interactNode.closeText(HideAudioNode())
+	if (interactNode != null && is_instance_valid(interactNode)):
+		interactNode.closeText(HideAudioNode())
 
 
 func ShowAudioNode() -> AudioStream:
