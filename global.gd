@@ -16,6 +16,19 @@ extends Node
 #can always check in the future like I was now if shit is working properly by printing the child count
 #and child array of global
 
+	#PROJECT SETTINGS (As of May-12-2020):
+	#Physics Engine = GodotPhysics
+	#Thread Model = Single-Safe
+	#Sleep Threshold Linear = 2
+	#Sleep Threshold Angular = 0.14
+	#Time Before Sleep = 0.5
+	#Bp Hashtable Size = 4096
+	#Cell Size = 128
+	#Default Gravity = 98
+	#Defualt Gravity Vector = Vector2(0, 1)
+	#Default Linear Damp = 0
+	#Default Angular Damp = 1
+
 var interactNode #$"/root/Control/astro/InteractFont"
 var interactNodes = []
 var maxInteractNodes = 2
@@ -29,6 +42,8 @@ var controls_enabled
 var can_reset
 var playTest
 var astroDead
+var gravTermVel
+var gravFor1Frame
 var gravMag
 var gravRadAng
 var gravRadAngFromNorm
@@ -38,7 +53,6 @@ func getNextInteractNodeIndex():
 	var currIndex = 0
 	var overrideFlip = null
 	
-	#var infoInteractNode = interactNodes[infoInteractNodeIndex]
 	destroyInteractNode(infoInteractNode)
 	
 	while(interactNodes[currIndex] != null):
@@ -60,12 +74,8 @@ func getNextInteractNodeIndex():
 	print(infoInteractNodeIndex)
 	infoInteractNode = addNewInteractNode(infoInteractNodeIndex, overrideFlip)
 	
-#	if wasAbleToAdd:
-#		return interactNodes[currIndex]
-	
 	return newInteractNode
-	#print("heereee")
-	#print(temp)
+	
 func addNewInteractNode(index, overrideFlip):
 	#if interactNodes.size() < index+1: interactNodes.resize(index+1)
 	if interactNodes.size() > index && interactNodes[index] == null:
@@ -92,7 +102,7 @@ func setInterNodeVerticalOffset(interNodeIndex):
 				if prevInterNode.text != null && prevInterNode.text != "":
 					var actualPrevTextVect = (getRealTextVector2(prevInterNode.text, prevInterNode.get_size().x, prevInterNode.get("custom_fonts/normal_font")))
 				#	print(actualPrevTextVect)
-					interNode.multiInterNodeOffset = actualPrevTextVect.y + prevInterNode.multiInterNodeOffset#prevInterNode.normal_font.get_wordwrap_string_size()#prevInterNode.get_content_height() + prevInterNode.multiInterNodeOffset#interactNodes[temp-1].normal_font.get_string_size().y
+					interNode.multiInterNodeOffset = actualPrevTextVect.y + prevInterNode.multiInterNodeOffset
 		
 func getRealTextVector2(string, width, font):
 	print("string length")
@@ -151,6 +161,9 @@ func init():
 	can_reset = false
 	astroDead = false
 	
+	gravTermVel = 200
+	#assuming phsyics is running at 60 fps
+	gravFor1Frame = 60 * 3
 	gravMag = 1
 	#remember y is flipped
 	gravRadAng = deg2rad(90)

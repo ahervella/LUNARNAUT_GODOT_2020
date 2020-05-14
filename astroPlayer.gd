@@ -30,9 +30,9 @@ export (bool) var enableShadows = true setget enableShadowsSetter
 var vel = Vector2()
 var velFinal = Vector2()
 var max_move_speed = 200
-var TERMINAL_VEL = 200
+#var TERMINAL_VEL = 200
 var directional_force = Vector2()
-const GRAVITY = 3
+#const GRAVITY = 3
 var gravity = 0
 var groundedBubble = true
 
@@ -70,6 +70,8 @@ var touchingNora = false
 var currItems = []
 var currItemsGlobalPosDict = {}
 
+var movableObject = null
+var intertia = 1
 
 #touch controls
 var vJoy = -5 # -5 has no specific functionality, but can't be null or shit breaks
@@ -172,7 +174,7 @@ func _physics_process(delta):
 	if Engine.editor_hint:
 		return
 	
-	gravity = GRAVITY * global.gravMag
+	gravity = global.gravFor1Frame * global.gravMag#GRAVITY * global.gravMag
 		
 	set_rotation(global.gravRadAng - deg2rad(90))
 		
@@ -188,9 +190,9 @@ func _physics_process(delta):
 		currMaxAirTime = DEFAULT_MAX_AIR_TIME
 
 	ApplyMovement(delta)
-	
-	
-	vel.y += delta * 60 * gravity
+
+
+	vel.y += delta * gravity# * 60 * gravity
 
 	#this method allows for proper physics feel when launched in air
 	#and for different max speeds & accels on ground and in air
@@ -204,7 +206,7 @@ func _physics_process(delta):
 	max_move_speed = max(abs(vel.x), speed)
 	
 	vel.x = clamp(vel.x, -max_move_speed, max_move_speed)
-	vel.y = clamp(vel.y, -TERMINAL_VEL, TERMINAL_VEL)
+	vel.y = clamp(vel.y, -global.gravTermVel, global.gravTermVel)
 	
 
 		# why isn't snap working? opposite direction? look at demo
@@ -215,9 +217,8 @@ func _physics_process(delta):
 		#vel = move_and_slide_with_snap(vel, Vector2(0, 1), Vector2.UP, false, 4, deg2rad(120), false)
 	velFinal = vel.rotated(global.gravRadAng - deg2rad(90))
 	
-	var velFinal2 = velFinal
 	if restrictAndMove2Point != null:
-		velFinal2 =  restrictAndMove2Point - restrictAndMove2Point.normalized() * 20 - get_global_position()# + (restrictAndMove2Point.normalized() * 200) - get_global_position()
+		velFinal =  restrictAndMove2Point - restrictAndMove2Point.normalized() * 20 - get_global_position()# + (restrictAndMove2Point.normalized() * 200) - get_global_position()
 		restrictAndMove2Point = null
 		if directional_force.x > 0:
 			restrictMovingRight = true
@@ -225,15 +226,35 @@ func _physics_process(delta):
 			restrictMovingRight = false
 	
 	if (restrictAndMove2Point == null):
-		velFinal = move_and_slide(velFinal2, global.gravVect() * -1, 5, 4, deg2rad(30))#(vel, Vector2(0, 1), Vector2.UP, false, 4, deg2rad(120), false)
-		#vel = move_and_slide(vel, Vector2.UP, 5, 4, deg2rad(30))#(vel, Vector2(0, 1), Vector2.UP, false, 4, deg2rad(120), false)
-		vel = velFinal.rotated((global.gravRadAng - deg2rad(90))* -1)
 		
+		vel = move_and_slide(velFinal, global.gravVect() * -1, 5, 4, deg2rad(30), false)#(vel, Vector2(0, 1), Vector2.UP, false, 4, deg2rad(120), false)
+		#vel = move_and_slide(vel, Vector2.UP, 5, 4, deg2rad(30))#(vel, Vector2(0, 1), Vector2.UP, false, 4, deg2rad(120), false)
+		
+		velFinal = velFinal.rotated((global.gravRadAng - deg2rad(90))* -1)
+		vel = velFinal
+		
+		
+		
+		#	if directional_force.x != 0:
+#		for index in get_slide_count():
+#			var coll = get_slide_collision(index)
+#			if coll.collider != null && coll.collider.is_in_group("object"):
+#				if coll.collider.get_linear_velocity().x < coll.collider.VEL_LIM:
+#					#if coll.collider.get_applied_force().x == 0:
+#					#coll.collider.add_central_force(-coll.normal * 10)
+#					coll.collider.apply_central_impulse(-coll.normal * 50)
 	#so that restrictAndMove2Point does not get transformed by change in gravity
 	else:
-		vel = move_and_slide(velFinal2, global.gravVect() * -1, 5, 4, deg2rad(30))
+		vel = move_and_slide(velFinal, global.gravVect() * -1, 5, 4, deg2rad(30), false)
 		
+		
+	preventPushBack(velFinal)
+	
+	
+					#coll.collider.add_central_force(-coll.normal * 10)
+#	print(velFinal2)
 
+			
 func ApplyMovement(delta):
 	#governs direction of buttons being pressed. Mostly used for
 	#horizontal movement. Resets to zero every frame
@@ -246,6 +267,14 @@ func ApplyMovement(delta):
 	InteractCheck()
 	MoveCameraAndInteracText()
 	RestrictFromRope()
+	MoveMovableObjects()
+
+func preventPushBack(velBeforeMoveSlide):
+	if (movableObject != null && movableObject.movingDir != 0):
+		for index in get_slide_count():
+			var coll = get_slide_collision(index)
+			if coll.collider != null && coll.collider.is_in_group("object"):
+				vel = velBeforeMoveSlide
 
 func ApplyInput():
 	
@@ -299,6 +328,10 @@ func Move():
 		return
 			
 	get_node("ASTRO_ANIM2").set_flip_h(directional_force.x < 0)
+	
+	if dirMulti != null:
+		var pushPullShape = get_node("push_pull_area/push_pull_area_shape")
+		pushPullShape.set_position(Vector2(abs(pushPullShape.get_position().x) * dirMulti, pushPullShape.get_position().y))
 		
 	astro_o2_change(curr_anim_code)
 		
@@ -425,7 +458,15 @@ func RestrictFromRope():
 	elif !restrictMovingRight:
 		directional_force.x = clamp(directional_force.x, 0, 1)
 	
-		
+
+
+func MoveMovableObjects():
+	if movableObject != null:
+		movableObject.movingDir = 0
+		if directional_force.x > 0:
+			movableObject.movingDir = 1
+		elif directional_force.x < 0:
+			movableObject.movingDir = -1
 #****************SUIT LIGHT / HEALTH CONTROLLER***************:
 	
 #color codes used for astro suit
@@ -818,3 +859,15 @@ func _on_Item_check_area_exited(area):
 		
 	if (area.get_groups().has("nora")):
 		touchingNora = false
+
+
+func _on_push_pull_area_body_entered(body):
+	if body.is_in_group("object"):
+		movableObject = body
+
+func _on_push_pull_area_body_exited(body):
+	if body.is_in_group("object"):
+		if movableObject == body:
+			if movableObject.movingDir != 0:
+				movableObject.movingDir = 0
+			movableObject = null
