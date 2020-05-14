@@ -17,7 +17,7 @@ var APPLIED_FORCE = 0
 #is changed by astro
 var movingDir = 0 
 
-var oneShotRotation = true
+var firstFrameOneShot = true
 var defaultTextureNode
 onready var defaultTexture = getDefaultNode()
 var rigidBodyMode
@@ -105,7 +105,11 @@ func _ready():
 	
 	setCustomSprite()
 	
+	setForceVelLim()
 	
+	
+			
+func setForceVelLim():
 	match objectWeight:
 		OBJECT_WEIGHT.HEAVY:
 			APPLIED_FORCE = 100
@@ -119,7 +123,6 @@ func _ready():
 			APPLIED_FORCE = 300
 			PUSH_PULL_VELOCITY_LIM = 120
 			return
-			
 			
 func changeWeight(weight):
 	objectWeight = weight
@@ -135,17 +138,17 @@ func _physics_process(delta):
 		return
 		
 func _integrate_forces(state):
-	#turn off tool shit
-	set_physics_process(false)
 	
 	#translate linear velocity back to standard setup
 	var vel = state.get_linear_velocity().rotated(-global.gravRadAngFromNorm)
 	
 	#need to do this because first frame, the vel will have not been
 	#set as rotated yet, so need to unrotate this change first frame
-	if (oneShotRotation):
+	if (firstFrameOneShot):
+		#turn off tool shit
+		set_physics_process(false)
 		vel = state.get_linear_velocity().rotated(global.gravRadAngFromNorm)
-		oneShotRotation = false
+		firstFrameOneShot = false
 	
 	#gravity
 	vel.y += global.gravFor1Frame * global.gravMag * state.get_step()
@@ -171,7 +174,7 @@ func _integrate_forces(state):
 	vel -= vel * LINEAR_DAMP
 	
 	state.set_linear_velocity(vel.rotated(global.gravRadAngFromNorm))
-	
+
 
 func setMode():
 	set_mode(rigidBodyMode)

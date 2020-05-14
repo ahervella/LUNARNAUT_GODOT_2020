@@ -71,7 +71,7 @@ var currItems = []
 var currItemsGlobalPosDict = {}
 
 var movableObject = null
-var intertia = 1
+var grabbingMovableObj = false
 
 #touch controls
 var vJoy = -5 # -5 has no specific functionality, but can't be null or shit breaks
@@ -205,6 +205,27 @@ func _physics_process(delta):
 	
 	max_move_speed = max(abs(vel.x), speed)
 	
+	#logic for pulling objects
+	if grabbingMovableObj:
+		#only change the x max if pulling and not pushing
+		var get_flip = get_node("ASTRO_ANIM2").is_flipped_h()
+		if (get_flip && directional_force.x > 0) || (!get_flip && directional_force.x < 0):
+			max_move_speed = abs(movableObject.get_linear_velocity().rotated(-global.gravRadAngFromNorm).x)
+		
+		#only stop if was moving forward
+		if directional_force.x == 0 && ((vel.x > 0 && !get_flip) || (vel.x < 0 && get_flip)) :
+			#stop object from moving horizontally
+			var objVel = movableObject.get_linear_velocity().rotated(-global.gravRadAngFromNorm)
+			objVel.x = 0
+			movableObject.set_linear_velocity(objVel.rotated(global.gravRadAngFromNorm))
+			
+			#hack for weird bug where circle obj keeps spinning if stoped
+			if (movableObject.roll):
+				movableObject.rigidBodyMode = RigidBody2D.MODE_CHARACTER
+			
+		elif movableObject.PUSH_PULL_VELOCITY_LIM == 0:
+			movableObject.setForceVelLim()
+	
 	vel.x = clamp(vel.x, -max_move_speed, max_move_speed)
 	vel.y = clamp(vel.y, -global.gravTermVel, global.gravTermVel)
 	
@@ -234,25 +255,14 @@ func _physics_process(delta):
 		vel = velFinal
 		
 		
-		
-		#	if directional_force.x != 0:
-#		for index in get_slide_count():
-#			var coll = get_slide_collision(index)
-#			if coll.collider != null && coll.collider.is_in_group("object"):
-#				if coll.collider.get_linear_velocity().x < coll.collider.VEL_LIM:
-#					#if coll.collider.get_applied_force().x == 0:
-#					#coll.collider.add_central_force(-coll.normal * 10)
-#					coll.collider.apply_central_impulse(-coll.normal * 50)
 	#so that restrictAndMove2Point does not get transformed by change in gravity
 	else:
 		vel = move_and_slide(velFinal, global.gravVect() * -1, 5, 4, deg2rad(30), false)
 		
 		
-	preventPushBack(velFinal)
+	preventMovingObjPushBack(velFinal)
 	
 	
-					#coll.collider.add_central_force(-coll.normal * 10)
-#	print(velFinal2)
 
 			
 func ApplyMovement(delta):
@@ -269,7 +279,8 @@ func ApplyMovement(delta):
 	RestrictFromRope()
 	MoveMovableObjects()
 
-func preventPushBack(velBeforeMoveSlide):
+
+func preventMovingObjPushBack(velBeforeMoveSlide):
 	if (movableObject != null && movableObject.movingDir != 0):
 		for index in get_slide_count():
 			var coll = get_slide_collision(index)
@@ -326,12 +337,19 @@ func Move():
 			set_anim("END")
 
 		return
-			
-	get_node("ASTRO_ANIM2").set_flip_h(directional_force.x < 0)
 	
-	if dirMulti != null:
-		var pushPullShape = get_node("push_pull_area/push_pull_area_shape")
-		pushPullShape.set_position(Vector2(abs(pushPullShape.get_position().x) * dirMulti, pushPullShape.get_position().y))
+	#if not pulling an object
+	if !grabbingMovableObj:
+		#flip astro sprite		
+		get_node("ASTRO_ANIM2").set_flip_h(directional_force.x < 0)
+		
+		#flip movableObject bubble
+		if dirMulti != null:
+			var pushPullShape = get_node("push_pull_area/push_pull_area_shape")
+			pushPullShape.set_position(Vector2(abs(pushPullShape.get_position().x) * dirMulti, pushPullShape.get_position().y))
+		
+		
+		
 		
 	astro_o2_change(curr_anim_code)
 		
@@ -397,13 +415,13 @@ func MoveJump(delta):
 		holdDownCanJump = false
 	
 func InteractCheck():
-	var anyItem = null
-	for item in currItems:
-		if item != null:
-			anyItem = item
-			
-	if anyItem == null:
-		return
+#	var anyItem = null
+#	for item in currItems:
+#		if item != null:
+#			anyItem = item
+#
+#	if anyItem == null:
+#		return
 	
 	var touchInteractJustPressed = TOUCH_CONTROL_NODE.touchStateDict["interact"] == TOUCH_CONTROL_NODE.TOUCH_STATE.JUST_TOUCHED
 	
@@ -413,6 +431,10 @@ func InteractCheck():
 			
 		for item in currItems:
 			item.processed = false
+			
+	var touchInteractPressed = TOUCH_CONTROL_NODE.touchStateDict["interact"] == TOUCH_CONTROL_NODE.TOUCH_STATE.TOUCHING
+	
+	grabbingMovableObj = (Input.is_action_pressed("ui_interact") || touchInteractPressed) && movableObject != null
 
 
 func MoveCameraAndInteracText():
@@ -430,13 +452,12 @@ func MoveCameraAndInteracText():
 	
 	for interNode in global.interactNodes:
 		if interNode == null: continue
-		#print("worked")
+		
 		if (interNode.fixedOffset):
 			interNode.set_global_position(currItemsGlobalPosDict[interNode] + interNode.totalOffset)
 			continue
-		#print(interNode.totalOffset)
+			
 		interNode.set_position(astroPos + interNode.totalOffset)
-		#print(interNode.get_position())
 	
 	
 	
