@@ -347,8 +347,19 @@ func Move():
 		if dirMulti != null:
 			var pushPullShape = get_node("push_pull_area/push_pull_area_shape")
 			pushPullShape.set_position(Vector2(abs(pushPullShape.get_position().x) * dirMulti, pushPullShape.get_position().y))
+	
+	
+	#place holder for push and pull anims:
+	else:
+		var get_flip = get_node("ASTRO_ANIM2").is_flipped_h()
+		if directional_force.x > 0:
+			
+			if get_flip: pass#set_anim("PULL")
+			else: pass#set_anim("PUSH")
 		
-		
+		elif directional_force.x < 0:
+			if get_flip: pass#set_anim("PUSH")
+			else: pass#set_anim("PULL")
 		
 		
 	astro_o2_change(curr_anim_code)
@@ -415,26 +426,27 @@ func MoveJump(delta):
 		holdDownCanJump = false
 	
 func InteractCheck():
-#	var anyItem = null
-#	for item in currItems:
-#		if item != null:
-#			anyItem = item
-#
-#	if anyItem == null:
-#		return
-	
+
+		
+		
 	var touchInteractJustPressed = TOUCH_CONTROL_NODE.touchStateDict["interact"] == TOUCH_CONTROL_NODE.TOUCH_STATE.JUST_TOUCHED
-	
-	if (Input.is_action_just_pressed("ui_interact") || touchInteractJustPressed):
-		for item in currItems:
-			item.Interact()
+	if (Input.is_action_just_pressed("ui_interact") || touchInteractJustPressed) && movableObject == null:
+		
+		# only be able to interact with shit if not currently able to move an object
+		if movableObject == null:
+			for item in currItems:
+				item.Interact()
+				
+		else: movableObject.Interact()
+			
 			
 		for item in currItems:
 			item.processed = false
 			
+	#set grabable object if interact being held down
 	var touchInteractPressed = TOUCH_CONTROL_NODE.touchStateDict["interact"] == TOUCH_CONTROL_NODE.TOUCH_STATE.TOUCHING
+	grabbingMovableObj = (Input.is_action_pressed("ui_interact") || touchInteractPressed) && movableObject != null && groundedBubble
 	
-	grabbingMovableObj = (Input.is_action_pressed("ui_interact") || touchInteractPressed) && movableObject != null
 
 
 func MoveCameraAndInteracText():
@@ -482,12 +494,15 @@ func RestrictFromRope():
 
 
 func MoveMovableObjects():
-	if movableObject != null:
+	if movableObject != null && grabbingMovableObj:
 		movableObject.movingDir = 0
 		if directional_force.x > 0:
 			movableObject.movingDir = 1
 		elif directional_force.x < 0:
 			movableObject.movingDir = -1
+			
+	if movableObject != null && !grabbingMovableObj:
+		movableObject.movingDir = 0
 #****************SUIT LIGHT / HEALTH CONTROLLER***************:
 	
 #color codes used for astro suit
@@ -847,48 +862,109 @@ func _on_groundBubble_body_exited(body):
 
 func _on_Item_check_area_entered(area):
 	print("astoooo: shit entered")
-	print(area.get_groups())
+	#print(area.get_groups())
 	if (area.get_groups().has("interact")):
 		var newItem = area.get_parent()
-		currItems.append(newItem)
-		#do virtual interface check
-		global.InteractInterfaceCheck(newItem)
 		
-		#need to store global pos for when it leaves astro
-		#in case it is fixed text
-		currItemsGlobalPosDict[newItem] = newItem.get_global_position()
-		
-		#Execute autoInteract just once, upon entering
-		newItem.AutoInteract()
+		processItemEntered(newItem)
 	
 	if (area.get_groups().has("nora")):
 		touchingNora = true
 		TakeDamage()
 
 
+func processItemEntered(newItem):
+	print("processedItemEntered")
+		#do virtual interface check
+	global.InteractInterfaceCheck(newItem)
+		
+	currItems.append(newItem)
+	
+	#need to store global pos for when it leaves astro
+	#in case it is fixed text
+	currItemsGlobalPosDict[newItem] = newItem.get_global_position()
+	
+	#only if a movable object is not currently in bound
+	if movableObject == null || !isTouchingMovableObj():
+		#Execute autoInteract just once, upon entering
+		newItem.AutoInteract()
+
+
+
+
+func isTouchingMovableObj():
+	
+	for item in currItems:
+		if item.is_in_group("object"):
+			return true
+	return false
+
 func _on_Item_check_area_exited(area):
 	print("_on_Item_check_area_exited")
 	if(area.get_groups().has("interact")):
+		
 		var exitingItem = area.get_parent()
-		#do virtual interface check
-		global.InteractInterfaceCheck(exitingItem)
-		#print("useNextInterNodeIfNeeded")
-		#print(exitingItem.useNextInterNodeIfNeeded)
-		exitingItem.AutoCloseInteract()
-		currItems.erase(exitingItem)
+		
+		processItemExited(exitingItem)
+
 		#currItem = null
 		
 	if (area.get_groups().has("nora")):
 		touchingNora = false
+		
+		
+func processItemExited(exitingItem):
+	print("processedItemEXITED")
+	#do virtual interface check
+	global.InteractInterfaceCheck(exitingItem)
+	
+	#this order of destroying the item from the list first before closing
+	#text is important because AutoCloseInteract() triggers the
+	#global.enableMultiInteractNodes(true), which checks currItems
+	#for any other nodes that have useNextInterNodeIfNeeded set to false
+	currItems.erase(exitingItem)
+	
+	exitingItem.AutoCloseInteract()
+	
+
+
+
 
 
 func _on_push_pull_area_body_entered(body):
 	if body.is_in_group("object"):
+		print("object entered")
+		print(body.get_global_position())
+		
+		#make sure we grab the lowest object if they are stacked
+		#so we always drag the entire stack
+		
+		if movableObject != null:
+			if body.objIsBelow(movableObject):
+				return
+			
+			global.destroyInteractNode(movableObject.getSpriteNode().interactNode)
+		
 		movableObject = body
+		processItemEntered (movableObject.getSpriteNode())
+		
+		
+		
+		
+		
+		
 
 func _on_push_pull_area_body_exited(body):
 	if body.is_in_group("object"):
+		print("object exiteddddd")
 		if movableObject == body:
-			if movableObject.movingDir != 0:
-				movableObject.movingDir = 0
+			movableObject.movingDir = 0
+			
+			processItemExited(movableObject.getSpriteNode())
+			
 			movableObject = null
+			
+			#should only be executing text prompts again
+#			for item in currItems:
+#				if !item.is_in_group("object"):
+#					item.AutoInteract()

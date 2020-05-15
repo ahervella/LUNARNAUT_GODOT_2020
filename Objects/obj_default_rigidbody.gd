@@ -9,6 +9,20 @@ export (OBJECT_WEIGHT) var objectWeight = OBJECT_WEIGHT.MEDIUM setget changeWeig
 export (bool) var roll = false
 export (Vector2) var shapeDimensions = Vector2(25, 25) setget setShapeDim
 export (NodePath) var CUSTOM_SPRITE_PATH = null
+export (Resource) var TC_AUTO
+export (Resource) var TC_INTERACT
+
+export (String) var interactSoundNode = null
+export (String) var interactSoundGroup = null
+
+export (String) var showSoundNode = null
+export (String) var showSoundGroup = null
+
+export (String) var hideSoundNode = null
+export (String) var hideSoundGroup = null
+
+var rectObjBelow = null
+
 var CUSTOM_SPRITE
 var SHAPE_NODE
 var PUSH_PULL_VELOCITY_LIM = 0
@@ -21,6 +35,8 @@ var firstFrameOneShot = true
 var defaultTextureNode
 onready var defaultTexture = getDefaultNode()
 var rigidBodyMode
+
+
 
 func getDefaultNode():
 	if defaultTextureNode == null:
@@ -101,32 +117,62 @@ func setVarsToDefault():
 	#Default Angular Damp = 1
 
 func _ready():
+	
+	#set tc in interact node and trigger node in astro scrupt for movabkle onjs
+	
 	setVarsToDefault()
 	
 	setCustomSprite()
 	
 	setForceVelLim()
 	
-	
+	setInteractVars()
 			
+			
+#had to do this because inter_default extends a sprite, not a rigidbody,
+#and I kinda want the rigidbody to be the head node here so it doesn't
+#have to update it's parent position and shit and not get scaled (because 
+#you're not allowed to scale rigidbodies)
+func setInteractVars():
+	var spriteNode = getSpriteNode()
+	spriteNode.TC_AUTO = TC_AUTO
+	spriteNode.TC_INTERACT = TC_INTERACT
+	
+	spriteNode.interactSoundNode = interactSoundNode
+	spriteNode.interactSoundGroup = interactSoundGroup
+	
+	spriteNode.showSoundNode = showSoundNode
+	spriteNode.showSoundGroup = showSoundGroup
+	
+	spriteNode.hideSoundNode = hideSoundNode
+	spriteNode.hideSoundGroup = hideSoundGroup
+			
+func getSpriteNode():
+	for child in get_children():
+		if child is Sprite:
+			return child
+	return get_node("DEFAULT_SPRITE")
+	
+	
+
 func setForceVelLim():
 	match objectWeight:
 		OBJECT_WEIGHT.HEAVY:
-			APPLIED_FORCE = 100
+			APPLIED_FORCE = 20
 			PUSH_PULL_VELOCITY_LIM = 50
 			return
 		OBJECT_WEIGHT.MEDIUM:
-			APPLIED_FORCE = 200
+			APPLIED_FORCE = 30
 			PUSH_PULL_VELOCITY_LIM = 80
 			return
 		OBJECT_WEIGHT.LIGHT:
-			APPLIED_FORCE = 300
+			APPLIED_FORCE = 50
 			PUSH_PULL_VELOCITY_LIM = 120
 			return
 			
 func changeWeight(weight):
 	objectWeight = weight
-	_ready()
+	setForceVelLim()#_ready()
 
 
 
@@ -155,7 +201,10 @@ func _integrate_forces(state):
 	vel.y = clamp(vel.y, -global.gravTermVel, global.gravTermVel)
 	
 	#apply pushing force (will always be perpendicular to astro)
-	vel.x += APPLIED_FORCE * movingDir
+	if rectObjBelow == null || movingDir != 0:
+		vel.x += APPLIED_FORCE * movingDir
+	elif rectObjBelow != null:
+		vel.x = rectObjBelow.get_linear_velocity().rotated(-global.gravRadAngFromNorm).x
 	
 	rigidBodyMode = RigidBody2D.MODE_RIGID
 	if movingDir != 0:
@@ -171,10 +220,40 @@ func _integrate_forces(state):
 	
 	#linear dampening so shit doesn't bounce around everywhere
 	# and so the circ obj doesn't roll for ever
-	vel -= vel * LINEAR_DAMP
+	vel.y -= vel.y * LINEAR_DAMP
+	if rectObjBelow == null || movingDir != 0:
+		vel.x -= vel.x * LINEAR_DAMP
 	
 	state.set_linear_velocity(vel.rotated(global.gravRadAngFromNorm))
 
 
+
 func setMode():
 	set_mode(rigidBodyMode)
+
+
+func objIsBelow(obj):
+	var objRotPos = obj.get_global_position().rotated(-global.gravRadAngFromNorm)
+	var selfRotPos = get_global_position().rotated(-global.gravRadAngFromNorm)
+	
+	return selfRotPos.y < objRotPos.y
+		
+		
+		
+		
+		
+
+
+func _on_STACK_AREA_body_entered(body):
+	if roll: return
+	if body.is_in_group("object"):
+		if objIsBelow(body):
+			rectObjBelow = body
+			
+		
+
+func _on_STACK_AREA_body_exited(body):
+	pass # Replace with function body.
+	if body.is_in_group("object"):
+		if rectObjBelow != null && body == rectObjBelow:
+			rectObjBelow = null

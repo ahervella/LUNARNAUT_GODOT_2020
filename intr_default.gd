@@ -40,7 +40,6 @@ export (bool) var eatRequirements = false
 #interactNodes
 export (bool) var useNextInterNodeIfNeeded = false
 
-var interactNodeIndex = null
 var interactNode = null
 
 var can_interact : bool = true
@@ -51,6 +50,7 @@ var timerUniqueID
 #used in case multiple items that interact with eachother at once
 #such as with plugs/cables
 var processed = false
+
 
 func Interact():
 	# If we can't interact, bail
@@ -73,14 +73,15 @@ func Interact():
 	# Give us items if we're supposed to	
 	get_tree().get_current_scene().AddInventoryItems(itemsGained)
 
-	# Update text for items we got
-	if (itemsGained != null && itemsGained.size() > 0):
-		for iq in itemsGained:
-			TC_INTERACT.text = "%s\nGained %d %s" % [TC_INTERACT.text,iq.quantity, iq.item.Name]
-
-	# Display text
-	if (interactNode != null && is_instance_valid(interactNode)):
-		interactNode.animateText(TC_INTERACT, InteractAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
+	if TC_INTERACT != null:
+		# Update text for items we got
+		if (itemsGained != null && itemsGained.size() > 0):
+			for iq in itemsGained:
+				TC_INTERACT.text = "%s\nGained %d %s" % [TC_INTERACT.text,iq.quantity, iq.item.Name]
+	
+		# Display text
+		if (interactNode != null && is_instance_valid(interactNode)):
+			interactNode.animateText(TC_INTERACT, InteractAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
 
 	# If oneshot, then we all done
 	if (oneshot):
@@ -90,8 +91,23 @@ func Interact():
 var addedItemsToAuto = false;
 
 func AutoInteract():
-	print("interactNodeIndex")
+	#print("interactNodeIndex")
+	
+	if !useNextInterNodeIfNeeded:
+		#print("should worK??")
+#		for item in global.lvl().astroNode.currItems:
+#			if !item.is_in_group("object"):
+#					item.interactNode = null
+		
+		global.enableMultiInteractNodes(false)#.closeText(HideAudioNode()) #because will not finish closing text before requesting on next line
+			
+
+				
+		#interactNode = global.getNextInteractNodeIndex()
+		
 	interactNode = global.getNextInteractNodeIndex()#interactNodeIndex = global.getNextInteractNodeIndex()
+	
+	
 	if (!oneshot):
 		can_interact = true
 	if (!can_interact):
@@ -113,17 +129,13 @@ func AutoInteract():
 	elif(itemsRequired != null && itemsRequired.size() > 0):
 		TC_AUTO.ColorType = TextConfig.colorType.info
 
-	if !useNextInterNodeIfNeeded:
-		for i in global.interactNodes.size():
-			if i == 0: continue
-			if global.interactNodes[i] != null && is_instance_valid(global.interactNodes[i]):
-				global.destroyInteractNode(global.interactNodes[i])#.closeText(HideAudioNode()) #because will not finish closing text before requesting on next line
-				
-		interactNode = global.getNextInteractNodeIndex()
+	
 				
 	if (interactNode != null && is_instance_valid(interactNode)):
 		interactNode.animateText(TC_AUTO, InteractAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
 
+#I think you can call AutoInteract again with out hick ups,
+#but I guess helpful if you had changed AutoInteract shit in an extended script
 func TextInteract():
 	if (TC_AUTO == null):
 		return	
@@ -137,8 +149,17 @@ func AutoCloseInteract():
 	if (!oneshot):
 		can_interact = true
 		
+		
+	#because this originally deleted the interNodes of all items, but them back
+	if !useNextInterNodeIfNeeded:
+		global.enableMultiInteractNodes(true)
+		
+	print("got here")
 	if (interactNode != null && is_instance_valid(interactNode)):
+		print("got here2")
 		interactNode.closeText(HideAudioNode())
+		
+	
 
 
 func ShowAudioNode() -> AudioStream:

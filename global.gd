@@ -31,7 +31,8 @@ extends Node
 
 var interactNode #$"/root/Control/astro/InteractFont"
 var interactNodes = []
-var maxInteractNodes = 2
+const DEF_MAX_INTERACT = 2
+var maxInteractNodes = DEF_MAX_INTERACT
 #var infoInteractNodeIndex = 0
 var infoInteractNode 
 
@@ -49,7 +50,7 @@ var gravRadAng
 var gravRadAngFromNorm
 
 func getNextInteractNodeIndex():
-	print("gettingNexINterNode")
+	print("global.getNextInteractNodeIndex")
 	var currIndex = 0
 	var overrideFlip = null
 	
@@ -70,8 +71,8 @@ func getNextInteractNodeIndex():
 		
 	
 	var newInteractNode = addNewInteractNode(currIndex, overrideFlip)
-	print("infoInteractNodeIndex")
-	print(infoInteractNodeIndex)
+	#print("infoInteractNodeIndex")
+	#print(infoInteractNodeIndex)
 	infoInteractNode = addNewInteractNode(infoInteractNodeIndex, overrideFlip)
 	
 	return newInteractNode
@@ -105,13 +106,11 @@ func setInterNodeVerticalOffset(interNodeIndex):
 					interNode.multiInterNodeOffset = actualPrevTextVect.y + prevInterNode.multiInterNodeOffset
 		
 func getRealTextVector2(string, width, font):
-	print("string length")
-	print(font.get_string_size(string))
+	
 	var cursor = 0
 	var words = []
 	for i in string.length():
 		if string.substr(i, 1) == " ":
-			print(i)
 			words.append(string.substr(cursor, i-cursor))
 			cursor = i+1
 		elif(i == string.length() -1):
@@ -120,7 +119,6 @@ func getRealTextVector2(string, width, font):
 	var lines = []
 	var currLine = ""
 	
-	print(width)
 	for word in words:
 		if font.get_string_size(currLine + word).x < width || currLine == "":
 			currLine += word + " "
@@ -140,14 +138,45 @@ func getRealTextVector2(string, width, font):
 	#plus one because of line spacing I believe
 	return Vector2(width, (font.get_string_size(string).y+1) * lines.size())
 
+func enableMultiInteractNodes(enable):
+	
+	var oldWasDisabled = maxInteractNodes == 1
+	
+	if enable:
+		for item in lvl().astroNode.currItems:
+			if !item.useNextInterNodeIfNeeded:
+				return
+		
+		maxInteractNodes = DEF_MAX_INTERACT
+		
+		
+	else:
+		for interNode in interactNodes:
+			#if i == 0: continue
+			if interNode != null && is_instance_valid(interNode):
+				destroyInteractNode(interNode)
+		maxInteractNodes = 1
+		
+	interactNodes.resize(maxInteractNodes + 1)
+	
+	if enable && oldWasDisabled:
+		for item in lvl().astroNode.currItems:
+			item.AutoInteract()
+
 func destroyInteractNode(interNode):
-	print("destroy node")
+	print("globa.destroyInteractNode")
 	for i in interactNodes.size():
 		if interactNodes[i] != null && interactNodes[i] == interNode:
+			#remove interactNode references from items in astro
+			for item in lvl().astroNode.currItems:
+				if item == interNode:
+					item.interactNode = null
+					
 			interactNodes[i] = null
 			#interactNode.remove_child(interNode)
 			if interNode.timer != null && interNode.timerUniqueID == interNode.timer.to_string():
 				interNode.timer.free()
+			#interNode.free()
 			interNode.call_deferred('free')
 			return
 	
@@ -224,11 +253,11 @@ func newTween(object, tweeningMethod, startVars, endVars, time, delay, func_ref 
 func DestroyTween(object, key, tweenObj, func_ref = null):
 	#if any other functions to be called were passed, do that
 	
-	print("destroyTweenFuncRef")
-	print(func_ref)
+	#print("destroyTweenFuncRef")
+	#print(func_ref)
 	if (func_ref != null):
 		func_ref.call_func()
-		print("destroyTweenFuncRef was called")
+		#print("destroyTweenFuncRef was called")
 	#ensures that next frame free will be called on this tween instance
 	tweenObj.call_deferred('free')
 
@@ -260,9 +289,10 @@ func DestroyTimer(timer, ref):
 #to clean up shit before switching scenes to not cause scene / node ref errors
 func DestroyAllChildren():
 	for i in range(0, get_child_count()):
-		print("childcount")
-		print(get_child_count())
+		#print("childcount")
+		#print(get_child_count())
 		get_child(i).call_deferred('free')
+
 
 #these are functions that any interact node must have (acts as an interface enforcer)
 #ALSO, the interact node MUST have "interact" in node area group to work
