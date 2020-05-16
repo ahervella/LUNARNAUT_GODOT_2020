@@ -17,5 +17,7 @@ func initialize(character):
 
 
 func _on_Button_button_up():
+	global.lvl().characterSpecificNodes(false)
+	
 	global.CharacterRes = Character
 	global.goto_scene("res://SCENES/%s.tscn" % Character.level)

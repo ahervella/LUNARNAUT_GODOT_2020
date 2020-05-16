@@ -8,6 +8,9 @@ export (NodePath) var astroNodePath = null
 export (Array, Resource) var startingInventory
 var astroNode
 export (NodePath) var trigChunkNodePath = null
+#export (global.CHAR) var character
+export (Array, Resource) var NodesPerCharacter
+
 var trigChunkNode
 var ASTRO_GLOBAL_START_POS : Vector2
 var ASTRO_FACE_RIGHT : bool
@@ -25,6 +28,51 @@ func _ready():
 	if (trigChunkNodePath != null):
 		trigChunkNode = get_node(trigChunkNodePath)
 	global.interactNode = astroNode.INTERACT_TEXT_NODE
+	
+	for node in characterSpecificNodes():
+		node.hide()
+	
+	
+	
+func characterSpecificNodes(restoreNodePos = true, node = self):
+	var currChar = global.CharacterRes.id
+	var delChildren = []
+	for child in node.get_children():
+		for charID in NodesPerCharacter:
+			if charID is CharacterNodeDict:
+				var nodee = get_node(charID.node)
+				if nodee == child:
+					var keep = true
+					match currChar:
+						global.CHAR.USA:
+							keep = charID.USA
+							
+							continue
+						global.CHAR.RUS:
+							keep = charID.RUS
+							continue
+						global.CHAR.FRA:
+							keep = charID.USA
+							continue
+						global.CHAR.CHN:
+							keep = charID.CHN
+							continue
+						global.CHAR.MAR:
+							keep = charID.MAR
+				
+					if !keep:
+						delChildren.append(child)
+					elif charID.charNodePosDict[currChar] != null && restoreNodePos:
+						child.set_global_position(charID.charNodePosDict[currChar])
+					elif !restoreNodePos:
+						charID.charNodePosDict[currChar] = child.get_global_position()
+					break
+					
+		if child.get_children().size() > 0:
+			for childNode in characterSpecificNodes(true, child):
+				delChildren.push_front(childNode)
+	return delChildren
+	
 	
 	
 func initLevel():

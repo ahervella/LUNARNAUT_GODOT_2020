@@ -29,6 +29,11 @@ extends Node
 	#Default Linear Damp = 0
 	#Default Angular Damp = 1
 
+enum CHAR {USA, RUS, FRA, CHN, MAR}
+
+#var availableChar = [CHAR.USA, CHAR.RUS]
+var astroCharDict = {CHAR.USA : "res://RESOURCES/CHARACTERS/CHAR_USA", CHAR.RUS : "res://RESOURCES/CHARACTERS/CHAR_RUS"}
+#var currChar = astroCharDict[CHAR.USA]
 var interactNode #$"/root/Control/astro/InteractFont"
 var interactNodes = []
 const DEF_MAX_INTERACT = 2
@@ -155,6 +160,7 @@ func enableMultiInteractNodes(enable):
 			#if i == 0: continue
 			if interNode != null && is_instance_valid(interNode):
 				destroyInteractNode(interNode)
+				
 		maxInteractNodes = 1
 		
 	interactNodes.resize(maxInteractNodes + 1)
@@ -164,7 +170,11 @@ func enableMultiInteractNodes(enable):
 			item.AutoInteract()
 
 func destroyInteractNode(interNode):
-	print("globa.destroyInteractNode")
+	
+	print("global.destroyInteractNode")
+#	if !is_instance_valid(interNode):
+#		return
+	
 	for i in interactNodes.size():
 		if interactNodes[i] != null && interactNodes[i] == interNode:
 			#remove interactNode references from items in astro
@@ -174,7 +184,7 @@ func destroyInteractNode(interNode):
 					
 			interactNodes[i] = null
 			#interactNode.remove_child(interNode)
-			if interNode.timer != null && interNode.timerUniqueID == interNode.timer.to_string():
+			if interNode.timer != null  && interNode.timerUniqueID == interNode.timer.to_string():
 				interNode.timer.free()
 			#interNode.free()
 			interNode.call_deferred('free')
@@ -212,6 +222,9 @@ func loadLevel(lvlNum):
 
 	
 func goto_scene(path):
+	for child in lvl().get_children():
+		child.set_physics_process(false)
+		
 	DestroyAllChildren()
 	get_tree().change_scene(path)
 	
@@ -288,6 +301,12 @@ func DestroyTimer(timer, ref):
 		
 #to clean up shit before switching scenes to not cause scene / node ref errors
 func DestroyAllChildren():
+	
+	for interNode in interactNodes:
+		destroyInteractNode(interNode)
+		
+	interactNode = null
+	
 	for i in range(0, get_child_count()):
 		#print("childcount")
 		#print(get_child_count())

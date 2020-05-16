@@ -12,7 +12,9 @@ extends KinematicBody2D
 #ALEJANDRO (Feb-24-2020)
 #renamed from astrooo to astroPlayer.gd!
 
+#used for testing
 export (Resource) var CHARACTER_RES = null
+#var CHARACTER_RES : Resource = null
 export (NodePath) var CAMERA_NODE_PATH = null
 onready var CAMERA_NODE = get_node(CAMERA_NODE_PATH)
 const CAMERA_OFFSET = 200
@@ -22,6 +24,9 @@ onready var TOUCH_CONTROL_NODE = CAMERA_NODE.get_node(CAMERA_NODE.TOUCH_CONTROL_
 export (NodePath) var INTERACT_TEXT_NODE_PATH = null
 onready var INTERACT_TEXT_NODE = get_node(INTERACT_TEXT_NODE_PATH)
 
+
+export (PackedScene) var MENU_SCENE
+var MENU_NODE
 
 export (bool) var showMoonBG =  true setget showMoonBGSetter
 export (bool) var showBlackBG = true setget showBlackBGSetter
@@ -93,6 +98,7 @@ const DIRECTION = {
 }
 
 func _ready():
+	
 	#only execute in game
 	if Engine.editor_hint:
 		return
@@ -103,8 +109,15 @@ func _ready():
 	#global.interactNodes.clear()
 	#global.interactNodes.append(INTERACT_TEXT_NODE)
 	
-	if (global.CharacterRes != null):
+	if (CHARACTER_RES == null && global.CharacterRes != null):
 		CHARACTER_RES = global.CharacterRes
+	elif (global.CharacterRes == null):
+		global.CharacterRes = CHARACTER_RES
+		
+#	if (global.CharacterRes != null || is_instance_valid(global.CharacterRes)):
+		#CHARACTER_RES = global.CharacterRes
+#	else:
+		#global.CharacterRes = CHARACTER_RES
 	
 	#need to do this as well here because the interact text node needs
 	#an astro node reference. Because asto is always below text in scene tree,
@@ -269,15 +282,16 @@ func ApplyMovement(delta):
 	#governs direction of buttons being pressed. Mostly used for
 	#horizontal movement. Resets to zero every frame
 	
-	ApplyInput()
-	
+	ProcessMoveInput()
 	Move()
-
 	MoveJump(delta)
-	InteractCheck()
+	
+	ProcessInteractInput()
 	MoveCameraAndInteracText()
 	RestrictFromRope()
 	MoveMovableObjects()
+	
+	ProcessMenuInput()
 
 
 func preventMovingObjPushBack(velBeforeMoveSlide):
@@ -287,7 +301,7 @@ func preventMovingObjPushBack(velBeforeMoveSlide):
 			if coll.collider != null && coll.collider.is_in_group("object"):
 				vel = velBeforeMoveSlide
 
-func ApplyInput():
+func ProcessMoveInput():
 	
 	directional_force = DIRECTION.ZERO
 	
@@ -425,8 +439,10 @@ func MoveJump(delta):
 	if(jumpJustReleased):
 		holdDownCanJump = false
 	
-func InteractCheck():
-
+func ProcessInteractInput():
+	
+	if(!global.controls_enabled):
+		return
 		
 		
 	var touchInteractJustPressed = TOUCH_CONTROL_NODE.touchStateDict["interact"] == TOUCH_CONTROL_NODE.TOUCH_STATE.JUST_TOUCHED
@@ -463,7 +479,7 @@ func MoveCameraAndInteracText():
 	global.interactNode.set_global_position(astroPos + global.interactNode.totalOffset)
 	
 	for interNode in global.interactNodes:
-		if interNode == null: continue
+		if interNode == null || !is_instance_valid(interNode): continue #|| !is_instance_valid(interNode)
 		
 		if (interNode.fixedOffset):
 			interNode.set_global_position(currItemsGlobalPosDict[interNode] + interNode.totalOffset)
@@ -503,6 +519,26 @@ func MoveMovableObjects():
 			
 	if movableObject != null && !grabbingMovableObj:
 		movableObject.movingDir = 0
+		
+		
+		
+		
+		
+func ProcessMenuInput():
+	if(!global.controls_enabled):
+		return
+		
+	if (Input.is_action_just_pressed("ui_start")):
+		
+		if MENU_NODE == null:
+			MENU_NODE = MENU_SCENE.instance()
+			
+			CAMERA_NODE.add_child(MENU_NODE)
+		else:
+			CAMERA_NODE.remove_child(MENU_NODE)
+			MENU_NODE = null
+		
+	
 #****************SUIT LIGHT / HEALTH CONTROLLER***************:
 	
 #color codes used for astro suit

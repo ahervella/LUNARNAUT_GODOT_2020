@@ -3,7 +3,7 @@ extends Node
 export (NodePath) var childContainer
 export (PackedScene) var child
 
-var path = "res://RESOURCES/Character"
+var path = "res://RESOURCES/CHARACTERS"
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
