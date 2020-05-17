@@ -1,3 +1,4 @@
+tool
 extends Node
 
 #ALEJANDRO (Feb-23-2020)
@@ -9,6 +10,9 @@ export (Array, Resource) var startingInventory
 var astroNode
 export (NodePath) var trigChunkNodePath = null
 #export (global.CHAR) var character
+export (bool) var CharNodesAddAstroAndCam = false setget setAddAstroAndCam
+export (bool) var CharNodesAddAll1stGenChildNodes = false setget setAddAllChildNodes
+export (bool) var CharNodesClearAllNodes = false setget setClearAllNodes
 export (Array, Resource) var NodesPerCharacter
 
 var trigChunkNode
@@ -22,19 +26,101 @@ var levelNodes : Dictionary
 
 var Inventory : Dictionary
 
+var oneShotAddAstroAndCam = true
+
+func setAddAstroAndCam(garboVal):
+	addAstroAndCamPerChar()
+	
+func setAddAllChildNodes(garboVal):
+	addAstroAndCamPerChar()
+	
+	for child in get_children():
+		var alreadyPresent = false
+		
+		for resNode in NodesPerCharacter:
+			if get_node(resNode.node) == child:
+				alreadyPresent = true
+				break
+		
+		if !alreadyPresent:
+			var childRes = CharacterNodeDict.new()
+			#name can actually act as a readable node path
+			childRes.node = child.get_name()
+			NodesPerCharacter.append(childRes)
+	
+	
+func setClearAllNodes(garboVal):
+	NodesPerCharacter.resize(0)
+	
+
 func _ready():
+	
+	#prevent from running in editor
+	if Engine.editor_hint:
+		return
+	
+	remove_child(get_node("Nodeeee"))
+	
 	global.playTest = playTest
 	astroNode = get_node(astroNodePath)
 	if (trigChunkNodePath != null):
 		trigChunkNode = get_node(trigChunkNodePath)
 	global.interactNode = astroNode.INTERACT_TEXT_NODE
 	
+
+	
 	for node in characterSpecificNodes():
 		node.hide()
 	
 	
+func addAstroAndCamPerChar():
+	var astroPresent = false
+	var astroAnimSpritePresent = false
+	var camPresent = false
+	
+	var astro = get_node(astroNodePath)
+	var astroAnimSprite
+	var camNode
+	for astroChild in astro.get_children():
+		if astroChild is AnimatedSprite:
+			astroAnimSprite = astroChild
+	for child in get_children():
+		if child is Camera2D:
+			camNode = child 
+	
+	
+	for resNode in NodesPerCharacter:
+		if get_node(resNode.node) == astro:
+			astroPresent = true
+		
+		if get_node(resNode.node) == astroAnimSprite:
+			astroAnimSpritePresent = true
+		
+		if get_node(resNode.node) == camNode:
+			camPresent = true
+			
+
+
+	
+	if !astroPresent:
+		var astroCharRes = CharacterNodeDict.new()
+		astroCharRes.node = astroNodePath
+		NodesPerCharacter.append(astroCharRes)
+	
+	if !astroAnimSpritePresent:
+		var astroSpriteCharRes = CharacterNodeDict.new()
+		#name can actually act as a readable nodePath
+		astroSpriteCharRes.node = astro.get_name() + "/" + astroAnimSprite.get_name()
+		NodesPerCharacter.append(astroSpriteCharRes)
+
+	if !camPresent:
+		var camCharRes = CharacterNodeDict.new()
+		camCharRes.node = camNode.get_name()
+		NodesPerCharacter.append(camCharRes)
+
 	
 func characterSpecificNodes(restoreNodePos = true, node = self):
+	
 	var currChar = global.CharacterRes.id
 	var delChildren = []
 	for child in node.get_children():
@@ -42,6 +128,9 @@ func characterSpecificNodes(restoreNodePos = true, node = self):
 			if charID is CharacterNodeDict:
 				var nodee = get_node(charID.node)
 				if nodee == child:
+					print(child.name)
+					if child.name == "ASTRO_ANIM2":
+						print(child.has_method("is_flipped_h"))
 					var keep = true
 					match currChar:
 						global.CHAR.USA:
@@ -59,29 +148,59 @@ func characterSpecificNodes(restoreNodePos = true, node = self):
 							continue
 						global.CHAR.MAR:
 							keep = charID.MAR
-				
+					print(restoreNodePos)
+					print("spot 1")
 					if !keep:
 						delChildren.append(child)
-					elif charID.charNodePosDict[currChar] != null && restoreNodePos:
+						break
+					print("spot 2")
+					if charID.charNodePosDict[currChar] != null && restoreNodePos:
 						child.set_global_position(charID.charNodePosDict[currChar])
-					elif !restoreNodePos:
+					print("spot 3")
+					if charID.isFlipped[currChar] != null && restoreNodePos:
+						child.set_flip_h(charID.isFlipped[currChar])
+						
+						
+					if !restoreNodePos:
+						print("setting")
 						charID.charNodePosDict[currChar] = child.get_global_position()
+						if child.has_method("is_flipped_h"):
+							print("asfdasdfjjjjjjjjjijijiiiiiijijijijijijijijijijijijijijijijiji")
+							print(charID.node)
+							charID.isFlipped[currChar] = child.is_flipped_h()
+							
+						if child == astroNode:
+							print("fasdfjaidjfoaisdjfoaisjdfoiajsdfoijsdfio")
+							print(charID.charNodePosDict)
+							print(charID.isFlipped)
+						
 					break
 					
+					
+					
 		if child.get_children().size() > 0:
-			for childNode in characterSpecificNodes(true, child):
+			for childNode in characterSpecificNodes(restoreNodePos, child):
 				delChildren.push_front(childNode)
 	return delChildren
 	
 	
 	
 func initLevel():
+	#prevent from running in editor
+	if Engine.editor_hint:
+		return
+		
 	if (startingInventory != null):
 		for iq in startingInventory:
 			AddInventoryItem(iq)
 
 #initAstro is not called here but in the extended gd scripts
 func initAstro(customSpawnPoint = null):
+	
+	#prevent from running in editor
+	if Engine.editor_hint:
+		return
+	
 	var camNode = astroNode.CAMERA_NODE
 	
 	

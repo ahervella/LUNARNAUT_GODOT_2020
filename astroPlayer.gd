@@ -129,6 +129,9 @@ func _ready():
 	audio.sound("suitBeep").play()
 
 	$"ASTRO_ANIM2"._set_playing(true)
+	
+
+		
 
 	#need to do this for anything that is doing global.playTest
 	#because children readys happen before parent ready (and lvl node
@@ -153,6 +156,11 @@ func readyDeferred():
 		enableShadowsSetter(enableShadows)
 		showBlackBGSetter(showBlackBG)
 	
+	
+	#flip movableObject bubble
+	#checks after character switching applied in lvl ready
+	#due to being call_deferred
+	flipPushPullArea($"ASTRO_ANIM2".is_flipped_h())
 
 func showMoonBGSetter(val):
 	showMoonBG = val
@@ -358,10 +366,7 @@ func Move():
 		get_node("ASTRO_ANIM2").set_flip_h(directional_force.x < 0)
 		
 		#flip movableObject bubble
-		if dirMulti != null:
-			var pushPullShape = get_node("push_pull_area/push_pull_area_shape")
-			pushPullShape.set_position(Vector2(abs(pushPullShape.get_position().x) * dirMulti, pushPullShape.get_position().y))
-	
+		flipPushPullArea(get_node("ASTRO_ANIM2").is_flipped_h())
 	
 	#place holder for push and pull anims:
 	else:
@@ -388,6 +393,12 @@ func Move():
 	if (groundedBubble && get_anim() != "RUN2"):
 		set_anim("START2")
 
+#flip movableObject bubble
+func flipPushPullArea(faceLeft):
+	var dir = -1 if faceLeft else 1
+		
+	var pushPullShape = get_node("push_pull_area/push_pull_area_shape")
+	pushPullShape.set_position(Vector2(abs(pushPullShape.get_position().x) * dir, pushPullShape.get_position().y))
 
 		
 func MoveJump(delta):

@@ -20,7 +20,14 @@ var doorShadowTscn= preload("res://SCENES/doorShadow.tscn")
 export (bool) var demoVersionOfLevel1 = false
 
 func _ready():
+	
+	#prevent from running in editor
+	if Engine.editor_hint:
+		return
+	
 	._ready()
+	
+
 	
 	noraNode = get_node(noraNodePath)
 	
@@ -46,6 +53,8 @@ func _ready():
 	
 func initLevel():
 	.initLevel()
+	
+	
 	spawnNora = false
 	doorOpened = false
 	

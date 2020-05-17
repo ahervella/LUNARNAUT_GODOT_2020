@@ -4,6 +4,7 @@ extends Resource
 class_name CharacterNodeDict
 
 var charNodePosDict = {global.CHAR.USA : null, global.CHAR.RUS : null, global.CHAR.FRA : null, global.CHAR.CHN : null, global.CHAR.MAR : null}
+var isFlipped = {global.CHAR.USA : null, global.CHAR.RUS : null, global.CHAR.FRA : null, global.CHAR.CHN : null, global.CHAR.MAR : null}
 
 export (NodePath) var node
 export (bool) var USA = true
