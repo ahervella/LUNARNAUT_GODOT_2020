@@ -10,10 +10,10 @@ export (Array, Resource) var startingInventory
 var astroNode
 export (NodePath) var trigChunkNodePath = null
 #export (global.CHAR) var character
-export (bool) var CharNodesAddAstroAndCam = false setget setAddAstroAndCam
-export (bool) var CharNodesAddAll1stGenChildNodes = false setget setAddAllChildNodes
-export (bool) var CharNodesClearAllNodes = false setget setClearAllNodes
-export (Array, Resource) var NodesPerCharacter
+export (bool) var CSWrapsAddAstroAndCam = false setget setAddAstroAndCam
+export (bool) var CSWrapsAddAll1stGenChildNodes = false setget setAddAllChildNodes
+export (bool) var CSWrapsClearAllNodes = false setget setClearAllNodes
+export (Array, Resource) var charSwitchWrappers
 
 var trigChunkNode
 var ASTRO_GLOBAL_START_POS : Vector2
@@ -37,20 +37,20 @@ func setAddAllChildNodes(garboVal):
 	for child in get_children():
 		var alreadyPresent = false
 		
-		for resNode in NodesPerCharacter:
+		for resNode in charSwitchWrappers:
 			if get_node(resNode.node) == child:
 				alreadyPresent = true
 				break
 		
 		if !alreadyPresent:
-			var childRes = CharacterNodeDict.new()
+			var childRes = CharacterSwitchingWrapper.new()
 			#name can actually act as a readable node path
 			childRes.node = child.get_name()
-			NodesPerCharacter.append(childRes)
+			charSwitchWrappers.append(childRes)
 	
 	
 func setClearAllNodes(garboVal):
-	NodesPerCharacter.resize(0)
+	charSwitchWrappers.resize(0)
 	
 
 func _ready():
@@ -59,7 +59,6 @@ func _ready():
 	if Engine.editor_hint:
 		return
 	
-	remove_child(get_node("Nodeeee"))
 	
 	global.playTest = playTest
 	astroNode = get_node(astroNodePath)
@@ -70,8 +69,12 @@ func _ready():
 
 	
 	for node in characterSpecificNodes():
-		node.hide()
+		remove_child(node)
 	
+	#laod the first ever positions if first time loading this level with this character
+	for csWrap in charSwitchWrappers:
+		if csWrap.charNodeFormerPosDict[global.CharacterRes.id] == null:
+			csWrap.charNodeFormerPosDict[global.CharacterRes.id] = get_node(csWrap.node).get_global_position()
 	
 func addAstroAndCamPerChar():
 	var astroPresent = false
@@ -89,7 +92,7 @@ func addAstroAndCamPerChar():
 			camNode = child 
 	
 	
-	for resNode in NodesPerCharacter:
+	for resNode in charSwitchWrappers:
 		if get_node(resNode.node) == astro:
 			astroPresent = true
 		
@@ -103,20 +106,22 @@ func addAstroAndCamPerChar():
 
 	
 	if !astroPresent:
-		var astroCharRes = CharacterNodeDict.new()
+		var astroCharRes = CharacterSwitchingWrapper.new()
 		astroCharRes.node = astroNodePath
-		NodesPerCharacter.append(astroCharRes)
+		charSwitchWrappers.append(astroCharRes)
+		astroCharRes.neverAffectFuture = true
 	
-	if !astroAnimSpritePresent:
-		var astroSpriteCharRes = CharacterNodeDict.new()
-		#name can actually act as a readable nodePath
-		astroSpriteCharRes.node = astro.get_name() + "/" + astroAnimSprite.get_name()
-		NodesPerCharacter.append(astroSpriteCharRes)
+#	if !astroAnimSpritePresent:
+#		var astroSpriteCharRes = CharacterSwitchingWrapper.new()
+#		#name can actually act as a readable nodePath
+#		astroSpriteCharRes.node = astro.get_name() + "/" + astroAnimSprite.get_name()
+#		charSwitchWrappers.append(astroSpriteCharRes)
 
 	if !camPresent:
-		var camCharRes = CharacterNodeDict.new()
+		var camCharRes = CharacterSwitchingWrapper.new()
 		camCharRes.node = camNode.get_name()
-		NodesPerCharacter.append(camCharRes)
+		charSwitchWrappers.append(camCharRes)
+		camCharRes.neverAffectFuture = true
 
 	
 func characterSpecificNodes(restoreNodePos = true, node = self):
@@ -124,14 +129,14 @@ func characterSpecificNodes(restoreNodePos = true, node = self):
 	var currChar = global.CharacterRes.id
 	var delChildren = []
 	for child in node.get_children():
-		for charID in NodesPerCharacter:
-			if charID is CharacterNodeDict:
+		for charID in charSwitchWrappers:
+			if charID is CharacterSwitchingWrapper:
 				var nodee = get_node(charID.node)
 				if nodee == child:
 					print(child.name)
-					if child.name == "ASTRO_ANIM2":
-						print(child.has_method("is_flipped_h"))
+					
 					var keep = true
+					
 					match currChar:
 						global.CHAR.USA:
 							keep = charID.USA
@@ -148,31 +153,65 @@ func characterSpecificNodes(restoreNodePos = true, node = self):
 							continue
 						global.CHAR.MAR:
 							keep = charID.MAR
-					print(restoreNodePos)
-					print("spot 1")
+							
+							
 					if !keep:
 						delChildren.append(child)
 						break
-					print("spot 2")
-					if charID.charNodePosDict[currChar] != null && restoreNodePos:
-						child.set_global_position(charID.charNodePosDict[currChar])
-					print("spot 3")
-					if charID.isFlipped[currChar] != null && restoreNodePos:
-						child.set_flip_h(charID.isFlipped[currChar])
-						
+					
+					if charID.processed:
+						charID.processed = false
+						break
+					
+					if restoreNodePos:
+						if child.has_method("handleCharSwitchRestore"):
+							child.handleCharSwitchRestore(charID)
+							
+						else:
+							var relNode = null
+							if charID.relativeNode[currChar] != null:
+								relNode = get_node(charID.relativeNode[currChar])
+							
+							charID.defaultRestore(currChar, child, relNode)
+#							if charID.charNodePosDict[currChar] != null:
+#								var pos = charID.charNodePosDict[currChar]
+#								#if position was relative to an object, set pos relative to it
+#								if charID.relativeNode[currChar] != null:
+#									pos += get_node(charID.relativeNode[currChar]).get_global_position()
+#								child.set_global_position(pos)
+#
+#							if charID.isFlipped[currChar] != null:
+#								child.set_flip_h(charID.isFlipped[currChar])
+					
 						
 					if !restoreNodePos:
-						print("setting")
-						charID.charNodePosDict[currChar] = child.get_global_position()
-						if child.has_method("is_flipped_h"):
-							print("asfdasdfjjjjjjjjjijijiiiiiijijijijijijijijijijijijijijijijiji")
-							print(charID.node)
-							charID.isFlipped[currChar] = child.is_flipped_h()
+						
+						if child.has_method("handleCharSwitchSave"):
+							child.handleCharSwitchSave(charID)
 							
-						if child == astroNode:
-							print("fasdfjaidjfoaisdjfoaisjdfoiajsdfoijsdfio")
-							print(charID.charNodePosDict)
-							print(charID.isFlipped)
+						else:
+							var relNode = null
+							if child.has_method("getRelativeNodeBelow"):
+							
+								relNode = child.getRelativeNodeBelow()
+							
+							charID.defaultSave(currChar, child, relNode)
+						
+#						getRelativeNodeBelow(child)
+#
+#						var relNodePos = child.get_global_position()
+#						if charID.relativeNode[currChar] != null:
+#							relNodePos -= get_node(charID.relativeNode[currChar]).get_global_position()
+#
+#						charID.charNodePosDict[currChar] = relNodePos
+#
+#						if child.has_method("is_flipped_h"):
+#							print(charID.node)
+#							charID.isFlipped[currChar] = child.is_flipped_h()
+#
+#						if child == astroNode:
+#							print(charID.charNodePosDict)
+#							print(charID.isFlipped)
 						
 					break
 					
@@ -183,7 +222,18 @@ func characterSpecificNodes(restoreNodePos = true, node = self):
 				delChildren.push_front(childNode)
 	return delChildren
 	
+#here we set relative node for objects that can change location.
+#right now: astro, movable objs, and cables
+func getRelativeNodeBelow(node):
+	if node.has_method("getRelativeNodeBelow"):
+		return node.getRelativeNodeBelow()
+	return null
 	
+#	if node.is_in_group("astro"):
+#		return node.firstSolidBodyNode
+#
+#	if node.is_in_group("object"):
+#
 	
 func initLevel():
 	#prevent from running in editor

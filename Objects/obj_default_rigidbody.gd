@@ -36,6 +36,7 @@ var defaultTextureNode
 onready var defaultTexture = getDefaultNode()
 var rigidBodyMode
 
+var contactPosDict = {}
 
 
 func getDefaultNode():
@@ -155,8 +156,8 @@ func getSpriteNode():
 	
 	
 
-func setForceVelLim():
-	match objectWeight:
+func setForceVelLim(overrideWeight = objectWeight):
+	match overrideWeight:
 		OBJECT_WEIGHT.HEAVY:
 			APPLIED_FORCE = 20
 			PUSH_PULL_VELOCITY_LIM = 50
@@ -225,7 +226,13 @@ func _integrate_forces(state):
 		vel.x -= vel.x * LINEAR_DAMP
 	
 	state.set_linear_velocity(vel.rotated(global.gravRadAngFromNorm))
-
+	
+	#record contact positions with the contacting body as the key
+	contactPosDict.clear()
+	for i in state.get_contact_count():
+		#local coll point to object plus global position of object
+		var pos = state.get_contact_collider_position(i) + get_global_position()
+		contactPosDict[pos] = state.get_contact_collider_object(i)
 
 
 func setMode():
@@ -243,17 +250,35 @@ func objIsBelow(obj):
 		
 		
 
+#used by lvl() to get the relative node below for character switching
+func getRelativeNodeBelow():
+	if rectObjBelow != null:
+		return rectObjBelow
+	else:
+		var lowestContPoint = get_global_position()
+		for collPoint in contactPosDict.keys():
+			if collPoint.y >= lowestContPoint.y:
+				lowestContPoint = collPoint
+		
+		if lowestContPoint != get_global_position():
+			return contactPosDict[lowestContPoint]
+			
+	return null
+
 
 func _on_STACK_AREA_body_entered(body):
 	if roll: return
 	if body.is_in_group("object"):
 		if objIsBelow(body):
 			rectObjBelow = body
+			#so if shit is stacked, make heavier
+			rectObjBelow.setForceVelLim(OBJECT_WEIGHT.HEAVY)
 			
 		
 
 func _on_STACK_AREA_body_exited(body):
-	pass # Replace with function body.
 	if body.is_in_group("object"):
 		if rectObjBelow != null && body == rectObjBelow:
+			#if shit is unstacked, set back to default forceVelLim
+			rectObjBelow.setForceVelLim()
 			rectObjBelow = null

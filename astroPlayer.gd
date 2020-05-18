@@ -41,6 +41,10 @@ var directional_force = Vector2()
 var gravity = 0
 var groundedBubble = true
 
+#used for keeping track of what astro is standing on top of during
+#character switching
+var firstSolidBodyNode = null
+
 #used so that when multiple shapes enter or exit, can keep track
 #on whether there is at least one solid (floor) shape touching
 var solidBodyCount = 0
@@ -892,6 +896,12 @@ func _on_groundBubble_body_entered(body):
 	if (body.get_groups().has("solid")):
 		solidBodyCount += 1
 		
+		if solidBodyCount == 1:
+			firstSolidBodyNode = body
+		
+		#save object standing on and relative position to object
+		#if object in other character does not exist, just get astro global position
+		
 		groundedBubble = true
 		restrictMovingRight = null
 		
@@ -901,8 +911,19 @@ func _on_groundBubble_body_entered(body):
 func _on_groundBubble_body_exited(body):
 	if (body.get_groups().has("solid")):
 		solidBodyCount -= 1
+		if body == firstSolidBodyNode:
+			firstSolidBodyNode = null
+			
+			#if there are still other solid shapes, that astro is touching,
+			#set the next one
+			if solidBodyCount != 0:
+				var groundedBubbleObjs = get_node("groundBubble").get_overlapping_bodies()
+				for bod in groundedBubbleObjs:
+					if bod.is_in_group("solid"):
+						firstSolidBodyNode = bod
 	
 	if (solidBodyCount == 0):
+		
 		groundedBubble = false
 		
 	
@@ -1015,3 +1036,56 @@ func _on_push_pull_area_body_exited(body):
 #			for item in currItems:
 #				if !item.is_in_group("object"):
 #					item.AutoInteract()
+
+func getRelativeNodeBelow():
+	return firstSolidBodyNode
+	
+	
+func funchandleCharSwitchRestore(charSwitchWrapper):
+	
+	pass
+	
+	
+	
+func handleCharSwitchSave(charSwitchWrapper):
+	
+	var astroAnimName
+	for child in get_children():
+		if child is AnimatedSprite:
+			astroAnimName = child.get_name()
+	
+	var astroAnimCSWrapNodePath = get_name() + "/" + astroAnimName
+	
+	var astroAnimCSWrapExists = false
+	
+	for csWrap in global.lvl().charSwitchWrappers:
+		if csWrap.node == astroAnimCSWrapNodePath || get_node(csWrap.node) == get_node(astroAnimCSWrapNodePath):
+			astroAnimCSWrapExists = true
+			break
+			
+	if !astroAnimCSWrapExists:
+		var astroAnimCSWrap = CharacterSwitchingWrapper.new()
+		astroAnimCSWrap.node = get_name() + "/" + astroAnimName
+		astroAnimCSWrap.defaultSave(global.CharacterRes.id, get_node(astroAnimName), null)
+		astroAnimCSWrap.processed = true
+		astroAnimCSWrap.neverAffectFuture = true
+			#hope the processed variable will take care of any issues of adding to a list while
+		#is it being iterated/walked
+		global.lvl().charSwitchWrappers.append(astroAnimCSWrap)
+
+	
+	charSwitchWrapper.defaultSave(global.CharacterRes.id, self, getRelativeNodeBelow())
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	pass
+	
