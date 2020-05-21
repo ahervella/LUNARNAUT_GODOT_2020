@@ -3,22 +3,15 @@ extends Resource
 
 class_name CharacterSwitchingWrapper
 
-var charNodePosDict = {global.CHAR.USA : null, global.CHAR.RUS : null, global.CHAR.FRA : null, global.CHAR.CHN : null, global.CHAR.MAR : null}
-var charNodeFormerPosDict = {global.CHAR.USA : null, global.CHAR.RUS : null, global.CHAR.FRA : null, global.CHAR.CHN : null, global.CHAR.MAR : null}
-var isFlipped = {global.CHAR.USA : null, global.CHAR.RUS : null, global.CHAR.FRA : null, global.CHAR.CHN : null, global.CHAR.MAR : null}
 
-
-var relativeNode = {global.CHAR.USA : null, global.CHAR.RUS : null, global.CHAR.FRA : null, global.CHAR.CHN : null, global.CHAR.MAR : null}
-#var relativeNodeFormerPos = {global.CHAR.USA : null, global.CHAR.RUS : null, global.CHAR.FRA : null, global.CHAR.CHN : null, global.CHAR.MAR : null}
-
-var nodeStoredData = {global.CHAR.USA : null, global.CHAR.RUS : null, global.CHAR.FRA : null, global.CHAR.CHN : null, global.CHAR.MAR : null}
-
-var processed = false
+var dependantCSWrappers = {global.CHAR.USA : [], global.CHAR.RUS : [], global.CHAR.FRA : [], global.CHAR.CHN : [], global.CHAR.MAR : []}
+var saveStartState = {global.CHAR.USA : [], global.CHAR.RUS : [], global.CHAR.FRA : [], global.CHAR.CHN : [], global.CHAR.MAR : []}
+var changesToApply = {global.CHAR.USA : [], global.CHAR.RUS : [], global.CHAR.FRA : [], global.CHAR.CHN : [], global.CHAR.MAR : []}
 
 
 
 export (NodePath) var node
-export (bool) var neverAffectFuture = false
+export (bool) var staticNode = false
 export (bool) var USA = true
 #export (NodePath) var USA_relativeNode = null
 export (bool) var RUS = true
@@ -30,70 +23,11 @@ export (bool) var CHN = true
 export (bool) var MAR = true
 #export (NodePath) var MAR_relativeNode = null
 
-#func _ready():
-#	call_deferred("readyDeffered")
-		
-#func readyDeffered():
-#		#initially set old position
-#		for key in charNodeFormerPosDict.keys():
-#			charNodeFormerPosDict[key] = global.lvl().get_node(node).get_global_position()
-
-func defaultRestore(currChar, nodeObj, relativeNodeObj, returnPosFromDefault = false):
-	if isFlipped[currChar] != null:
-			nodeObj.set_flip_h(isFlipped[currChar])
 	
-	if charNodePosDict[currChar] != null:
-		var pos = charNodePosDict[currChar]
-		#if position was relative to an object, set pos relative to it
-		if relativeNode[currChar] != null:
-			pos += relativeNodeObj.get_global_position()
 		
-		if returnPosFromDefault:
-			return pos
-		
-		call_deferred("moveNodePosWithCollisions", nodeObj, nodeObj.get_global_position(), pos)
-		#moveNodePosWithCollisions(nodeObj, nodeObj.get_global_position(), charNodePosDict[currChar])
-		
-								
-		
-			
-		
-			
-func defaultSave(currChar, nodeObj, relativeNodeObj, affectFuture = true):
-
-
-	relativeNode[currChar] = relativeNodeObj.get_path() if relativeNodeObj != null else null
-		
+func getFinalPosAfterCollisions(node, currPos, newPos, collisionShape = null, groups = ["solid", "wall", "astro", "object"]):
 	
-	
-	var relNodePos = nodeObj.get_global_position()
-	if relativeNode[currChar] != null:
-		relNodePos -= relativeNodeObj.get_global_position()
-
-	charNodePosDict[currChar] = relNodePos
-
-	if nodeObj.has_method("is_flipped_h"):
-			
-		isFlipped[currChar] = nodeObj.is_flipped_h()
-		
-	if !affectFuture || neverAffectFuture: return
-		
-	var currPos = charNodePosDict[currChar] + relativeNodeObj.get_global_position() if relativeNode[currChar] else charNodePosDict[currChar]
-	var posChangeFromFormer = currPos - charNodeFormerPosDict[currChar]#relativeNodeFormerPos[currChar]
-	
-	for astroChar in global.CHAR:
-		if global.charYearDict[global.CHAR[astroChar]] > global.charYearDict[currChar]:
-			if charNodePosDict[global.CHAR[astroChar]] != null:
-				charNodePosDict[global.CHAR[astroChar]] += posChangeFromFormer
-			
-			if isFlipped[global.CHAR[astroChar]] != null:
-				isFlipped[global.CHAR[astroChar]] = isFlipped[currChar]
-		
-	charNodeFormerPosDict[currChar] = nodeObj.get_global_position()
-		
-func moveNodePosWithCollisions(node, currPos, newPos, setting = true, collisionShape = null, groups = ["solid", "wall", "astro", "object"]):
-	
-	var shapePointsArray
+	var shapePointsArray = []
 	
 	if collisionShape == null:
 		shapePointsArray = getCollisionShapePoints(node)
@@ -108,7 +42,7 @@ func moveNodePosWithCollisions(node, currPos, newPos, setting = true, collisionS
 		var ray = RayCast2D.new()
 		node.add_child(ray)
 		ray.set_global_position(point)
-		ray.cast_to((newPos-currPos))
+		ray.set_cast_to((newPos-currPos))
 		ray.set_enabled(true)
 		var collObj = ray.get_collider()
 		while collObj != null && !isObjectInGroups(groups, collObj):
@@ -125,10 +59,7 @@ func moveNodePosWithCollisions(node, currPos, newPos, setting = true, collisionS
 		node.remove_child(ray)
 		ray.free()
 	
-	if setting:
-		node.set_global_position(shortestDistPoint)
-	else:
-		return shortestDistPoint
+	return shortestDistPoint
 	
 	
 func getCollisionShapePoints(node, overrideShapeNode = null):
@@ -139,18 +70,24 @@ func getCollisionShapePoints(node, overrideShapeNode = null):
 	var points = []
 	
 	#assuming shape node will be found in only the first gen of children
-	for child in node.get_children:
+	for child in node.get_children():
 		if child is StaticBody2D:
 			for subChild in child.get_children():
 				for point in getPointsFromNode(subChild):
 					points.append(point)
 			continue
 			
-		for point in getPointsFromNode(child):
-			points.append(point)
+			
+			
+		var pointsss = getPointsFromNode(child)
+		if pointsss != null:
+			for point in pointsss:
+				points.append(point)
+		
+	return points
 		
 func getPointsFromNode(node):
-	var shapePoints
+	var shapePoints = []
 	
 	if node is CollisionShape2D:
 		#solid shape, or some other shit

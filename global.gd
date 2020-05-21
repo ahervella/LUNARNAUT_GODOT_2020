@@ -34,6 +34,12 @@ enum CHAR {USA, RUS, FRA, CHN, MAR}
 #var availableChar = [CHAR.USA, CHAR.RUS]
 var astroCharDict = {CHAR.USA : "res://RESOURCES/CHARACTERS/CHAR_USA", CHAR.RUS : "res://RESOURCES/CHARACTERS/CHAR_RUS"}
 var charYearDict = {CHAR.USA : 1984, CHAR.RUS : 1973, CHAR.FRA : 1996, CHAR.CHN : 2021, CHAR.MAR : 2073}
+
+var tempCharSwitchWrapperList = null
+
+var levelWrapperDict = {}
+
+
 #var currChar = astroCharDict[CHAR.USA]
 var interactNode #$"/root/Control/astro/InteractFont"
 var interactNodes = []
@@ -223,10 +229,16 @@ func loadLevel(lvlNum):
 
 	
 func goto_scene(path):
+	
 	for child in lvl().get_children():
 		child.set_physics_process(false)
 		
 	DestroyAllChildren()
+	print(path)
+	if path is PackedScene:
+		get_tree().change_scene_to(path)
+		return
+	
 	get_tree().change_scene(path)
 	
 	

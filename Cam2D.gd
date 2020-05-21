@@ -89,4 +89,45 @@ func FadeIntoBlack(wonBool = null):
 	#global.newTween(self, "modulate", Color(r, g, b), Color(r, 0, 0), 0.5, 0, funcref(self, "TakeDamageFlashReverse"))
 	
 
-	 
+
+
+
+
+func CSWrapSaveStartState(CSWrap):
+	pass
+	
+	
+	
+	
+	
+	
+	
+func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
+	pass
+	
+
+	
+func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
+	var currChar = global.CharacterRes.id
+	var camPosChange = CSWrap.changesToApply[currChar][0]
+	
+	
+	var finalPos = get_global_position()
+	if camPosChange!= null || camPosChange != Vector2(0, 0):
+		finalPos += camPosChange
+	
+	set_global_position(finalPos)
+	
+
+func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper):
+	pass
+
+
+func CSWrapRecieveTransformChanges(CSWrap : CharacterSwitchingWrapper, currChar, posToAdd, rotToAdd):
+	
+	CSWrap.changesToApply[currChar].resize(2)
+	
+	if CSWrap.changesToApply[currChar][0] == null:
+		CSWrap.changesToApply[currChar][0] = Vector2(0, 0)
+		
+	CSWrap.changesToApply[currChar][0] += posToAdd

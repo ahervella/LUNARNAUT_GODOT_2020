@@ -13,7 +13,10 @@ export (NodePath) var trigChunkNodePath = null
 export (bool) var CSWrapsAddAstroAndCam = false setget setAddAstroAndCam
 export (bool) var CSWrapsAddAll1stGenChildNodes = false setget setAddAllChildNodes
 export (bool) var CSWrapsClearAllNodes = false setget setClearAllNodes
-export (Array, Resource) var charSwitchWrappers
+export (Array, Resource) var charSwitchWrappers# setget registerNodes
+
+var testBool = true
+
 
 var trigChunkNode
 var ASTRO_GLOBAL_START_POS : Vector2
@@ -28,10 +31,16 @@ var Inventory : Dictionary
 
 var oneShotAddAstroAndCam = true
 
+var readyDone = false
+
+
+
 func setAddAstroAndCam(garboVal):
+	if !readyDone: return
 	addAstroAndCamPerChar()
 	
 func setAddAllChildNodes(garboVal):
+	if !readyDone: return
 	addAstroAndCamPerChar()
 	
 	for child in get_children():
@@ -47,18 +56,56 @@ func setAddAllChildNodes(garboVal):
 			#name can actually act as a readable node path
 			childRes.node = child.get_name()
 			charSwitchWrappers.append(childRes)
+
+func addAstroAndCamPerChar():
+	var astroPresent = false
+	var camPresent = false
 	
+	var astro = get_node(astroNodePath)
+	var camNode
+			
+	for child in get_children():
+		if child is Camera2D:
+			camNode = child 
+	
+	
+	for csWrap in charSwitchWrappers:
+		if get_node(csWrap.node) == astro || csWrap.node == "astro":
+			astroPresent = true
+		
+		if get_node(csWrap.node) == camNode || csWrap.node == "Cam2D":
+			camPresent = true
+			
+	
+	if !astroPresent:
+		var astroCharRes = CharacterSwitchingWrapper.new()
+		astroCharRes.node = astroNodePath
+		charSwitchWrappers.append(astroCharRes)
+	
+	if !camPresent:
+		var camCharRes = CharacterSwitchingWrapper.new()
+		camCharRes.node = camNode.get_name()
+		charSwitchWrappers.append(camCharRes)
+
 	
 func setClearAllNodes(garboVal):
 	charSwitchWrappers.resize(0)
-	
+
+
+
 
 func _ready():
 	
 	#prevent from running in editor
 	if Engine.editor_hint:
+		readyDone = true
 		return
 	
+	
+	applyCSWrapperChanges()
+	saveCSWrapperStartStates()
+	
+		
 	
 	global.playTest = playTest
 	astroNode = get_node(astroNodePath)
@@ -66,173 +113,41 @@ func _ready():
 		trigChunkNode = get_node(trigChunkNodePath)
 	global.interactNode = astroNode.INTERACT_TEXT_NODE
 	
+	readyDone = true
 
+func applyCSWrapperChanges():
+	if global.CharacterRes == null: return
 	
-	for node in characterSpecificNodes():
-		remove_child(node)
-	
-	#laod the first ever positions if first time loading this level with this character
-	for csWrap in charSwitchWrappers:
-		if csWrap.charNodeFormerPosDict[global.CharacterRes.id] == null:
-			csWrap.charNodeFormerPosDict[global.CharacterRes.id] = get_node(csWrap.node).get_global_position()
-	
-func addAstroAndCamPerChar():
-	var astroPresent = false
-	var astroAnimSpritePresent = false
-	var camPresent = false
-	
-	var astro = get_node(astroNodePath)
-	var astroAnimSprite
-	var camNode
-	for astroChild in astro.get_children():
-		if astroChild is AnimatedSprite:
-			astroAnimSprite = astroChild
-	for child in get_children():
-		if child is Camera2D:
-			camNode = child 
-	
-	
-	for resNode in charSwitchWrappers:
-		if get_node(resNode.node) == astro:
-			astroPresent = true
-		
-		if get_node(resNode.node) == astroAnimSprite:
-			astroAnimSpritePresent = true
-		
-		if get_node(resNode.node) == camNode:
-			camPresent = true
-			
-
-
-	
-	if !astroPresent:
-		var astroCharRes = CharacterSwitchingWrapper.new()
-		astroCharRes.node = astroNodePath
-		charSwitchWrappers.append(astroCharRes)
-		astroCharRes.neverAffectFuture = true
-	
-#	if !astroAnimSpritePresent:
-#		var astroSpriteCharRes = CharacterSwitchingWrapper.new()
-#		#name can actually act as a readable nodePath
-#		astroSpriteCharRes.node = astro.get_name() + "/" + astroAnimSprite.get_name()
-#		charSwitchWrappers.append(astroSpriteCharRes)
-
-	if !camPresent:
-		var camCharRes = CharacterSwitchingWrapper.new()
-		camCharRes.node = camNode.get_name()
-		charSwitchWrappers.append(camCharRes)
-		camCharRes.neverAffectFuture = true
-
-	
-func characterSpecificNodes(restoreNodePos = true, node = self):
-	
+	var currLvlPath = "res://SCENES/%s.tscn" % global.CharacterRes.level
 	var currChar = global.CharacterRes.id
-	var delChildren = []
-	for child in node.get_children():
-		for charID in charSwitchWrappers:
-			if charID is CharacterSwitchingWrapper:
-				var nodee = get_node(charID.node)
-				if nodee == child:
-					print(child.name)
-					
-					var keep = true
-					
-					match currChar:
-						global.CHAR.USA:
-							keep = charID.USA
-							
-							continue
-						global.CHAR.RUS:
-							keep = charID.RUS
-							continue
-						global.CHAR.FRA:
-							keep = charID.USA
-							continue
-						global.CHAR.CHN:
-							keep = charID.CHN
-							continue
-						global.CHAR.MAR:
-							keep = charID.MAR
-							
-							
-					if !keep:
-						delChildren.append(child)
-						break
-					
-					if charID.processed:
-						charID.processed = false
-						break
-					
-					if restoreNodePos:
-						if child.has_method("handleCharSwitchRestore"):
-							child.handleCharSwitchRestore(charID)
-							
-						else:
-							var relNode = null
-							if charID.relativeNode[currChar] != null:
-								relNode = get_node(charID.relativeNode[currChar])
-							
-							charID.defaultRestore(currChar, child, relNode)
-#							if charID.charNodePosDict[currChar] != null:
-#								var pos = charID.charNodePosDict[currChar]
-#								#if position was relative to an object, set pos relative to it
-#								if charID.relativeNode[currChar] != null:
-#									pos += get_node(charID.relativeNode[currChar]).get_global_position()
-#								child.set_global_position(pos)
-#
-#							if charID.isFlipped[currChar] != null:
-#								child.set_flip_h(charID.isFlipped[currChar])
-					
-						
-					if !restoreNodePos:
-						
-						if child.has_method("handleCharSwitchSave"):
-							child.handleCharSwitchSave(charID)
-							
-						else:
-							var relNode = null
-							if child.has_method("getRelativeNodeBelow"):
-							
-								relNode = child.getRelativeNodeBelow()
-							
-							charID.defaultSave(currChar, child, relNode)
-						
-#						getRelativeNodeBelow(child)
-#
-#						var relNodePos = child.get_global_position()
-#						if charID.relativeNode[currChar] != null:
-#							relNodePos -= get_node(charID.relativeNode[currChar]).get_global_position()
-#
-#						charID.charNodePosDict[currChar] = relNodePos
-#
-#						if child.has_method("is_flipped_h"):
-#							print(charID.node)
-#							charID.isFlipped[currChar] = child.is_flipped_h()
-#
-#						if child == astroNode:
-#							print(charID.charNodePosDict)
-#							print(charID.isFlipped)
-						
-					break
-					
-					
-					
-		if child.get_children().size() > 0:
-			for childNode in characterSpecificNodes(restoreNodePos, child):
-				delChildren.push_front(childNode)
-	return delChildren
 	
-#here we set relative node for objects that can change location.
-#right now: astro, movable objs, and cables
-func getRelativeNodeBelow(node):
-	if node.has_method("getRelativeNodeBelow"):
-		return node.getRelativeNodeBelow()
-	return null
+	if global.levelWrapperDict.has(currLvlPath):
+		if global.levelWrapperDict[currLvlPath].lvlNodesCSWrapDict.has(currChar):
+			charSwitchWrappers = global.levelWrapperDict[currLvlPath].lvlNodesCSWrapDict[currChar]
 	
-#	if node.is_in_group("astro"):
-#		return node.firstSolidBodyNode
-#
-#	if node.is_in_group("object"):
+			for csWrap in charSwitchWrappers:
+				if csWrap.staticNode:continue
+				get_node(csWrap.node).CSWrapApplyChanges(csWrap)
+				get_node(csWrap.node).CSWrapApplyDependantChanges(csWrap)
+
+
+
+func saveCSWrapperStartStates():
+	
+	
+	#need to add to both registered and charSwitchWrappers
+	for csWrap in charSwitchWrappers:
+		if csWrap.staticNode: continue
+		get_node(csWrap.node).CSWrapSaveStartState(csWrap)
+
+
+
+
+
+
+
+	
+
 #
 	
 func initLevel():

@@ -98,8 +98,9 @@ const DIRECTION = {
 	LEFT = Vector2(-1,0),
 	UP = Vector2(0,-1),
 	DOWN = Vector2(0,1)
-
 }
+
+
 
 func _ready():
 	
@@ -143,6 +144,8 @@ func _ready():
 	call_deferred('readyDeferred')
 	#readyDeferred()
 	
+	
+	
 func readyDeferred():
 	
 	#These visible options are soley for the editor to be able to switch
@@ -166,6 +169,8 @@ func readyDeferred():
 	#due to being call_deferred
 	flipPushPullArea($"ASTRO_ANIM2".is_flipped_h())
 
+
+
 func showMoonBGSetter(val):
 	showMoonBG = val
 	
@@ -180,6 +185,7 @@ func showMoonBGSetter(val):
 		i.set_visible(showMoonBG) 
 
 
+
 func showBlackBGSetter(val):
 	showBlackBG = val
 	get_node("para/para-stars/black").set_visible(val)
@@ -190,7 +196,6 @@ func enableShadowsSetter(val):
 	enableShadows = val
 	get_node("Light2D").set_enabled(val)
 	get_node("Light2D/LightDarker").set_enabled(val)
-
 
 
 
@@ -1041,51 +1046,168 @@ func getRelativeNodeBelow():
 	return firstSolidBodyNode
 	
 	
-func funchandleCharSwitchRestore(charSwitchWrapper):
+func CSWrapSaveStartState(CSWrap):
+	var currChar = global.CharacterRes.id
 	
-	pass
-	
-	
-	
-func handleCharSwitchSave(charSwitchWrapper):
-	
-	var astroAnimName
-	for child in get_children():
-		if child is AnimatedSprite:
-			astroAnimName = child.get_name()
-	
-	var astroAnimCSWrapNodePath = get_name() + "/" + astroAnimName
-	
-	var astroAnimCSWrapExists = false
-	
-	for csWrap in global.lvl().charSwitchWrappers:
-		if csWrap.node == astroAnimCSWrapNodePath || get_node(csWrap.node) == get_node(astroAnimCSWrapNodePath):
-			astroAnimCSWrapExists = true
-			break
+	if CSWrap.saveStartState[currChar] == null:
+			CSWrap.saveStartState[currChar] = []
 			
-	if !astroAnimCSWrapExists:
-		var astroAnimCSWrap = CharacterSwitchingWrapper.new()
-		astroAnimCSWrap.node = get_name() + "/" + astroAnimName
-		astroAnimCSWrap.defaultSave(global.CharacterRes.id, get_node(astroAnimName), null)
-		astroAnimCSWrap.processed = true
-		astroAnimCSWrap.neverAffectFuture = true
-			#hope the processed variable will take care of any issues of adding to a list while
-		#is it being iterated/walked
-		global.lvl().charSwitchWrappers.append(astroAnimCSWrap)
+			
+	CSWrap.saveStartState[currChar].resize(3)
+	
+	CSWrap.saveStartState[currChar][0] = get_global_position()
+	CSWrap.saveStartState[currChar][1] = get_global_rotation()
+	CSWrap.saveStartState[currChar][2] = $"ASTRO_ANIM2".is_flipped_h()
+	
+	
+	
+	
+	
+	
+	
+func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
+	var currChar = global.CharacterRes.id
 
+
+	var posChange = get_global_position() - CSWrap.saveStartState[currChar][0]
+	var rotChange = get_global_rotation() - CSWrap.saveStartState[currChar][1]
 	
-	charSwitchWrapper.defaultSave(global.CharacterRes.id, self, getRelativeNodeBelow())
+	#add camera node as dependant of astro pos
+	for csw in global.lvl().charSwitchWrappers:
+		if csw.node == "Cam2D" || CAMERA_NODE == global.lvl().get_node(csw.node):
+			
+			if !CSWrap.dependantCSWrappers.has(currChar):
+				CSWrap.dependantCSWrappers[currChar] = []
+			
+			CSWrap.dependantCSWrappers[currChar].append(csw)
+
+#	for astroChar in global.CHAR:
+#
+#		if global.charYearDict[global.CHAR[astroChar]] > global.charYearDict[currChar]:
+#			CSWrapSendTransformChanges(CSWrap, global.CHAR[astroChar], posChange, rotChange)
+#			if CSWrap.changesToApply[global.CHAR[astroChar]][0] == null:
+#				CSWrap.changesToApply[global.CHAR[astroChar]][0] = Vector2(0, 0)
+#
+#			if CSWrap.changesToApply[global.CHAR[astroChar]][1] == null:
+#				CSWrap.changesToApply[global.CHAR[astroChar]][1] = 0.0
+#
+#			CSWrap.changesToApply[global.CHAR[astroChar]][0] += posChange
+#			CSWrap.changesToApply[global.CHAR[astroChar]][1] += rotChange
+	
+func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
+	var currChar = global.CharacterRes.id
+	
+	var astroPosChange = null
+	var astroRotChange = null
+	
+	if CSWrap.changesToApply[currChar].has(0):
+		astroPosChange = CSWrap.changesToApply[currChar][0]
+		
+	if CSWrap.changesToApply[currChar].has(1):
+		astroRotChange = CSWrap.changesToApply[currChar][1]
+	
+	var astroAnim2Flip = CSWrap.saveStartState[currChar][2]
+	
+	$"ASTRO_ANIM2".set_flip_h(astroAnim2Flip)
+	flipPushPullArea(astroAnim2Flip)
+	
+	var finalPos = get_global_position()
+	if astroPosChange != null && astroPosChange != Vector2(0, 0):
+		finalPos = CSWrap.getFinalPosAfterCollisions(self, get_global_position(), get_global_position() + astroPosChange, $"astroShape")
+	#CSWrap.getFinalPosAfterCollisions()
+	
+	set_global_position(finalPos)
+	
+	
+	if astroRotChange != null && astroRotChange != 0:
+		set_global_rotation(get_global_rotation() + astroRotChange)
+	
+
+func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper):
+	var currChar = global.CharacterRes.id
+	
+	var posChange = get_global_position() - CSWrap.saveStartState[currChar][0]
+	var rotChange = get_global_rotation() - CSWrap.saveStartState[currChar][1]
+	
+	
+	if CSWrap.dependantCSWrappers[global.CharacterRes.id] != null && CSWrap.dependantCSWrappers[global.CharacterRes.id].size() > 0:
+				for dependantCSWrap in CSWrap.dependantCSWrappers[global.CharacterRes.id]:
+					
+					global.lvl().get_node(dependantCSWrap.node).CSWrapRecieveTransformChanges(dependantCSWrap, global.CharacterRes.id, posChange, rotChange)
+
+func CSWrapRecieveTransformChanges(CSWrap : CharacterSwitchingWrapper, currChar, posToAdd, rotToAdd):
+	
+	CSWrap.changesToApply[currChar].resize(2)
+	
+	if CSWrap.changesToApply[currChar][0] == null:
+		CSWrap.changesToApply[currChar][0] = Vector2(0, 0)
+	
+	if CSWrap.changesToApply[currChar][1] == null:
+		CSWrap.changesToApply[currChar][1] = 0
+		
+	CSWrap.changesToApply[currChar][0] += posToAdd
+	CSWrap.changesToApply[currChar][1] += rotToAdd
 	
 	
 	
+#
+#
+#
+#func funchandleCharSwitchRestore(charSwitchWrapper):
+#
+#	pass
+#
+#
+#
+#func handleCharSwitchSave(charSwitchWrapper):
+#
+#	var astroAnimName
+#	for child in get_children():
+#		if child is AnimatedSprite:
+#			astroAnimName = child.get_name()
+#			print("got animatedSprite")
+#			break
+#
+#
+#	var astroAnimCSWrapNodePath = get_name() + "/" + astroAnimName
+#
+#	var astroAnimCSWrapExists = false
+#	var astroCSWrap
+#
+#	for csWrap in global.lvl().charSwitchWrappers:
+#		if csWrap.node == astroAnimCSWrapNodePath || get_node(csWrap.node) == get_node(astroAnimName):
+#			astroAnimCSWrapExists = true
+#			print("got animatedSprite 2")
+#			print(astroAnimCSWrapNodePath)
+#			print(csWrap.node)
+#			break
+#
+##		if csWrap.node == get_name() || get_node(csWrap.node) == self:
+##			astroCSWrap = csWrap
+#
+#
+#
+#	if !astroAnimCSWrapExists:
+#		print("got animatedSprite 3")
+#		var astroAnimCSWrap = CharacterSwitchingWrapper.new()
+#		astroAnimCSWrap.node = get_name() + "/" + astroAnimName
+#
+#		var ogAstroPos = charSwitchWrapper.charNodeFormerPosDict[global.CharacterRes.id]
+#
+#		astroAnimCSWrap.charNodeFormerPosDict[global.CharacterRes.id] = ogAstroPos + get_position()
+#		astroAnimCSWrap.defaultSave(global.CharacterRes.id, get_node(astroAnimName), null)
+#		astroAnimCSWrap.processed = true
+#		astroAnimCSWrap.neverAffectFuture = true
+#			#hope the processed variable will take care of any issues of adding to a list while
+#		#is it being iterated/walked
+#		print(global.lvl().charSwitchWrappers.size())
+#		global.lvl().charSwitchWrappers.append(astroAnimCSWrap)
+#		print(global.lvl().charSwitchWrappers.size())
+#
+#
+#	charSwitchWrapper.defaultSave(global.CharacterRes.id, self, getRelativeNodeBelow())
+#
+#
 	
 	
-	
-	
-	
-	
-	
-	
-	
-	pass
 	
