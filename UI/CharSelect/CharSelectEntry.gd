@@ -64,13 +64,21 @@ func saveCurrentLvl():
 		
 
 func savedCurrentLvlPackedScene(currLvlPath):
-		if !global.levelWrapperDict.has(currLvlPath):
-			global.levelWrapperDict[currLvlPath] = LevelWrapper.new()
+	var currChar = global.CharacterRes.id
+	
+	if !global.levelWrapperDict.has(currLvlPath):
+		global.levelWrapperDict[currLvlPath] = LevelWrapper.new()
 			
-		if !global.levelWrapperDict[currLvlPath].charSavedLvlSceneDict.has(global.CharacterRes.id):
-			global.levelWrapperDict[currLvlPath].charSavedLvlSceneDict[global.CharacterRes.id] = PackedScene.new()
+	if !global.levelWrapperDict[currLvlPath].charSavedLvlSceneDict.has(currChar):
+		global.levelWrapperDict[currLvlPath].charSavedLvlSceneDict[currChar] = PackedScene.new()
 			
-		global.levelWrapperDict[currLvlPath].charSavedLvlSceneDict[global.CharacterRes.id].pack(global.lvl())
+	global.levelWrapperDict[currLvlPath].charSavedLvlSceneDict[currChar].pack(global.lvl())
+		
+#	if !global.levelWrapperDict[currLvlPath].gravity.has(currChar):
+#		global.levelWrapperDict[currLvlPath].gravity[currChar] = []
+#		global.levelWrapperDict[currLvlPath].gravity[currChar].resize(2)
+		
+	global.levelWrapperDict[currLvlPath].gravity[currChar] = [global.gravMag, rad2deg(global.gravRadAngFromNorm)]
 
 
 
@@ -86,8 +94,13 @@ func reorderAndSaveCurrentLvlWrappers(currLvlPath):
 		
 		for dependantWrap in wrap.dependantCSWrappers[currChar]:
 			
-			var dependantWrapIndex = dependantOrderedCSWrappers.find(dependantWrap)
-			dependantOrderedCSWrappers.insert(dependantWrapIndex, dependantWrap)
+			#for all dependant wrappers, place them after the parent node
+			dependantOrderedCSWrappers.erase(dependantWrap)
+			var wrapIndex = dependantOrderedCSWrappers.find(wrap)
+			if wrapIndex > dependantOrderedCSWrappers.size():
+				dependantOrderedCSWrappers.resize(dependantOrderedCSWrappers.size()+1)
+				
+			dependantOrderedCSWrappers.insert(wrapIndex+1, dependantWrap)
 			
 			
 	global.levelWrapperDict[currLvlPath].lvlNodesCSWrapDict[currChar] = dependantOrderedCSWrappers

@@ -58,6 +58,7 @@ func setAddAllChildNodes(garboVal):
 			charSwitchWrappers.append(childRes)
 
 func addAstroAndCamPerChar():
+
 	var astroPresent = false
 	var camPresent = false
 	
@@ -101,9 +102,9 @@ func _ready():
 		readyDone = true
 		return
 	
-	
 	applyCSWrapperChanges()
 	saveCSWrapperStartStates()
+	removeDisabledCSWrapperNodes()
 	
 		
 	
@@ -122,6 +123,9 @@ func applyCSWrapperChanges():
 	var currChar = global.CharacterRes.id
 	
 	if global.levelWrapperDict.has(currLvlPath):
+		if global.levelWrapperDict[currLvlPath].gravity.has(currChar):
+			global.changeGrav(global.levelWrapperDict[currLvlPath].gravity[currChar][0], global.levelWrapperDict[currLvlPath].gravity[currChar][1], 0)
+		
 		if global.levelWrapperDict[currLvlPath].lvlNodesCSWrapDict.has(currChar):
 			charSwitchWrappers = global.levelWrapperDict[currLvlPath].lvlNodesCSWrapDict[currChar]
 	
@@ -143,6 +147,27 @@ func saveCSWrapperStartStates():
 
 
 
+func removeDisabledCSWrapperNodes():
+	for csWrap in charSwitchWrappers:
+		var nodeObj = get_node(csWrap.node)
+		match global.CharacterRes.id:
+			global.CHAR.USA:
+				if !csWrap.USA:
+					remove_child(nodeObj)
+			global.CHAR.RUS:
+				if !csWrap.RUS:
+					remove_child(nodeObj)
+			global.CHAR.FRA:
+				if !csWrap.FRA:
+					remove_child(nodeObj)
+			global.CHAR.CHN:
+				if !csWrap.CHN:
+					remove_child(nodeObj)
+			global.CHAR.MAR:
+				if !csWrap.MAR:
+					remove_child(nodeObj)
+		
+		
 
 
 

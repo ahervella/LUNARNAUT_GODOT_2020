@@ -91,6 +91,7 @@ onready var light2DScale = get_node("Light2D").get_scale()
 
 onready var get_shadows = get_tree().get_nodes_in_group("shadow")
 
+var lvlNodeReady = false
 
 const DIRECTION = {
 	ZERO = Vector2(0,0),
@@ -200,9 +201,15 @@ func enableShadowsSetter(val):
 
 
 func _physics_process(delta):
+	
 	#only execute in game
 	if Engine.editor_hint:
 		return
+	
+	
+#	if !lvlNodeReady:
+#		lvlNodeReady = global.lvl().readyDone
+#		return
 	
 	gravity = global.gravFor1Frame * global.gravMag#GRAVITY * global.gravMag
 		
@@ -1046,7 +1053,22 @@ func getRelativeNodeBelow():
 	return firstSolidBodyNode
 	
 	
-func CSWrapSaveStartState(CSWrap):
+func getWidth():
+	for child in get_children():
+		if child is CollisionShape2D:
+			var shape = child.get_shape()
+			return shape.get_radius() * 2 + shape.get_height()
+	return null
+	
+func getHeight():
+	for child in get_children():
+		if child is CollisionShape2D:
+			var shape = child.get_shape()
+			return shape.get_radius() * 2
+	return null
+	
+	
+func CSWrapSaveStartState(CSWrap : CharacterSwitchingWrapper):
 	var currChar = global.CharacterRes.id
 	
 	if CSWrap.saveStartState[currChar] == null:
@@ -1067,10 +1089,13 @@ func CSWrapSaveStartState(CSWrap):
 	
 func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 	var currChar = global.CharacterRes.id
+	
+	CSWrap.changesToApply[currChar].resize(3)
+	
+	CSWrap.changesToApply[currChar][0] = Vector2(0, 0)
+	CSWrap.changesToApply[currChar][1] = 0
+	CSWrap.changesToApply[currChar][2] = $"ASTRO_ANIM2".is_flipped_h()
 
-
-	var posChange = get_global_position() - CSWrap.saveStartState[currChar][0]
-	var rotChange = get_global_rotation() - CSWrap.saveStartState[currChar][1]
 	
 	#add camera node as dependant of astro pos
 	for csw in global.lvl().charSwitchWrappers:
@@ -1078,8 +1103,8 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 			
 			if !CSWrap.dependantCSWrappers.has(currChar):
 				CSWrap.dependantCSWrappers[currChar] = []
-			
-			CSWrap.dependantCSWrappers[currChar].append(csw)
+			if !CSWrap.dependantCSWrappers[currChar].has(csw):
+				CSWrap.dependantCSWrappers[currChar].append(csw)
 
 #	for astroChar in global.CHAR:
 #
@@ -1099,14 +1124,16 @@ func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
 	
 	var astroPosChange = null
 	var astroRotChange = null
+	var astroAnim2Flip = null
 	
-	if CSWrap.changesToApply[currChar].has(0):
-		astroPosChange = CSWrap.changesToApply[currChar][0]
+	#if CSWrap.changesToApply[currChar].has(0):
+	astroPosChange = CSWrap.changesToApply[currChar][0]
 		
-	if CSWrap.changesToApply[currChar].has(1):
-		astroRotChange = CSWrap.changesToApply[currChar][1]
-	
-	var astroAnim2Flip = CSWrap.saveStartState[currChar][2]
+	#if CSWrap.changesToApply[currChar].has(1):
+	astroRotChange = CSWrap.changesToApply[currChar][1]
+		
+
+	astroAnim2Flip = CSWrap.changesToApply[currChar][2]
 	
 	$"ASTRO_ANIM2".set_flip_h(astroAnim2Flip)
 	flipPushPullArea(astroAnim2Flip)
@@ -1126,8 +1153,8 @@ func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
 func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper):
 	var currChar = global.CharacterRes.id
 	
-	var posChange = get_global_position() - CSWrap.saveStartState[currChar][0]
-	var rotChange = get_global_rotation() - CSWrap.saveStartState[currChar][1]
+	var posChange = CSWrap.changesToApply[currChar][0]
+	var rotChange = CSWrap.changesToApply[currChar][1]
 	
 	
 	if CSWrap.dependantCSWrappers[global.CharacterRes.id] != null && CSWrap.dependantCSWrappers[global.CharacterRes.id].size() > 0:
@@ -1137,7 +1164,7 @@ func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper):
 
 func CSWrapRecieveTransformChanges(CSWrap : CharacterSwitchingWrapper, currChar, posToAdd, rotToAdd):
 	
-	CSWrap.changesToApply[currChar].resize(2)
+	#if posToAdd == null || 
 	
 	if CSWrap.changesToApply[currChar][0] == null:
 		CSWrap.changesToApply[currChar][0] = Vector2(0, 0)

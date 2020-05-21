@@ -42,6 +42,7 @@ var rigidBodyMode
 
 var contactPosDict = {}
 
+var lvlNodeReady = false
 
 
 func setterFunction(val):
@@ -140,6 +141,10 @@ func _ready():
 	setForceVelLim()
 	
 	setInteractVars()
+	
+	#if get_name() == "PROTO_OBJ_RECT2":
+	#	set_global_position(get_global_position() - Vector2(0, 100))
+	
 			
 			
 #had to do this because inter_default extends a sprite, not a rigidbody,
@@ -197,6 +202,13 @@ func _physics_process(delta):
 		return
 		
 func _integrate_forces(state):
+	
+	#print("bbbb" + get_name())
+	#print(get_global_position())
+#	if !lvlNodeReady:
+#		var currLvlPath = "res://SCENES/%s.tscn" % global.CharacterRes.level
+#		lvlNodeReady = !global.levelWrapperDict.has(currLvlPath)
+#		return
 	
 	#translate linear velocity back to standard setup
 	var vel = state.get_linear_velocity().rotated(-global.gravRadAngFromNorm)
@@ -261,8 +273,15 @@ func objIsAbove(obj):
 	var objRotPos = obj.get_global_position().rotated(-global.gravRadAngFromNorm)
 	var selfRotPos = get_global_position().rotated(-global.gravRadAngFromNorm)
 		
-	return (selfRotPos.y - shapeDimensions.y/2) >= objRotPos.y + obj.shapeDimensions.y/2
+	if obj.is_in_group("object"):
+		return (selfRotPos.y - shapeDimensions.y/2) >= objRotPos.y + obj.shapeDimensions.y/2
+	
+	elif obj.is_in_group("astro"):
+		#see if astro has at least half their body in the x dimension of object and astro center above object
+		return (((selfRotPos.x + shapeDimensions.x/2) >= (objRotPos.x - obj.getWidth()/2) || (selfRotPos.x - shapeDimensions.x/2) <= (objRotPos.x + obj.getWidth()/2)) 
+		&& ((selfRotPos.y - shapeDimensions.y/2) >= objRotPos.y))
 		
+	return (selfRotPos.y - shapeDimensions.y/2) >= objRotPos.y
 
 #used by lvl() to get the relative node below for character switching
 func getRelativeNodeBelow():
@@ -300,7 +319,7 @@ func _on_STACK_AREA_body_entered(body):
 			rectObjBelow = body
 			#so if shit is stacked, make heavier
 			rectObjBelow.setForceVelLim(OBJECT_WEIGHT.HEAVY)
-			
+	if body.is_in_group("object") || body.is_in_group("plug") || body.is_in_group("astro"):
 		if objIsAbove(body):
 			if rectObjsAbove.find(body) == -1:
 				rectObjsAbove.append(body)
@@ -313,7 +332,7 @@ func _on_STACK_AREA_body_exited(body):
 			#if shit is unstacked, set back to default forceVelLim
 			rectObjBelow.setForceVelLim()
 			rectObjBelow = null
-			
+	if body.is_in_group("object") || body.is_in_group("plug") || body.is_in_group("astro"):
 		if rectObjsAbove.find(body) != -1:
 			rectObjsAbove.erase(body)
 			
@@ -322,9 +341,13 @@ func _on_STACK_AREA_body_exited(body):
 #keeeeep
 func CSWrapSaveStartState(CSWrap : CharacterSwitchingWrapper):
 	var currChar = global.CharacterRes.id
+#	var ignoreY = false
 	
-	if CSWrap.saveStartState[currChar] == null:
-		CSWrap.saveStartState[currChar] = []
+	
+#	if CSWrap.saveStartState[currChar].size() == 0:
+#		ignoreY = true
+#		CSWrap.saveStartState[currChar] = []
+#		print("ounweoinwoiehfiohwefhiowefiohwefhio")
 		
 	CSWrap.saveStartState[currChar].resize(2)
 	
@@ -343,11 +366,15 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 	var posChange = get_global_position() - CSWrap.saveStartState[currChar][0]
 	var rotChange = get_global_rotation() - CSWrap.saveStartState[currChar][1]
 	
+	CSWrap.changesToApply[currChar].resize(2)
+	
+	CSWrap.changesToApply[currChar][0] = Vector2(0, 0)
+	CSWrap.changesToApply[currChar][1] = 0
 	
 	for depObj in rectObjsAbove:
 		for csw in global.lvl().charSwitchWrappers:
-			if depObj == global.lvl().get_node(csw.node):
-				CSWrap.dependantCSWrappers[currChar].append(depObj)
+			if depObj == global.lvl().get_node(csw.node) && !CSWrap.dependantCSWrappers[currChar].has(csw):
+				CSWrap.dependantCSWrappers[currChar].append(csw)
 	
 	for astroChar in global.CHAR:
 		CSWrap.changesToApply[global.CHAR[astroChar]].resize(2)
@@ -395,7 +422,11 @@ func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper):
 	var currChar = global.CharacterRes.id
 	if CSWrap.dependantCSWrappers.has(currChar) && CSWrap.dependantCSWrappers[currChar].size() > 0:
 		for dependantCSW in CSWrap.dependantCSWrappers[currChar]:
-			global.lvl().get_node(dependantCSW.node).CSWrapRecieveTransformChanges(dependantCSW, currChar, get_global_position(), get_global_rotation())
+			
+			var posChange = CSWrap.changesToApply[currChar][0]
+			var rotChange = CSWrap.changesToApply[currChar][1]
+			
+			global.lvl().get_node(dependantCSW.node).CSWrapRecieveTransformChanges(dependantCSW, currChar, posChange, rotChange)
 	
 	
 	

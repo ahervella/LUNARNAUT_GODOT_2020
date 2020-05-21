@@ -341,6 +341,12 @@ func InteractInterfaceCheck(var interactObj):
 		
 #this is what is used to change overall gravity
 func changeGrav(mag = 1, degFromNorm = 0, time = 2):
+	if time == 0:
+		gravMag = mag
+		gravRadAng = deg2rad(degFromNorm + 90)
+		gravRadAngFromNorm = deg2rad(degFromNorm)
+		return
+	
 	newTween(self, "gravMag", gravMag, mag, time, 0)
 	newTween(self, "gravRadAng", gravRadAng, deg2rad(degFromNorm + 90), time, 0)
 	newTween(self, "gravRadAngFromNorm", gravRadAngFromNorm, deg2rad(degFromNorm), time, 0)
