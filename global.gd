@@ -197,6 +197,9 @@ func destroyInteractNode(interNode):
 			interNode.call_deferred('free')
 			return
 	
+func getScenePath(sceneName):
+	return "res://SCENES/%s.tscn" % sceneName
+	
 #
 func _ready():
 	init()

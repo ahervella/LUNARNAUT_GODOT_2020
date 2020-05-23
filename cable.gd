@@ -668,13 +668,111 @@ func removeChildCable():
 
 	
 
-		
-	
-	
-	
-	
-	
-	
-	
-	
-	
+#
+#
+#
+#func CSWrapSaveStartState(CSWrap : CharacterSwitchingWrapper):
+#	var currChar = global.CharacterRes.id
+##	var ignoreY = false
+#
+#
+##	if CSWrap.saveStartState[currChar].size() == 0:
+##		ignoreY = true
+##		CSWrap.saveStartState[currChar] = []
+##		print("ounweoinwoiehfiohwefhiowefiohwefhio")
+#
+#	CSWrap.saveStartState[currChar].resize(2)
+#
+#
+#	CSWrap.saveStartState[currChar][0] = get_global_position()
+#	CSWrap.saveStartState[currChar][1] = get_global_rotation()
+#
+#
+#
+#
+#
+##keeeeep
+#func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
+#	var currChar = global.CharacterRes.id
+#
+#	var posChange = get_global_position() - CSWrap.saveStartState[currChar][0]
+#	var rotChange = get_global_rotation() - CSWrap.saveStartState[currChar][1]
+#
+#	CSWrap.changesToApply[currChar].resize(2)
+#
+#	CSWrap.changesToApply[currChar][0] = Vector2(0, 0)
+#	CSWrap.changesToApply[currChar][1] = 0
+#
+#	for depObj in rectObjsAbove:
+#		for csw in global.lvl().charSwitchWrappers:
+#			if depObj == global.lvl().get_node(csw.node) && !CSWrap.dependantCSWrappers[currChar].has(csw):
+#				CSWrap.dependantCSWrappers[currChar].append(csw)
+#
+#	for astroChar in global.CHAR:
+#		CSWrap.changesToApply[global.CHAR[astroChar]].resize(2)
+#
+#		if global.charYearDict[global.CHAR[astroChar]] > global.charYearDict[currChar]:
+#			if CSWrap.changesToApply[global.CHAR[astroChar]][0] == null:
+#				CSWrap.changesToApply[global.CHAR[astroChar]][0] = Vector2(0, 0)
+#
+#			if CSWrap.changesToApply[global.CHAR[astroChar]][1] == null:
+#				CSWrap.changesToApply[global.CHAR[astroChar]][1] = 0.0
+#
+#			CSWrap.changesToApply[global.CHAR[astroChar]][0] += posChange
+#			CSWrap.changesToApply[global.CHAR[astroChar]][1] += rotChange
+#
+#
+#
+#
+#func CSWrapRecieveTransformChanges(CSWrap : CharacterSwitchingWrapper, currChar, posToAdd, rotToAdd):
+#
+#	CSWrap.changesToApply[currChar].resize(2)
+#
+#	if CSWrap.changesToApply[currChar][0] == null:
+#		CSWrap.changesToApply[currChar][0] = Vector2(0, 0)
+#
+#	if CSWrap.changesToApply[currChar][1] == null:
+#		CSWrap.changesToApply[currChar][1] = 0
+#
+#	CSWrap.changesToApply[currChar][0] += posToAdd
+#	CSWrap.changesToApply[currChar][1] += rotToAdd
+#
+#
+#
+#
+#func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
+#	var currChar = global.CharacterRes.id
+#	if CSWrap.changesToApply[currChar][0] != null:
+#		set_global_position(get_global_position() + CSWrap.changesToApply[currChar][0])
+#
+#	if CSWrap.changesToApply[currChar][1] != null:
+#		set_global_rotation(get_global_rotation() + CSWrap.changesToApply[currChar][1])
+#
+#
+#
+#func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper):
+#	var currChar = global.CharacterRes.id
+#	if CSWrap.dependantCSWrappers.has(currChar) && CSWrap.dependantCSWrappers[currChar].size() > 0:
+#		for dependantCSW in CSWrap.dependantCSWrappers[currChar]:
+#
+#			var posChange = CSWrap.changesToApply[currChar][0]
+#			var rotChange = CSWrap.changesToApply[currChar][1]
+#
+#			global.lvl().get_node(dependantCSW.node).CSWrapRecieveTransformChanges(dependantCSW, currChar, posChange, rotChange)
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#

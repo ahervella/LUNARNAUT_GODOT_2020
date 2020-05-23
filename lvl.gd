@@ -32,6 +32,7 @@ var Inventory : Dictionary
 var oneShotAddAstroAndCam = true
 
 var readyDone = false
+var processDone = true
 
 
 
@@ -55,6 +56,8 @@ func setAddAllChildNodes(garboVal):
 			var childRes = CharacterSwitchingWrapper.new()
 			#name can actually act as a readable node path
 			childRes.node = child.get_name()
+			if !child.has_method("CSWrapSaveStartState"):
+				childRes.staticNode = true
 			charSwitchWrappers.append(childRes)
 
 func addAstroAndCamPerChar():
@@ -93,6 +96,21 @@ func setClearAllNodes(garboVal):
 	charSwitchWrappers.resize(0)
 
 
+func _physics_process(delta):
+	if Engine.editor_hint:
+		readyDone = true
+		return
+
+	if readyDone && !processDone:
+		applyCSWrapperChanges(delta)
+		saveCSWrapperStartStates()
+		removeDisabledCSWrapperNodes()
+		set_physics_process(false)
+		print("iosudhfaiusdhfiaushdfiaushdfisuhf")
+		processDone = true
+
+	elif readyDone:
+		processDone = false
 
 
 func _ready():
@@ -102,11 +120,11 @@ func _ready():
 		readyDone = true
 		return
 	
-	applyCSWrapperChanges()
-	saveCSWrapperStartStates()
-	removeDisabledCSWrapperNodes()
-	
-		
+#	applyCSWrapperChanges(0.017)
+#	saveCSWrapperStartStates()
+#	removeDisabledCSWrapperNodes()
+
+
 	
 	global.playTest = playTest
 	astroNode = get_node(astroNodePath)
@@ -116,10 +134,10 @@ func _ready():
 	
 	readyDone = true
 
-func applyCSWrapperChanges():
+func applyCSWrapperChanges(delta):
 	if global.CharacterRes == null: return
 	
-	var currLvlPath = "res://SCENES/%s.tscn" % global.CharacterRes.level
+	var currLvlPath = global.getScenePath(global.CharacterRes.level)
 	var currChar = global.CharacterRes.id
 	
 	if global.levelWrapperDict.has(currLvlPath):
@@ -131,8 +149,8 @@ func applyCSWrapperChanges():
 	
 			for csWrap in charSwitchWrappers:
 				if csWrap.staticNode:continue
-				get_node(csWrap.node).CSWrapApplyChanges(csWrap)
-				get_node(csWrap.node).CSWrapApplyDependantChanges(csWrap)
+				get_node(csWrap.node).CSWrapApplyChanges(csWrap, delta)
+				get_node(csWrap.node).CSWrapApplyDependantChanges(csWrap, delta)
 
 
 

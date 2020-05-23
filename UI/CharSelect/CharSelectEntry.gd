@@ -27,7 +27,7 @@ func _on_Button_button_up():
 
 func loadNewCharacterLevel():
 	global.CharacterRes = Character
-	var newLvlPath = "res://SCENES/%s.tscn" % Character.level
+	var newLvlPath = global.getScenePath(Character.level)
 	print(newLvlPath)
 	print("print(newLvlPath)")
 	if global.levelWrapperDict.has(newLvlPath):
@@ -54,7 +54,7 @@ func saveCurrentLvl():
 			
 		
 		
-		var currLvlPath = "res://SCENES/%s.tscn" % global.CharacterRes.level
+		var currLvlPath = global.getScenePath(global.CharacterRes.level)
 	
 		savedCurrentLvlPackedScene(currLvlPath)
 		

@@ -285,7 +285,7 @@ func _physics_process(delta):
 	
 	if (restrictAndMove2Point == null):
 		
-		vel = move_and_slide(velFinal, global.gravVect() * -1, 5, 4, deg2rad(30), false)#(vel, Vector2(0, 1), Vector2.UP, false, 4, deg2rad(120), false)
+		vel = move_and_slide(velFinal, global.gravVect() * -1, true, 4, deg2rad(30), false)#(vel, Vector2(0, 1), Vector2.UP, false, 4, deg2rad(120), false)
 		#vel = move_and_slide(vel, Vector2.UP, 5, 4, deg2rad(30))#(vel, Vector2(0, 1), Vector2.UP, false, 4, deg2rad(120), false)
 		
 		velFinal = velFinal.rotated((global.gravRadAng - deg2rad(90))* -1)
@@ -1119,7 +1119,7 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 #			CSWrap.changesToApply[global.CHAR[astroChar]][0] += posChange
 #			CSWrap.changesToApply[global.CHAR[astroChar]][1] += rotChange
 	
-func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
+func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper, delta):
 	var currChar = global.CharacterRes.id
 	
 	var astroPosChange = null
@@ -1139,8 +1139,8 @@ func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
 	flipPushPullArea(astroAnim2Flip)
 	
 	var finalPos = get_global_position()
-	if astroPosChange != null && astroPosChange != Vector2(0, 0):
-		finalPos = CSWrap.getFinalPosAfterCollisions(self, get_global_position(), get_global_position() + astroPosChange, $"astroShape")
+	#if astroPosChange != null && astroPosChange != Vector2(0, 0):
+		#finalPos = CSWrap.getFinalPosAfterCollisions(self, get_global_position(), get_global_position() + astroPosChange, $"astroShape")
 	#CSWrap.getFinalPosAfterCollisions()
 	
 	set_global_position(finalPos)
@@ -1150,7 +1150,7 @@ func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
 		set_global_rotation(get_global_rotation() + astroRotChange)
 	
 
-func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper):
+func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper, delta):
 	var currChar = global.CharacterRes.id
 	
 	var posChange = CSWrap.changesToApply[currChar][0]

@@ -312,6 +312,15 @@ func getRelativeNodesAbove():
 		return contactPosDict[lowestContPoint]
 
 
+func getDimensions():
+	for child in get_children():
+		if child is CollisionShape2D:
+			var shape = child.get_shape()
+			if shape is CircleShape2D:
+				return Vector2(shape.radius*2, shape.radius*2 ) * child.get_scale()
+			if shape is RectangleShape2D:
+				return Vector2(shape.extents.x*2, shape.extents.y*2 )* child.get_scale()
+
 func _on_STACK_AREA_body_entered(body):
 	if roll: return
 	if body.is_in_group("object"):
@@ -408,28 +417,51 @@ func CSWrapRecieveTransformChanges(CSWrap : CharacterSwitchingWrapper, currChar,
 				
 
 	
-func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
+func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper, delta):
+	#var initialLocation = get_global_position()
+	#var initialRotation = get_global_rotation()
 	var currChar = global.CharacterRes.id
-	if CSWrap.changesToApply[currChar][0] != null:
-		set_global_position(get_global_position() + CSWrap.changesToApply[currChar][0])
+	
+	var dependantGroup = CSWrap.getDependantGroup()
+	
+	if CSWrap.changesToApply[currChar][0] != null && CSWrap.changesToApply[currChar][0] != Vector2(0, 0):
+		
+		var collShape = null
+		var newPos = get_global_position() + CSWrap.changesToApply[currChar][0]
+		var kBody = null
+		for child in get_children():
+			if child is CollisionShape2D:
+				collShape = child 
+			if child is KinematicBody2D:
+				kBody = child
+				
+		#kBody.add_collision_exception_with(self)
+		#kBody.add_collision_exception_with(collShape)
+		print("foaijsdfoaijsdfoajdsfoiajsdofijasodifjaosdifjaoisdjf")
+		CSWrap.getFinalPosAfterCollisions2(self, CSWrap.changesToApply[currChar][0], kBody, dependantGroup)
+		#var finalPos = CSWrap.getFinalPosAfterCollisions(self, getDimensions(), get_global_position(), newPos, collShape)
+		#set_global_position(finalPos)#get_global_position() + CSWrap.changesToApply[currChar][0])
 		
 	if CSWrap.changesToApply[currChar][1] != null:
 		set_global_rotation(get_global_rotation() + CSWrap.changesToApply[currChar][1])
 	
+	#CSWrap.changesToApply[currChar][0] = get_global_position() - initialLocation
+	#CSWrap.changesToApply[currChar][1] = get_global_rotation() - initialRotation
 	
 	
-func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper):
-	var currChar = global.CharacterRes.id
-	if CSWrap.dependantCSWrappers.has(currChar) && CSWrap.dependantCSWrappers[currChar].size() > 0:
-		for dependantCSW in CSWrap.dependantCSWrappers[currChar]:
-			
-			var posChange = CSWrap.changesToApply[currChar][0]
-			var rotChange = CSWrap.changesToApply[currChar][1]
-			
-			global.lvl().get_node(dependantCSW.node).CSWrapRecieveTransformChanges(dependantCSW, currChar, posChange, rotChange)
-	
-	
-	
+func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper, delta):
+	pass
+#	var currChar = global.CharacterRes.id
+#	if CSWrap.dependantCSWrappers.has(currChar) && CSWrap.dependantCSWrappers[currChar].size() > 0:
+#		for dependantCSW in CSWrap.dependantCSWrappers[currChar]:
+#
+#			var posChange = CSWrap.changesToApply[currChar][0]
+#			var rotChange = CSWrap.changesToApply[currChar][1]
+#
+#			global.lvl().get_node(dependantCSW.node).CSWrapRecieveTransformChanges(dependantCSW, currChar, posChange, rotChange)
+#
+#	CSWrap.changesToApply[currChar][0] = Vector2(0, 0)
+#	CSWrap.changesToApply[currChar][1] = 0
 	
 	
 	

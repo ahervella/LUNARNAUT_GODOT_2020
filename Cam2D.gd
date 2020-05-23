@@ -112,7 +112,7 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 	
 
 	
-func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
+func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper, delta):
 	var currChar = global.CharacterRes.id
 	var camPosChange = CSWrap.changesToApply[currChar][0]
 	
@@ -127,7 +127,7 @@ func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
 	set_global_position(finalPos)
 	
 
-func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper):
+func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper, delta):
 	pass
 
 

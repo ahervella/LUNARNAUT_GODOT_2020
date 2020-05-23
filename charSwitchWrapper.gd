@@ -23,9 +23,267 @@ export (bool) var CHN = true
 export (bool) var MAR = true
 #export (NodePath) var MAR_relativeNode = null
 
+
+func getDependantGroup():
+	var groupArray = [self]
 	
+	for dependant in dependantCSWrappers[global.CharacterRes.id]:
+		var dependantArray = dependant.getDependantGroup()
+		for val in dependantArray:
+			groupArray.append(val)
+	return groupArray
+	
+func getFinalPosAfterCollisions2(node, totalChange, kBody, dependantGroup):
+	
+	if totalChange.length() < 5: return node.get_global_position()
+	
+	var kb = KinematicBody2D.new()
+	
+	global.lvl().add_child(kb)
+	kb.set_global_position(node.get_global_position())
+	
+	var ogParents = {}
+	
+	var dependantGroupNodes = []
+	
+	for dp in dependantGroup:
+		var dpNode = global.lvl().get_node(dp.node)
 		
-func getFinalPosAfterCollisions(node, currPos, newPos, collisionShape = null, groups = ["solid", "wall", "astro", "object"]):
+		dependantGroupNodes.append(dpNode)
+		ogParents[dpNode] = (dpNode.get_parent())
+		
+		
+	
+	for child in node.get_children():
+		if child is CollisionShape2D:
+			var globalPos = child.get_global_position()
+			var dup = child.duplicate()
+			kb.add_child(dup)
+			dup.set_global_position(globalPos)
+			break
+	
+	
+	for rb in dependantGroupNodes:
+		var thingy = rb
+		var thingyPos = thingy.get_global_position()
+		rb.get_parent().remove_child(rb)
+		kb.add_child(thingy)
+		thingy.set_global_position(thingyPos)
+		
+		
+	for dgn in dependantGroupNodes:
+		
+		for child in dgn.get_children():
+			if child is CollisionShape2D:
+				kb.add_collision_exception_with(child)
+		
+		kb.add_collision_exception_with(dgn)
+		for dgn2 in dependantGroupNodes:
+			if dgn == dgn2: continue
+			
+#			for child in dgn.get_children():
+#				if child is CollisionShape2D:
+#					dgn2.add_collision_exception_with(child)
+			
+			dgn.add_collision_exception_with(dgn2)
+		
+	
+	
+	var totalHorzDistToTrav = totalChange.length()
+	var overrideDir = null
+	var step = 10
+	
+	#while there is still distance to cover, keep incrementing
+	while totalHorzDistToTrav > 0:
+		var collObj = overrideDir
+		
+		if collObj == null:
+			#Kinematic bodies and move_and_collide have odd behaviors where
+			#if the vector it is moving along is very long, the less accurate
+			#it becomes in getting the object as close as possible
+			#therefore, since there will always be ground somewhere, test at small values
+			#and increment until it makes contact
+			
+			var multiplyer = 0
+			while collObj == null:
+				multiplyer += 100
+				#kBodies[i].set_global_position(kBodies[i].get_global_position() - global.gravVect())
+				kb.set_global_position(kb.get_global_position() - global.gravVect() * 2)
+				#collObj[i] = kBodies[i].move_and_collide(global.gravVect() * multiplyer, false)
+				collObj = kb.move_and_collide(global.gravVect() * multiplyer, false)
+				#dependantGroupNodes[i].set_global_position(kBodies[i].get_global_position())
+				
+			
+			#move the body slightly away from its point of contact so upong continuing its journey, it does
+			#not detect and parallel collisions with the object it just collided
+		#kBodies[k].set_global_position(kBodies[k].get_global_position() - (global.gravVect()*4* (k+1)) )#collObj[i].get_normal().normalized())
+	
+		kb.set_global_position(kb.get_global_position() - global.gravVect() * 2)
+	
+	
+		var dirVect = collObj.get_normal().tangent()
+		dirVect.x = abs(dirVect.x) if totalChange.x > 0 else abs(dirVect.x) * -1
+	
+		#the step is either 10 or whatever is remaining
+		step = 10 if totalHorzDistToTrav > 10 else totalHorzDistToTrav
+		
+		for inx in dependantGroupNodes.size():
+			if dependantGroupNodes[inx].test_motion(dirVect.normalized() * step, false):
+				var blah = dependantGroupNodes[inx]
+				var blahPos = blah.get_global_position()
+				kb.remove_child(dependantGroupNodes[inx])
+				ogParents[blah].add_child(blah)
+				blah.set_global_position(blahPos)
+		
+		var collObj2 = kb.move_and_collide(dirVect.normalized() * step, false)
+	
+
+			
+		#if the move parallel to its last move intersects again, then get the distance
+		#traveled to subtract from the ground covered
+		if collObj2 != null:
+			
+#			var testVect = collObj2.get_travel()
+#
+			
+			#prevent object from moving up slopes greater than 30 degrees with respect to the
+			#gravity angle
+			var tanVector = collObj2.get_normal().rotated(-global.gravRadAngFromNorm)
+			var totalAngle = 30
+			if abs(tanVector.x) != 0:
+				
+				tanVector.y = abs(tanVector.y) if totalChange.x > 0 else -abs(tanVector.y)
+				var atanVal = atan(tanVector.y / abs(tanVector.x))
+				#if atanVal > deg2rad(totalAngle):
+					#return
+					
+					
+					#undo this move if the angle is too great
+					#kBody.set_global_position(kBody.get_global_position() - collObj2.get_travel())
+					#kBody.set_global_position(kBody.get_global_position() + collObj2.get_normal().normalized())
+					#break
+			
+			
+				var blah = collObj2.get_travel()
+				
+				#if k == 0:
+					
+				totalHorzDistToTrav -= blah.length()
+			
+		#didn't run into anything so subtract the step from the distance to cover still
+		else:
+				#if k == 0:
+			totalHorzDistToTrav -= step
+			
+		overrideDir = collObj2
+			
+			
+			
+	
+	for nddd in kb.get_children():
+		var nd = nddd
+		var globalPos = nd.get_global_position()
+		kb.remove_child(nd)
+		if nd is CollisionShape2D: continue
+		
+		ogParents[nd].add_child(nd)
+		nd.set_global_position(globalPos)
+		
+	kb.free()
+	
+	for dgn in dependantGroupNodes:
+		for dgn2 in dependantGroupNodes:
+			if dgn == dgn2: continue
+			dgn.remove_collision_exception_with(dgn2)
+	
+	
+func getFinalPosAfterCollisions(node, nodeDim, currPos, newPos, collisionShape, groups = ["solid", "wall", "astro", "object"]):
+	
+	#var shapePointsArray =  getCollisionShapePoints(node, collisionShape)
+	
+	var totalChange = (newPos-currPos)
+	if totalChange.length() < 10: return currPos
+	var totalHorzDistToTrav = totalChange.length()
+	var finalPos = Vector2(0, 0)
+	var step = 10
+	var overrideCollObj = null
+	while totalHorzDistToTrav > 0:
+		var collObj = overrideCollObj
+		if collObj == null:
+		#kBody.set_global_position(kBody.get_global_position() - global.gravVect())
+			collObj = thingy(node, Vector2(0, 10000), groups, collisionShape, nodeDim)
+			#collObj = kBody.move_and_collide(global.gravVect() * 1000)
+			#kBody.set_global_position(kBody.get_global_position() - global.gravVect())
+		#	if collObj.get_travel().y < 0 :
+				#kBody.set_global_position(kBody.get_global_position() - collObj.get_travel())
+		
+		var dirVect = collObj[1].tangent() if collObj[1] != Vector2(0, 0) else Vector2(totalChange.x, 0)
+		dirVect.x = abs(dirVect.x) if totalChange.x > 0 else abs(dirVect.x) * -1
+		
+		step = 10 if totalHorzDistToTrav > 10 else totalHorzDistToTrav
+		var collObj2 = thingy(node, dirVect.normalized() * step, groups, collisionShape, nodeDim)
+		#var collObj2 = kBody.move_and_collide(dirVect.normalized() * step)
+		
+		
+		
+		if collObj2 != null:
+			#var blah = collObj2[2]
+			overrideCollObj = collObj2
+			
+		
+			totalHorzDistToTrav -= collObj2[2]
+		else:
+			totalHorzDistToTrav -= step
+	
+#	return shortestDistPoint
+	
+func thingy(node, newChangeVec, groups, collisionShape, nodeDim):
+	var currPos = node.get_global_position()
+	var shortestDist = newChangeVec.length()
+	var shortestDistPoint = newChangeVec + currPos#newPos#(newPos-currPos).length()
+	var shortestCollObj = null
+	var shortestCollNormal = null
+	var shapePointsArray = getPointsFromNode(collisionShape)
+	for point in shapePointsArray:
+		var ray = RayCast2D.new()
+		node.add_child(ray)
+		ray.set_global_position(point)
+		ray.set_cast_to((newChangeVec))
+		ray.set_enabled(true)
+		ray.force_raycast_update()
+		var globalPos = ray.get_global_position()
+		var isColl = ray.is_colliding()
+		var collObj = ray.get_collider()
+		while collObj != null && !isObjectInGroups(groups, collObj):
+			print("while loop in raycast")
+			ray.add_exception(collObj)
+			collObj = ray.get_collider()
+		
+		
+		if collObj != null:
+			var rayCollPoint = ray.get_collision_point()
+			var collPoint = rayCollPoint - ray.get_global_position()
+			var modifier = collPoint.length() if collPoint.length() < 1 else 1
+			var newPosObj = collPoint - (collPoint.normalized()*modifier * nodeDim/2)
+			if collPoint == Vector2(0, 0): newPosObj = Vector2(0, 0)
+			
+			var dis = collPoint.length()
+			var collNormal = ray.get_collision_normal()
+			if (dis < shortestDist):
+				shortestDist = dis
+				shortestDistPoint = newPosObj + node.get_global_position()
+				shortestCollObj = collObj
+				shortestCollNormal = collNormal
+				
+		
+		node.remove_child(ray)
+		ray.free()
+		
+		node.set_global_position(shortestDistPoint)
+		
+	return [shortestDistPoint, shortestCollNormal, shortestDist]
+	
+func getFinalPosAfterCollisions3(node, nodeDim, currPos, newPos, collisionShape = null, groups = ["solid", "wall", "astro", "object"]):
 	
 	var shapePointsArray = []
 	
@@ -44,6 +302,9 @@ func getFinalPosAfterCollisions(node, currPos, newPos, collisionShape = null, gr
 		ray.set_global_position(point)
 		ray.set_cast_to((newPos-currPos))
 		ray.set_enabled(true)
+		ray.force_raycast_update()
+		var globalPos = ray.get_global_position()
+		var isColl = ray.is_colliding()
 		var collObj = ray.get_collider()
 		while collObj != null && !isObjectInGroups(groups, collObj):
 			print("while loop in raycast")
@@ -52,15 +313,17 @@ func getFinalPosAfterCollisions(node, currPos, newPos, collisionShape = null, gr
 		
 		
 		if collObj != null:
-			if (ray.get_collision_point().length() < shortestDist):
-				shortestDist = ray.get_collision_point().length()
-				shortestDistPoint = ray.get_collision_point() + ray.get_global_position()
+			var collPoint = ray.get_collision_point() - ray.get_global_position()
+			var newPosObj = collPoint - (collPoint.normalized() * nodeDim/2)
+			var dis = collPoint.length()
+			if (dis < shortestDist):
+				shortestDist = dis
+				shortestDistPoint = newPosObj + ray.get_global_position()
 		
 		node.remove_child(ray)
 		ray.free()
 	
 	return shortestDistPoint
-	
 	
 func getCollisionShapePoints(node, overrideShapeNode = null):
 	
