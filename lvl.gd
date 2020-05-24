@@ -37,10 +37,14 @@ var processDone = true
 
 
 func setAddAstroAndCam(garboVal):
+	if !Engine.editor_hint:
+		return
 	if !readyDone: return
 	addAstroAndCamPerChar()
 	
 func setAddAllChildNodes(garboVal):
+	if !Engine.editor_hint:
+		return
 	if !readyDone: return
 	addAstroAndCamPerChar()
 	
@@ -55,12 +59,14 @@ func setAddAllChildNodes(garboVal):
 		if !alreadyPresent:
 			var childRes = CharacterSwitchingWrapper.new()
 			#name can actually act as a readable node path
-			childRes.node = child.get_name()
+			childRes.node = "/root/" + child.get_parent().get_name() + "/" + child.get_name()
 			if !child.has_method("CSWrapSaveStartState"):
 				childRes.staticNode = true
 			charSwitchWrappers.append(childRes)
 
 func addAstroAndCamPerChar():
+	if !Engine.editor_hint:
+		return
 
 	var astroPresent = false
 	var camPresent = false
@@ -120,6 +126,11 @@ func _ready():
 		readyDone = true
 		return
 	
+#	var blah = PackedScene.new()
+#	blah.pack(self)
+#	ResourceSaver.save("res://name2.tscn", blah)
+#	#blah.free()
+	
 #	applyCSWrapperChanges(0.017)
 #	saveCSWrapperStartStates()
 #	removeDisabledCSWrapperNodes()
@@ -149,8 +160,10 @@ func applyCSWrapperChanges(delta):
 	
 			for csWrap in charSwitchWrappers:
 				if csWrap.staticNode:continue
-				get_node(csWrap.node).CSWrapApplyChanges(csWrap, delta)
-				get_node(csWrap.node).CSWrapApplyDependantChanges(csWrap, delta)
+				print(csWrap.node)
+				var nd = get_node(csWrap.node)
+				nd.CSWrapApplyChanges(csWrap, delta)
+				nd.CSWrapApplyDependantChanges(csWrap, delta)
 
 
 
