@@ -153,7 +153,9 @@ func applyCSWrapperChanges(delta):
 	
 	if global.levelWrapperDict.has(currLvlPath):
 		if global.levelWrapperDict[currLvlPath].gravity.has(currChar):
-			global.changeGrav(global.levelWrapperDict[currLvlPath].gravity[currChar][0], global.levelWrapperDict[currLvlPath].gravity[currChar][1], 0)
+			var gravMag = global.levelWrapperDict[currLvlPath].gravity[currChar][0]
+			var gravDeg = global.levelWrapperDict[currLvlPath].gravity[currChar][1]
+			global.changeGrav(gravMag, gravDeg, 0)
 		
 		if global.levelWrapperDict[currLvlPath].lvlNodesCSWrapDict.has(currChar):
 			charSwitchWrappers = global.levelWrapperDict[currLvlPath].lvlNodesCSWrapDict[currChar]
@@ -161,9 +163,10 @@ func applyCSWrapperChanges(delta):
 			for csWrap in charSwitchWrappers:
 				if csWrap.staticNode:continue
 				print(csWrap.node)
-				var nd = get_node(csWrap.node)
-				nd.CSWrapApplyChanges(csWrap, delta)
-				nd.CSWrapApplyDependantChanges(csWrap, delta)
+				if csWrap.checkIfInCharLvl(currChar):
+					var nd = get_node(csWrap.node)
+					nd.CSWrapApplyChanges(csWrap, delta)
+					nd.CSWrapApplyDependantChanges(csWrap, delta)
 
 
 
@@ -173,30 +176,17 @@ func saveCSWrapperStartStates():
 	#need to add to both registered and charSwitchWrappers
 	for csWrap in charSwitchWrappers:
 		if csWrap.staticNode: continue
-		get_node(csWrap.node).CSWrapSaveStartState(csWrap)
+		if csWrap.checkIfInCharLvl(global.CharacterRes.id):
+			get_node(csWrap.node).CSWrapSaveStartState(csWrap)
 
 
 
 
 func removeDisabledCSWrapperNodes():
 	for csWrap in charSwitchWrappers:
-		var nodeObj = get_node(csWrap.node)
-		match global.CharacterRes.id:
-			global.CHAR.USA:
-				if !csWrap.USA:
-					remove_child(nodeObj)
-			global.CHAR.RUS:
-				if !csWrap.RUS:
-					remove_child(nodeObj)
-			global.CHAR.FRA:
-				if !csWrap.FRA:
-					remove_child(nodeObj)
-			global.CHAR.CHN:
-				if !csWrap.CHN:
-					remove_child(nodeObj)
-			global.CHAR.MAR:
-				if !csWrap.MAR:
-					remove_child(nodeObj)
+		if !csWrap.checkIfInCharLvl(global.CharacterRes.id):
+			var nodeObj = get_node(csWrap.node)
+			remove_child(nodeObj)
 		
 		
 

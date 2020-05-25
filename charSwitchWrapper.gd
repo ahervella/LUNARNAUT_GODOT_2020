@@ -41,6 +41,7 @@ func getFinalPosAfterCollisions2(node, totalChange, kBody, dependantGroup):
 	
 	global.lvl().add_child(kb)
 	kb.set_global_position(node.get_global_position())
+	kb.set_global_rotation(node.get_global_rotation())
 	
 	var ogParents = {}
 	var ogNodeAbove = {}
@@ -49,6 +50,7 @@ func getFinalPosAfterCollisions2(node, totalChange, kBody, dependantGroup):
 	
 	for dp in dependantGroup:
 		var dpNode = global.lvl().get_node(dp.node)
+		if dpNode.get_name() == "Cam2D": continue
 		
 		dependantGroupNodes.append(dpNode)
 		
@@ -63,18 +65,22 @@ func getFinalPosAfterCollisions2(node, totalChange, kBody, dependantGroup):
 	for child in node.get_children():
 		if child is CollisionShape2D:
 			var globalPos = child.get_global_position()
+			var globalRot = child.get_global_rotation()
 			var dup = child.duplicate()
 			kb.add_child(dup)
 			dup.set_global_position(globalPos)
+			dup.set_global_rotation(globalRot)
 			break
 	
 	
 	for rb in dependantGroupNodes:
 		var thingy = rb
 		var thingyPos = thingy.get_global_position()
+		var thingyRot = thingy.get_global_rotation()
 		rb.get_parent().remove_child(rb)
 		kb.add_child(thingy)
 		thingy.set_global_position(thingyPos)
+		thingy.set_global_rotation(thingyRot)
 		
 		
 	for dgn in dependantGroupNodes:
@@ -119,22 +125,45 @@ func getFinalPosAfterCollisions2(node, totalChange, kBody, dependantGroup):
 				collObj = kb.move_and_collide(global.gravVect() * multiplyer, false)
 				#dependantGroupNodes[i].set_global_position(kBodies[i].get_global_position())
 				
+				if collObj != null:
+					
+					var dirVect = collObj.get_normal().normalized()#.tangent()
+					#dirVect.x = abs(dirVect.x) if totalChange.x > 0 else abs(dirVect.x) * -1
+					dirVect = dirVect.rotated(deg2rad(90)) if totalChange.x > 0 else dirVect.rotated(deg2rad(-90))
+					
+					if hitAngle(dirVect, totalChange, kb, collObj, ogNodeAbove, ogParents, dependantGroupNodes):
+						return
 			
 			#move the body slightly away from its point of contact so upong continuing its journey, it does
 			#not detect and parallel collisions with the object it just collided
 		#kBodies[k].set_global_position(kBodies[k].get_global_position() - (global.gravVect()*4* (k+1)) )#collObj[i].get_normal().normalized())
 	
-		kb.set_global_position(kb.get_global_position() - global.gravVect() * 2)
+		#kb.set_global_position(kb.get_global_position() - global.gravVect() * 2)
 	
 	
-		var dirVect = collObj.get_normal().tangent()
-		dirVect.x = abs(dirVect.x) if totalChange.x > 0 else abs(dirVect.x) * -1
+		var dirVect = collObj.get_normal().normalized()#.tangent()
+		#dirVect.x = abs(dirVect.x) if totalChange.x > 0 else abs(dirVect.x) * -1
+		dirVect = dirVect.rotated(deg2rad(90)) if totalChange.x > 0 else dirVect.rotated(deg2rad(-90))
+	
+		kb.set_global_position(kb.get_global_position() + collObj.get_normal().normalized() * 2)
+	
 	
 		#the step is either 10 or whatever is remaining
 		step = 10 if totalHorzDistToTrav > 10 else totalHorzDistToTrav
 		
 		for inx in dependantGroupNodes.size():
-			if dependantGroupNodes[inx].test_motion(dirVect.normalized() * step, false):
+			if inx == 0: continue
+			
+			var nd = dependantGroupNodes[inx]
+			
+			#equal to null for debugging in case node isn't either
+			var wouldCollide = null
+			if nd is KinematicBody2D:
+				wouldCollide = nd.test_move(nd.get_transform(), dirVect.normalized() * step, false)
+			if nd is RigidBody2D:
+				wouldCollide = nd.test_motion(dirVect.normalized() * step, false)
+			
+			if wouldCollide:
 				var blah = dependantGroupNodes[inx]
 				var blahPos = blah.get_global_position()
 				kb.remove_child(dependantGroupNodes[inx])
@@ -151,43 +180,54 @@ func getFinalPosAfterCollisions2(node, totalChange, kBody, dependantGroup):
 					closeShit(kb, ogNodeAbove, ogParents, dependantGroupNodes)
 					return
 		
-		var collObj2 = kb.move_and_collide(dirVect.normalized() * step, false)
+		var collObj2 = kb.move_and_collide(dirVect * step, false)
 	
 
 			
 		#if the move parallel to its last move intersects again, then get the distance
 		#traveled to subtract from the ground covered
 		if collObj2 != null:
-			
+			if hitAngle(dirVect, totalChange, kb, collObj2, ogNodeAbove, ogParents, dependantGroupNodes):
+				return
+			#hitAngle(dirVect, totalChange, kb, collObj2, ogNodeAbove, ogParents, dependantGroupNodes)
 #			var testVect = collObj2.get_travel()
 #
 			
 			#prevent object from moving up slopes greater than 30 degrees with respect to the
 			#gravity angle
-			var tanVector = collObj2.get_normal().rotated(-global.gravRadAngFromNorm)
-			var totalAngle = 30
-			if abs(tanVector.x) != 0:
+#			var tanVector = dirVect#collObj2.get_normal().rotated(-deg2rad(90)-global.gravRadAngFromNorm)
+#			var maxAngle = 30
+#			if abs(tanVector.x) != 0 && tanVector.y < 0 && ((totalChange.x > 0 && tanVector.x > 0) || (totalChange.x < 0 && tanVector.x < 0)):
+#
+#
+#				#var rotatingVal = tanVector
+#				#negative y to put in the first quadrent
+#				var atanVal = atan(-abs(tanVector.y) / abs(tanVector.x))
+#
+#
+#				if atanVal > deg2rad(maxAngle):
+#					#return
+#
+#
+#					#undo this move if the angle is too great
+#					kb.set_global_position(kb.get_global_position() - collObj2.get_travel())
+#					kb.set_global_position(kb.get_global_position() + collObj2.get_normal().normalized())
+#
+#					closeShit(kb, ogNodeAbove, ogParents, dependantGroupNodes)
+#
+#					return
+					
+					
+			
+			var blah = collObj2.get_travel()
+			totalHorzDistToTrav -= blah.length()
 				
-				tanVector.y = abs(tanVector.y) if totalChange.x > 0 else -abs(tanVector.y)
-				var atanVal = atan(tanVector.y / abs(tanVector.x))
-				if atanVal > deg2rad(totalAngle):
-					#return
-					
-					
-					#undo this move if the angle is too great
-					kb.set_global_position(kb.get_global_position() - collObj2.get_travel())
-					kb.set_global_position(kb.get_global_position() + collObj2.get_normal().normalized())
-					
-					closeShit(kb, ogNodeAbove, ogParents, dependantGroupNodes)
-					
-					return
-			
-			
-				var blah = collObj2.get_travel()
+			#var asfwef = atan(dirVect.y/dirVect.x)#kb.look_at(kb.get_global_position() + dirVect)#rotate(atan(dirVect.y / dirVect.x))
+			#kb.set_global_rotation(asfwef)
 				
 				#if k == 0:
 					
-				totalHorzDistToTrav -= blah.length()
+				
 			
 		#didn't run into anything so subtract the step from the distance to cover still
 		else:
@@ -202,7 +242,37 @@ func getFinalPosAfterCollisions2(node, totalChange, kBody, dependantGroup):
 	closeShit(kb, ogNodeAbove, ogParents, dependantGroupNodes)
 	
 	
-
+func hitAngle(dirVect, totalChange, kb, collObj, ogNodeAbove, ogParents, dependantGroupNodes):
+	#prevent object from moving up slopes greater than 30 degrees with respect to the
+	#gravity angle
+	var tanVector = collObj.get_normal().rotated(deg2rad(90))
+	var vectAngToCheck = tanVector.rotated(-global.gravRadAngFromNorm)
+	var maxAngle = 30
+	if abs(vectAngToCheck.x) != 0 && ((totalChange.x > 0 && vectAngToCheck.x > 0) || (totalChange.x < 0 && vectAngToCheck.x < 0)):
+		
+		
+		#var rotatingVal = tanVector
+		var atanVal = atan(abs(vectAngToCheck.y) / abs(vectAngToCheck.x))
+		
+		
+		
+		
+		if atanVal > deg2rad(maxAngle):
+			#return
+			
+			
+			#undo this move if the angle is too great
+			kb.set_global_position(kb.get_global_position() - collObj.get_travel())
+			kb.set_global_position(kb.get_global_position() + collObj.get_normal().normalized())
+			
+			closeShit(kb, ogNodeAbove, ogParents, dependantGroupNodes)
+			
+			return true
+			
+	var asfwef = atan(tanVector.y/tanVector.x)#kb.look_at(kb.get_global_position() + dirVect)#rotate(atan(dirVect.y / dirVect.x))
+	kb.set_global_rotation(asfwef)
+	
+	return false
 	
 func closeShit(kb, ogNodeAbove, ogParents, dependantGroupNodes):
 	for nddd in kb.get_children():
@@ -214,7 +284,15 @@ func closeShit(kb, ogNodeAbove, ogParents, dependantGroupNodes):
 		var nodeAbove = findNodeAbove(dependantGroupNodes, ogNodeAbove, nddd)
 				#check again!!!! and do same for when removing child above
 		
-		ogParents[nddd].add_child_below_node(nodeAbove, nddd)#add_child(nd)
+		#see if node was set to itself from the beginning of this method
+		#indicating that it is the first node index of its parent's children
+		if nodeAbove == nddd:
+			ogParents[nddd].add_child(nddd)
+			ogParents[nddd].move_child(nddd, 0)
+		else:
+			ogParents[nddd].add_child_below_node(nodeAbove, nddd)#add_child(nd)
+		
+		
 		if nddd.get_owner() == null:
 			nddd.set_owner(ogParents[nddd])
 		nddd.set_global_position(globalPos)
@@ -227,6 +305,9 @@ func closeShit(kb, ogNodeAbove, ogParents, dependantGroupNodes):
 			dgn.remove_collision_exception_with(dgn2)
 	
 func findNodeAbove(dependantGroupNodes, ogNodeAbove, node):
+	if ogNodeAbove[node] == node:
+		return ogNodeAbove[node]
+	
 	for dpNode in dependantGroupNodes:
 		if ogNodeAbove[node] == dpNode:
 			return findNodeAbove(dependantGroupNodes, ogNodeAbove, dpNode)
@@ -234,6 +315,21 @@ func findNodeAbove(dependantGroupNodes, ogNodeAbove, node):
 	return ogNodeAbove[node]
 	
 	
+	
+	
+	
+func checkIfInCharLvl(currChar):
+	match currChar:
+		global.CHAR.USA:
+			return USA
+		global.CHAR.RUS:
+			return RUS
+		global.CHAR.FRA:
+			return FRA
+		global.CHAR.CHN:
+			return CHN
+		global.CHAR.MAR:
+			return MAR
 	
 	
 func getFinalPosAfterCollisions(node, nodeDim, currPos, newPos, collisionShape, groups = ["solid", "wall", "astro", "object"]):

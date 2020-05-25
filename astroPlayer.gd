@@ -1037,6 +1037,7 @@ func _on_push_pull_area_body_entered(body):
 func _on_push_pull_area_body_exited(body):
 	if body.is_in_group("object"):
 		print("object exiteddddd")
+		body.movingDir = 0
 		if movableObject == body:
 			movableObject.movingDir = 0
 			

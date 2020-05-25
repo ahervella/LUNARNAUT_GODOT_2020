@@ -10,5 +10,7 @@ func _ready():
 	
 	#._ready()
 	global.playTest = false
-#	if global.CharacterRes.id == global.CHAR.RUS:
-#		global.changeGrav(2, 45)
+	if global.CharacterRes.id == global.CHAR.RUS:
+		global.changeGrav(2, -15)
+	else:
+		global.changeGrav(1, 15, 1)

@@ -101,9 +101,9 @@ func setVarsToDefault():
 	
 	var physMat = get_physics_material_override()
 	physMat.friction = 0.7
-	physMat.rough = false
+	physMat.rough = true#false
 	physMat.bounce = 0.1
-	physMat.absorbent = false
+	physMat.absorbent = true#false
 	gravity_scale = 1
 	set_use_custom_integrator(true)
 	set_continuous_collision_detection_mode(0)
@@ -450,7 +450,8 @@ func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper, delta):
 	
 	
 func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper, delta):
-	pass
+	CSWrap.dependantCSWrappers[global.CharacterRes.id] = []
+	
 #	var currChar = global.CharacterRes.id
 #	if CSWrap.dependantCSWrappers.has(currChar) && CSWrap.dependantCSWrappers[currChar].size() > 0:
 #		for dependantCSW in CSWrap.dependantCSWrappers[currChar]:

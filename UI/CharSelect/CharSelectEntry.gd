@@ -49,7 +49,8 @@ func saveCurrentLvl():
 		
 		for CSWrap in global.lvl().charSwitchWrappers:
 			if CSWrap.staticNode: continue
-			global.lvl().get_node(CSWrap.node).CSWrapAddChanges(CSWrap)
+			if CSWrap.checkIfInCharLvl(global.CharacterRes.id):
+				global.lvl().get_node(CSWrap.node).CSWrapAddChanges(CSWrap)
 			
 			
 		
