@@ -47,11 +47,18 @@ var prevPos : PoolVector2Array
 var prevPosOld : PoolVector2Array
 var cableNodes = []
 
+var cNodesFlipped = false
+
 var tempStartNodePos
 var tempEndNodePos
 
 var endMonitor = null
 var startMonitor = null
+
+
+#used for determining which plugs changes between character switching takes
+#priority
+var lastTouchedPlug = null
 
 func startPlug(val):
 	START_PLUG_SCENE = val
@@ -129,21 +136,27 @@ func readyDeferred():
 	
 func initShapes():
 	for n in range(NODE_COUNT):
-		cableNodes.append(CABLE_NODE.instance())
+		var newCN = CABLE_NODE.instance()
+		cableNodes.append(newCN)
 		if (!CABLE_NODE_SPRITE):
-			cableNodes[n].setCableNodeSprite(CABLE_NODE_SPRITE)
+			newCN.setCableNodeSprite(CABLE_NODE_SPRITE)
 		#need to add child to make active
-		add_child(cableNodes[n])
+		add_child(newCN)
+		newCN.set_name("cablePoint_%s_%s" % [n, get_name()])
 		setCNPos(n, pos[n])
 		
 		
 		if (n == 0):
 			if START_PLUG != null:
 				cableNodes[n].add_child(START_PLUG)
-			
+				#need to give distince name amongst this cable so that the dictionary
+				#in the extra wrappers in the cable cswrapper works
+				START_PLUG.set_name("plugA_%s" % self.get_name())
+				
 		if (n == NODE_COUNT - 1):
 			if END_PLUG != null:
 				cableNodes[n].add_child(END_PLUG)
+				END_PLUG.set_name("plugB_%s" % self.get_name())
 		
 	#prevent parts of cable from colliding with eachother
 	for n in range (NODE_COUNT):
@@ -646,6 +659,7 @@ func reverseSingleCable():
 		parentLinkCable.reverseSingleCable()
 		
 	cableNodes.invert()
+	cNodesFlipped = !cNodesFlipped
 	var tempPos = pos
 	var tempPosOld = posOld
 	for i in NODE_COUNT:
@@ -666,67 +680,113 @@ func removeChildCable():
 	childLinkCable.parentLinkCable = null
 	childLinkCable = null
 
+
+
+
+#keeeeep
+func CSWrapSaveStartState(CSWrap : CharacterSwitchingWrapper):
+	var currChar = global.CharacterRes.id
+#	var ignoreY = false
+	
+	
+#	if CSWrap.saveStartState[currChar].size() == 0:
+#		ignoreY = true
+#		CSWrap.saveStartState[currChar] = []
+#		print("ounweoinwoiehfiohwefhiowefiohwefhio")
+		
+	CSWrap.saveStartState[currChar].resize(7)
+	
+	
+	#start plug
+	CSWrap.saveStartState[currChar][0] = START_PLUG
+	CSWrap.saveStartState[currChar][1] = START_PIN
+	#start pin
+	CSWrap.saveStartState[currChar][2] = END_PLUG
+	CSWrap.saveStartState[currChar][3] = END_PIN
+	
+	#initial save spots need to be saved because first frame (due to these methods being called
+	#on the first frame by the lvl.gd), points will jump
+	#to initially set pins (which will change after frame 1)
+	CSWrap.saveStartState[currChar][4] = childLinkCable
+	CSWrap.saveStartState[currChar][5] = parentLinkCable
+	
+	#CSWrap.extraCSWrappers.resize(2)
+	
+	if !CSWrap.extraCSWrappers is Dictionary:
+		CSWrap.extraCSWrappers = {START_PLUG.get_name() : CharacterSwitchingWrapper.new(), END_PLUG.get_name() : CharacterSwitchingWrapper.new()}
+		CSWrap.extraCSWrappers[START_PLUG.get_name()].node = cableNodes[0].get_name() + "/" + START_PLUG.get_name()
+		CSWrap.extraCSWrappers[END_PLUG.get_name()].node = cableNodes[cableNodes.size()-1].get_name() + "/" + END_PLUG.get_name()
+		
+	START_PLUG.CSWrapSaveStartState(CSWrap.extraCSWrappers[START_PLUG.get_name()])
+	END_PLUG.CSWrapSaveStartState(CSWrap.extraCSWrappers[END_PLUG.get_name()])
+	
 	
 
-#
-#
-#
-#func CSWrapSaveStartState(CSWrap : CharacterSwitchingWrapper):
-#	var currChar = global.CharacterRes.id
-##	var ignoreY = false
-#
-#
-##	if CSWrap.saveStartState[currChar].size() == 0:
-##		ignoreY = true
-##		CSWrap.saveStartState[currChar] = []
-##		print("ounweoinwoiehfiohwefhiowefiohwefhio")
-#
-#	CSWrap.saveStartState[currChar].resize(2)
-#
-#
-#	CSWrap.saveStartState[currChar][0] = get_global_position()
-#	CSWrap.saveStartState[currChar][1] = get_global_rotation()
-#
-#
-#
-#
-#
-##keeeeep
-#func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
-#	var currChar = global.CharacterRes.id
-#
-#	var posChange = get_global_position() - CSWrap.saveStartState[currChar][0]
-#	var rotChange = get_global_rotation() - CSWrap.saveStartState[currChar][1]
-#
-#	CSWrap.changesToApply[currChar].resize(2)
-#
-#	CSWrap.changesToApply[currChar][0] = Vector2(0, 0)
-#	CSWrap.changesToApply[currChar][1] = 0
-#
-#	for depObj in rectObjsAbove:
-#		for csw in global.lvl().charSwitchWrappers:
-#			if depObj == global.lvl().get_node(csw.node) && !CSWrap.dependantCSWrappers[currChar].has(csw):
-#				CSWrap.dependantCSWrappers[currChar].append(csw)
-#
-#	for astroChar in global.CHAR:
-#		CSWrap.changesToApply[global.CHAR[astroChar]].resize(2)
-#
-#		if global.charYearDict[global.CHAR[astroChar]] > global.charYearDict[currChar]:
-#			if CSWrap.changesToApply[global.CHAR[astroChar]][0] == null:
-#				CSWrap.changesToApply[global.CHAR[astroChar]][0] = Vector2(0, 0)
-#
-#			if CSWrap.changesToApply[global.CHAR[astroChar]][1] == null:
-#				CSWrap.changesToApply[global.CHAR[astroChar]][1] = 0.0
-#
-#			CSWrap.changesToApply[global.CHAR[astroChar]][0] += posChange
-#			CSWrap.changesToApply[global.CHAR[astroChar]][1] += rotChange
-#
-#
-#
-#
-#func CSWrapRecieveTransformChanges(CSWrap : CharacterSwitchingWrapper, currChar, posToAdd, rotToAdd):
-#
-#	CSWrap.changesToApply[currChar].resize(2)
+#keeeeep
+func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
+	var currChar = global.CharacterRes.id
+	CSWrap.changesToApply[currChar].resize(17)
+	
+	CSWrap.changesToApply[currChar][0] = -1 if CSWrap.saveStartState[currChar][0] == START_PLUG else START_PLUG
+	CSWrap.changesToApply[currChar][1] = -1 if CSWrap.saveStartState[currChar][1] == START_PIN else START_PIN
+	CSWrap.changesToApply[currChar][2] = -1 if CSWrap.saveStartState[currChar][2] == END_PLUG else END_PLUG
+	CSWrap.changesToApply[currChar][3] = -1 if CSWrap.saveStartState[currChar][3] == END_PIN else END_PIN
+	CSWrap.changesToApply[currChar][4] = -1 if CSWrap.saveStartState[currChar][4] == childLinkCable else childLinkCable
+	CSWrap.changesToApply[currChar][5] = -1 if CSWrap.saveStartState[currChar][5] == parentLinkCable else parentLinkCable
+	
+	CSWrap.changesToApply[currChar][6] = START_PLUG.get_name()
+	CSWrap.changesToApply[currChar][7] = -1 if START_PIN == null else START_PIN.get_name()
+	CSWrap.changesToApply[currChar][8] = END_PLUG.get_name()
+	CSWrap.changesToApply[currChar][9] = -1 if END_PIN == null else END_PIN.get_name()
+	CSWrap.changesToApply[currChar][10] = -1 if childLinkCable == null else childLinkCable.get_name()
+	CSWrap.changesToApply[currChar][11] = -1 if parentLinkCable == null else parentLinkCable.get_name()
+	CSWrap.changesToApply[currChar][12] = pos
+	CSWrap.changesToApply[currChar][13] = posOld
+	CSWrap.changesToApply[currChar][14] = cNodesFlipped
+	CSWrap.changesToApply[currChar][15] = []
+	CSWrap.changesToApply[currChar][16] = []
+	for cn in cableNodes:
+		CSWrap.changesToApply[currChar][15].append(cn.get_global_position())
+		CSWrap.changesToApply[currChar][16].append(cn.get_global_rotation())
+		
+	
+	for astroChar in global.CHAR:
+		var otherChar = global.CHAR[astroChar]
+		
+		if global.charYearDict[otherChar] > global.charYearDict[currChar]:
+			CSWrap.changesToApply[otherChar].resize(17)
+			#start plug
+			if !CSWrap.changesToApply[currChar][0] is int:
+				CSWrap.changesToApply[otherChar][0] = CSWrap.changesToApply[currChar][0]
+				
+			#start pin
+			if !CSWrap.changesToApply[currChar][1] is int:
+				CSWrap.changesToApply[otherChar][1] = CSWrap.changesToApply[currChar][1]
+			
+			#end plug
+			if !CSWrap.changesToApply[currChar][2] is int:
+				CSWrap.changesToApply[otherChar][2] = CSWrap.changesToApply[currChar][2]
+				
+			#end pin
+			if !CSWrap.changesToApply[currChar][3] is int:
+				CSWrap.changesToApply[otherChar][3] = CSWrap.changesToApply[currChar][3]
+				
+			if !CSWrap.changesToApply[currChar][4] is int:
+				CSWrap.changesToApply[otherChar][4] = CSWrap.changesToApply[currChar][4]
+
+			if !CSWrap.changesToApply[currChar][5] is int:
+				CSWrap.changesToApply[otherChar][5] = CSWrap.changesToApply[currChar][5]
+	
+		#-comment on this last part
+		#-make enums to use
+
+	START_PLUG.CSWrapAddChanges(CSWrap.extraCSWrappers[START_PLUG.get_name()])
+	END_PLUG.CSWrapAddChanges(CSWrap.extraCSWrappers[END_PLUG.get_name()])
+	
+	
+func CSWrapRecieveTransformChanges(CSWrap : CharacterSwitchingWrapper, currChar, posToAdd, rotToAdd):
+	return
+#	CSWrap.changesToApply[currChar].resize(3)
 #
 #	if CSWrap.changesToApply[currChar][0] == null:
 #		CSWrap.changesToApply[currChar][0] = Vector2(0, 0)
@@ -736,21 +796,54 @@ func removeChildCable():
 #
 #	CSWrap.changesToApply[currChar][0] += posToAdd
 #	CSWrap.changesToApply[currChar][1] += rotToAdd
-#
-#
-#
-#
-#func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
-#	var currChar = global.CharacterRes.id
-#	if CSWrap.changesToApply[currChar][0] != null:
-#		set_global_position(get_global_position() + CSWrap.changesToApply[currChar][0])
-#
-#	if CSWrap.changesToApply[currChar][1] != null:
-#		set_global_rotation(get_global_rotation() + CSWrap.changesToApply[currChar][1])
-#
-#
-#
-#func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper):
+	
+				
+func CSWrapRestoreState(CSWrap : CharacterSwitchingWrapper):
+	var currChar = global.CharacterRes.id
+	var changes = CSWrap.changesToApply[currChar]
+	var lvlNode = global.lvl()
+	
+	var START_PLUGname = CSWrap.changesToApply[currChar][6]
+	var START_PINname = CSWrap.changesToApply[currChar][7]
+	var END_PLUGname = CSWrap.changesToApply[currChar][8]
+	var END_PINname = CSWrap.changesToApply[currChar][9]
+	var clcName = CSWrap.changesToApply[currChar][10]
+	var plcName = CSWrap.changesToApply[currChar][11]
+	
+	#return to initial set up, because frame one fucks this up
+	START_PLUG = lvlNode.find_node(START_PLUGname, true, false)
+	START_PIN = lvlNode.find_node(START_PINname, true, false) if !START_PINname is int else null
+	END_PLUG = lvlNode.find_node(END_PLUGname, true, false)
+	END_PIN = lvlNode.find_node(END_PINname, true, false) if !END_PINname is int else null
+	childLinkCable = lvlNode.find_node(clcName, true, false) if !clcName is int else null
+	parentLinkCable = lvlNode.find_node(plcName, true, false) if !plcName is int else null
+	pos = CSWrap.changesToApply[currChar][12]
+	posOld = CSWrap.changesToApply[currChar][13]
+	cNodesFlipped = CSWrap.changesToApply[currChar][14]
+	
+	if cNodesFlipped:
+		cableNodes.invert()
+	
+	for index in cableNodes.size():
+		cableNodes[index].set_global_position(CSWrap.changesToApply[currChar][15][index])
+		cableNodes[index].set_global_rotation(CSWrap.changesToApply[currChar][16][index])
+		
+	
+
+func CSWrapRestoreExtraState(CSWrap : CharacterSwitchingWrapper):
+	START_PLUG.CSWrapRestoreState(CSWrap.extraCSWrappers[START_PLUG.get_name()])
+	END_PLUG.CSWrapRestoreState(CSWrap.extraCSWrappers[END_PLUG.get_name()])
+	
+func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper, delta):
+	pass
+	
+func attemptMovePlug():
+	pass
+	
+func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper, delta):
+	return
+	#CSWrap.dependantCSWrappers[global.CharacterRes.id] = []
+	
 #	var currChar = global.CharacterRes.id
 #	if CSWrap.dependantCSWrappers.has(currChar) && CSWrap.dependantCSWrappers[currChar].size() > 0:
 #		for dependantCSW in CSWrap.dependantCSWrappers[currChar]:
@@ -760,19 +853,5 @@ func removeChildCable():
 #
 #			global.lvl().get_node(dependantCSW.node).CSWrapRecieveTransformChanges(dependantCSW, currChar, posChange, rotChange)
 #
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
+#	CSWrap.changesToApply[currChar][0] = Vector2(0, 0)
+#	CSWrap.changesToApply[currChar][1] = 0

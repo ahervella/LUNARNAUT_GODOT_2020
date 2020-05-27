@@ -108,6 +108,8 @@ func _physics_process(delta):
 		return
 
 	if readyDone && !processDone:
+		restoreCSWrapperState()
+		restoreExtraCSWrapperState()
 		applyCSWrapperChanges(delta)
 		saveCSWrapperStartStates()
 		removeDisabledCSWrapperNodes()
@@ -145,9 +147,55 @@ func _ready():
 	
 	readyDone = true
 
+func restoreCSWrapperState():
+	if global.CharacterRes == null: return
+	print(global.lvl().get_filename())
+	var currLvlPath = global.getScenePath(global.CharacterRes.level)
+	var currChar = global.CharacterRes.id
+	
+	if global.levelWrapperDict.has(currLvlPath):
+		if global.levelWrapperDict[currLvlPath].gravity.has(currChar):
+			var gravMag = global.levelWrapperDict[currLvlPath].gravity[currChar][0]
+			var gravDeg = global.levelWrapperDict[currLvlPath].gravity[currChar][1]
+			global.changeGrav(gravMag, gravDeg, 0)
+		
+		if global.levelWrapperDict[currLvlPath].lvlNodesCSWrapDict.has(currChar):
+			charSwitchWrappers = global.levelWrapperDict[currLvlPath].lvlNodesCSWrapDict[currChar]
+	
+			for csWrap in charSwitchWrappers:
+				if csWrap.staticNode:continue
+				print(csWrap.node)
+				if csWrap.checkIfInCharLvl(currChar):
+					var nd = get_node(csWrap.node)
+					if nd.has_method("CSWrapRestoreState"):
+						nd.CSWrapRestoreState(csWrap)
+						
+func restoreExtraCSWrapperState():
+	if global.CharacterRes == null: return
+	print(global.lvl().get_filename())
+	var currLvlPath = global.getScenePath(global.CharacterRes.level)
+	var currChar = global.CharacterRes.id
+	
+	if global.levelWrapperDict.has(currLvlPath):
+		if global.levelWrapperDict[currLvlPath].gravity.has(currChar):
+			var gravMag = global.levelWrapperDict[currLvlPath].gravity[currChar][0]
+			var gravDeg = global.levelWrapperDict[currLvlPath].gravity[currChar][1]
+			global.changeGrav(gravMag, gravDeg, 0)
+		
+		if global.levelWrapperDict[currLvlPath].lvlNodesCSWrapDict.has(currChar):
+			charSwitchWrappers = global.levelWrapperDict[currLvlPath].lvlNodesCSWrapDict[currChar]
+	
+			for csWrap in charSwitchWrappers:
+				if csWrap.staticNode:continue
+				print(csWrap.node)
+				if csWrap.checkIfInCharLvl(currChar):
+					var nd = get_node(csWrap.node)
+					if nd.has_method("CSWrapRestoreExtraState"):
+						nd.CSWrapRestoreExtraState(csWrap)
+
 func applyCSWrapperChanges(delta):
 	if global.CharacterRes == null: return
-	
+	print(global.lvl().get_filename())
 	var currLvlPath = global.getScenePath(global.CharacterRes.level)
 	var currChar = global.CharacterRes.id
 	

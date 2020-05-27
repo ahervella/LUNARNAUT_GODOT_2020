@@ -1,3 +1,4 @@
+tool
 extends "res://SCRIPTS/lvl.gd"
 
 

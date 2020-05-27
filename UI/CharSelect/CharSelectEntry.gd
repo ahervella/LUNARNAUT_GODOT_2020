@@ -73,6 +73,7 @@ func savedCurrentLvlPackedScene(currLvlPath):
 	if !global.levelWrapperDict[currLvlPath].charSavedLvlSceneDict.has(currChar):
 		global.levelWrapperDict[currLvlPath].charSavedLvlSceneDict[currChar] = PackedScene.new()
 	global.levelWrapperDict[currLvlPath].charSavedLvlSceneDict[currChar].pack(global.lvl())
+	
 	#ResourceSaver.save("res://name.tscn", global.levelWrapperDict[currLvlPath].charSavedLvlSceneDict[currChar])
 #	if !global.levelWrapperDict[currLvlPath].gravity.has(currChar):
 #		global.levelWrapperDict[currLvlPath].gravity[currChar] = []

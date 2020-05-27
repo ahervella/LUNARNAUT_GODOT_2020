@@ -60,6 +60,7 @@ var gravFor1Frame
 var gravMag
 var gravRadAng
 var gravRadAngFromNorm
+var gravMaxDegAngAllowedMove
 
 func getNextInteractNodeIndex():
 	print("global.getNextInteractNodeIndex")
@@ -217,6 +218,8 @@ func init():
 	#remember y is flipped
 	gravRadAng = deg2rad(90)
 	gravRadAngFromNorm = deg2rad(0)
+	gravMaxDegAngAllowedMove = 30
+	
 	playTest = true
 	#+ 1 for result / report node
 	interactNodes.resize(maxInteractNodes + 1)
