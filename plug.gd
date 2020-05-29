@@ -446,7 +446,11 @@ func grabPlug(isStartPlug = null):
 	if isStartPlug && parentCable.END_PIN != astro:
 		
 		parentCable.START_PIN = astro
-		parentCable.lastTouchedPlug = self
+		
+		
+		#parentCable.lastTouchedPlug = self
+		
+		
 		#print("astro set to start pin")
 		#print(astroIsHoldingPlug())
 		
@@ -454,7 +458,11 @@ func grabPlug(isStartPlug = null):
 		
 		#parentCable.setgetTotalCableEndPlugPin(true, false, astro)
 		parentCable.END_PIN = astro
-		parentCable.lastTouchedPlug = self
+		
+		
+		#parentCable.lastTouchedPlug = self
+		
+		
 		#print("astro set to end pin")
 		#print(parentCable.START_PIN)
 		#print(parentCable.END_PIN)
@@ -523,49 +531,72 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 	var currChar = global.CharacterRes.id
 	
 	CSWrap.changesToApply[currChar].resize(2)
+	#if new, set original setup
 	if CSWrap.changesToApply[currChar] == [null, null]:
 		CSWrap.changesToApply[currChar] = [[], []] 
 		CSWrap.changesToApply[currChar][0].resize(5)
 		CSWrap.changesToApply[currChar][1].resize(5)
 		
+		CSWrap.changesToApply[currChar][1][0] = -1
+		CSWrap.changesToApply[currChar][1][1] = -1
 		CSWrap.changesToApply[currChar][1][2] = -1
 		CSWrap.changesToApply[currChar][1][3] = -1
 		CSWrap.changesToApply[currChar][1][4] = -1
 	
-	var currStates = []
+	var restoreStates = []
 	var statesToApply = []
 	
-	currStates.resize(6)
-	statesToApply.resize(6)
+	restoreStates.resize(6)
+	statesToApply.resize(7)
 	var parentNode = get_parent()
 	
-	currStates[0] = get_global_position()
-	currStates[1] = get_global_rotation()
-	currStates[2] = connPlug.get_name() if connPlug != null else -1
-	currStates[3] = sourcePlug.get_name() if sourcePlug != null else -1
-	currStates[4] = parentCable.get_name() if parentCable != null else -1
-	currStates[5] = parentNode.get_name()
+	restoreStates[0] = get_global_position()
+	restoreStates[1] = get_global_rotation()
+	restoreStates[2] = connPlug.get_name() if connPlug != null else null
+	restoreStates[3] = sourcePlug.get_name() if sourcePlug != null else null
+	restoreStates[4] = parentCable.get_name() if parentCable != null else null
+	restoreStates[5] = parentNode.get_name()
 	
-	
+	#set the change from the start state to the current state
 	statesToApply[0] =  get_global_position() - CSWrap.saveStartState[currChar][0]
-	if  CSWrap.changesToApply[currChar][1][0] != null:
+	#if there is a previous change that was already added, add it to the states to apply
+	if  !CSWrap.changesToApply[currChar][1][0] is int:
 		statesToApply[0] +=  CSWrap.changesToApply[currChar][1][0]
 	
 	statesToApply[1] = get_global_rotation() - CSWrap.saveStartState[currChar][1]
-	if  CSWrap.changesToApply[currChar][1][1] != null:
-		statesToApply[currChar][1] +=  CSWrap.changesToApply[currChar][1][1]
+	if  !CSWrap.changesToApply[currChar][1][1] is int:
+		statesToApply[1] +=  CSWrap.changesToApply[currChar][1][1]
 		
+	#if there is a change, set it, else, 
 	if connPlug != CSWrap.saveStartState[currChar][2]:
 		statesToApply[2] = connPlug
+		if connPlug != null:
+			#need to store the exact location if connected
+			#so it may be the targetPos of the plug when trying to move
+			statesToApply[6] = get_global_position()
+	else:
+		#if no change, set what ever the change was already
+		statesToApply[2] = CSWrap.changesToApply[currChar][1][2]
+		statesToApply[6] = CSWrap.changesToApply[currChar][1][6]
+		
 	if sourcePlug != CSWrap.saveStartState[currChar][3]:
 		statesToApply[3] = sourcePlug
+	else:
+		statesToApply[3] = CSWrap.changesToApply[currChar][1][3]
+		
 	if parentCable != CSWrap.saveStartState[currChar][4]:
 		statesToApply[4] = parentCable
+	else:
+		statesToApply[4] = CSWrap.changesToApply[currChar][1][4]
 		
-	if parentCable != CSWrap.saveStartState[currChar][5]:
+	if parentNode != CSWrap.saveStartState[currChar][5]:
 		statesToApply[5] = parentNode
+	else:
+		statesToApply[5] = CSWrap.changesToApply[currChar][1][5]
 	
-	CSWrap.changesToApply[currChar][0] = currStates
+	
+	
+	CSWrap.changesToApply[currChar][0] = restoreStates
 	CSWrap.changesToApply[currChar][1] = statesToApply
 	
 func CSWrapRecieveTransformChanges(CSWrap : CharacterSwitchingWrapper, currChar, posToAdd, rotToAdd):
@@ -576,6 +607,7 @@ func CSWrapRestoreState(CSWrap : CharacterSwitchingWrapper):
 	var currLvl = global.lvl()
 	var restorations = CSWrap.changesToApply[currChar][0]
 	
+	#resolve parent first
 	var parentNode = currLvl.find_node(restorations[5], true, false)
 	
 	if parentNode != get_parent():
@@ -584,16 +616,16 @@ func CSWrapRestoreState(CSWrap : CharacterSwitchingWrapper):
 		parentNode.add_child(selfNode)
 		set_owner(parentNode)
 	
-	
+	#then apply pos and rot
 	set_global_position(restorations[0])
 	set_global_rotation(restorations[1])
-	connPlug = currLvl.find_node(restorations[2], true, false) if !restorations[2] is int else null
-	sourcePlug = currLvl.find_node(restorations[3], true, false) if !restorations[3] is int else null
-	parentCable = currLvl.find_node(restorations[4], true, false) if !restorations[4] is int else null
+	connPlug = currLvl.find_node(restorations[2], true, false) if restorations[2] != null else null
+	sourcePlug = currLvl.find_node(restorations[3], true, false) if restorations[3] != null else null
+	parentCable = currLvl.find_node(restorations[4], true, false) if restorations[4] != null else null
 
 	
 	
-func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper, delta):
+func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper, wasLastTouchedPlug):
 	var currChar = global.CharacterRes.id
 	var currLvl = global.lvl()
 	
@@ -609,10 +641,16 @@ func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper, delta):
 	
 	if !changes[2] is int && connPlug != changes[2]:
 		attemptConnectionSpecificPlug(changes[2])
-		if connPlug != changes[2]:
-			#move cable/plug, check if priority terminal of cable
-			parentCable.attemptMovePlug()
+		if connPlug != changes[2] && wasLastTouchedPlug != null && wasLastTouchedPlug:
+			#6 index is the direct location
+			parentCable.attemptMovePlug(changes[6])
 			attemptConnectionSpecificPlug(changes[2])
+				
+	#0 is the difference vector (change, not direct position)
+	elif !changes[0] is int:
+		if wasLastTouchedPlug != null && wasLastTouchedPlug:
+			parentCable.attemptMovePlug(changes[0])
+	
 			
 		
 					

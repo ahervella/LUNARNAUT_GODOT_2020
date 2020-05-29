@@ -9,8 +9,8 @@ func _ready():
 		return
 	
 	#._ready()
-	global.playTest = false
-	if global.CharacterRes.id == global.CHAR.RUS:
-		global.changeGrav(2, -15)
-	else:
-		global.changeGrav(1, 15, 1)
+#	global.playTest = false
+#	if global.CharacterRes.id == global.CHAR.RUS:
+#		global.changeGrav(2, -15)
+#	else:
+#		global.changeGrav(1, 45, 1)
