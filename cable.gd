@@ -720,6 +720,65 @@ func CSWrapSaveStartState(CSWrap : CharacterSwitchingWrapper):
 	END_PLUG.CSWrapSaveStartState(CSWrap.extraCSWrappers[END_PLUG.get_name()])
 	
 	
+	
+func CSWrapDetectChange(CSWrap : CharacterSwitchingWrapper):
+	var currChar = global.CharacterRes.id
+	
+	if CSWrap.saveStartState[currChar][0] == START_PLUG : return true
+	if CSWrap.saveStartState[currChar][1] == START_PIN : return true
+		#start pin
+	if CSWrap.saveStartState[currChar][2] == END_PLUG : return true
+	if CSWrap.saveStartState[currChar][3] == END_PIN : return true
+		
+		#initial save spots need to be saved because first frame (due to these methods being called
+		#on the first frame by the lvl.gd), points will jump
+		#to initially set pins (which will change after frame 1)
+	if CSWrap.saveStartState[currChar][4] == childLinkCable : return true
+	if CSWrap.saveStartState[currChar][5] == parentLinkCable : return true
+		
+	if CSWrap.saveStartState[currChar][6] == cNodesFlipped : return true
+	
+	if START_PLUG.CSWrapDetectChange(CSWrap.extraCSWrappers[START_PLUG.get_name()]) : return true
+	if END_PLUG.CSWrapDetectChange(CSWrap.extraCSWrappers[END_PLUG.get_name()]) : return true
+	
+	return false
+	
+func CSWrapSaveTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, set : bool):
+	#pass
+	var currChar = global.CharacterRes.id
+	
+	if !set:
+		CSWrap.savedTimeDiscrepencyState[currChar] = []
+		START_PLUG.CSWrapSaveTimeDiscrepState(CSWrap.extraCSWrappers[START_PLUG.get_name()], false)
+		END_PLUG.CSWrapSaveTimeDiscrepState(CSWrap.extraCSWrappers[END_PLUG.get_name()], false)
+		return
+	
+	CSWrap.savedTimeDiscrepencyState[currChar].resize(7)
+	
+	
+	#start plug
+	CSWrap.savedTimeDiscrepencyState[currChar][0] = START_PLUG
+	CSWrap.savedTimeDiscrepencyState[currChar][1] = START_PIN
+	#start pin
+	CSWrap.savedTimeDiscrepencyState[currChar][2] = END_PLUG
+	CSWrap.savedTimeDiscrepencyState[currChar][3] = END_PIN
+	
+	#initial save spots need to be saved because first frame (due to these methods being called
+	#on the first frame by the lvl.gd), points will jump
+	#to initially set pins (which will change after frame 1)
+	CSWrap.savedTimeDiscrepencyState[currChar][4] = childLinkCable
+	CSWrap.savedTimeDiscrepencyState[currChar][5] = parentLinkCable
+	
+	CSWrap.savedTimeDiscrepencyState[currChar][6] = cNodesFlipped
+	
+	
+	#if still new, make dictionary values
+	if !CSWrap.extraCSWrappers is Dictionary:
+		CSWrap.extraCSWrappers = {START_PLUG.get_name() : CharacterSwitchingWrapper.new(), END_PLUG.get_name() : CharacterSwitchingWrapper.new()}
+		
+	START_PLUG.CSWrapSaveTimeDiscrepState(CSWrap.extraCSWrappers[START_PLUG.get_name()], true)
+	END_PLUG.CSWrapSaveTimeDiscrepState(CSWrap.extraCSWrappers[END_PLUG.get_name()], true)
+	#savedTimeDiscrepencyState
 
 #keeeeep
 func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
@@ -760,6 +819,11 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 		CSWrap.changesToApply[currChar][17].append(cn.get_global_rotation())
 		
 	
+	if !CSWrapDetectChange(CSWrap):
+		START_PLUG.CSWrapAddChanges(CSWrap.extraCSWrappers[START_PLUG.get_name()], false)
+		END_PLUG.CSWrapAddChanges(CSWrap.extraCSWrappers[END_PLUG.get_name()], false)
+		return
+	
 	for astroChar in global.CHAR:
 		var otherChar = global.CHAR[astroChar]
 		
@@ -769,45 +833,29 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 			#set to default -1 s if otherChar changes are still new
 			if CSWrap.changesToApply[otherChar].size() == 0:
 				CSWrap.changesToApply[otherChar].resize(18)
-				for i in CSWrap.changesToApply[otherChar].size():
-					CSWrap.changesToApply[otherChar][i] = -1
 			
-
-			
-			#if there was change from time loading character to now, add to changes
-			#start plug 
-			if CSWrap.saveStartState[currChar][0] != START_PLUG:
 				#start plug should never be null so should always have a name
 				CSWrap.changesToApply[otherChar][0] = START_PLUG.get_name()
 				
-			#start pin
-			if CSWrap.saveStartState[currChar][1] != START_PIN:
-				#this can either be the name or null since pins may be null
+			#start pin, this can either be the name or null since pins may be null
 				CSWrap.changesToApply[otherChar][1] = startPinName
 			
 			#end plug
-			if CSWrap.saveStartState[currChar][2] != END_PLUG:
 				CSWrap.changesToApply[otherChar][2] = END_PLUG.get_name()
 				
 			#end pin
-			if CSWrap.saveStartState[currChar][3] != END_PIN:
 				CSWrap.changesToApply[otherChar][3] = endPinName
 				
-			#cNodesFlipped
-			if CSWrap.saveStartState[currChar][4] != cNodesFlipped:
-				#cNodesFlipped is only ever true of false, never null
+			#cNodesFlipped, cNodesFlipped is only ever true of false, never null
 				CSWrap.changesToApply[otherChar][4] = cNodesFlipped
 
-			if CSWrap.saveStartState[currChar][5] != childLinkCable:
 				#this can either be the name or null since link cables may be null
 				CSWrap.changesToApply[otherChar][5] = clcName
-				
-			if CSWrap.saveStartState[currChar][6] != parentLinkCable:
 				CSWrap.changesToApply[otherChar][6] = plcName
 	
 
-	START_PLUG.CSWrapAddChanges(CSWrap.extraCSWrappers[START_PLUG.get_name()])
-	END_PLUG.CSWrapAddChanges(CSWrap.extraCSWrappers[END_PLUG.get_name()])
+	START_PLUG.CSWrapAddChanges(CSWrap.extraCSWrappers[START_PLUG.get_name()], true)
+	END_PLUG.CSWrapAddChanges(CSWrap.extraCSWrappers[END_PLUG.get_name()], true)
 	
 	if lastTouchedPlugIsStart:
 		var posChange = get_global_position() - CSWrap.saveStartState[currChar][0]
@@ -866,6 +914,18 @@ func CSWrapRestoreState(CSWrap : CharacterSwitchingWrapper):
 	
 	#at the beginning of reloading currChar, nothing has been touched
 	lastTouchedPlugIsStart = null
+	
+	
+	
+	
+	#TODO: make sure changes are applied in order?? or does it matter....
+	
+	
+	
+	
+	
+	
+	
 	
 func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper, delta):
 	var currChar = global.CharacterRes.id

@@ -30,12 +30,12 @@ func loadNewCharacterLevel():
 	var newLvlPath = global.getScenePath(Character.level)
 	print(newLvlPath)
 	print("print(newLvlPath)")
-	if global.levelWrapperDict.has(newLvlPath):
-		if global.levelWrapperDict[newLvlPath].charSavedLvlSceneDict.has(Character.id):
-			global.goto_scene(global.levelWrapperDict[newLvlPath].charSavedLvlSceneDict[Character.id])
+	#if global.levelWrapperDict.has(newLvlPath):
+	#	if global.levelWrapperDict[newLvlPath].charSavedLvlSceneDict.has(Character.id):
+	#		global.goto_scene(global.levelWrapperDict[newLvlPath].charSavedLvlSceneDict[Character.id])
 			
 			
-			return
+			#return
 	
 	
 	global.goto_scene(newLvlPath)
@@ -67,6 +67,7 @@ func saveCurrentLvl():
 func savedCurrentLvlPackedScene(currLvlPath):
 	var currChar = global.CharacterRes.id
 	
+	
 	if !global.levelWrapperDict.has(currLvlPath):
 		global.levelWrapperDict[currLvlPath] = LevelWrapper.new()
 			
@@ -74,12 +75,14 @@ func savedCurrentLvlPackedScene(currLvlPath):
 		global.levelWrapperDict[currLvlPath].charSavedLvlSceneDict[currChar] = PackedScene.new()
 	global.levelWrapperDict[currLvlPath].charSavedLvlSceneDict[currChar].pack(global.lvl())
 	
-	#ResourceSaver.save("res://name.tscn", global.levelWrapperDict[currLvlPath].charSavedLvlSceneDict[currChar])
+	ResourceSaver.save("res://name.tscn", global.levelWrapperDict[currLvlPath].charSavedLvlSceneDict[currChar])
 #	if !global.levelWrapperDict[currLvlPath].gravity.has(currChar):
 #		global.levelWrapperDict[currLvlPath].gravity[currChar] = []
 #		global.levelWrapperDict[currLvlPath].gravity[currChar].resize(2)
 		
 	global.levelWrapperDict[currLvlPath].gravity[currChar] = [global.gravMag, rad2deg(global.gravRadAngFromNorm)]
+	global.levelWrapperDict[currLvlPath].lvlTimeDiscrepAreaDict[currChar] = [global.lvl().timeDiscrepAreaBodyDict.duplicate(true), PackedScene.new()]
+	global.levelWrapperDict[currLvlPath].lvlTimeDiscrepAreaDict[currChar][1].pack(global.lvl().timeDiscrepArea)
 
 
 

@@ -8,10 +8,12 @@ var dependantCSWrappers = {global.CHAR.USA : [], global.CHAR.RUS : [], global.CH
 var extraCSWrappers = []
 var saveStartState = {global.CHAR.USA : [], global.CHAR.RUS : [], global.CHAR.FRA : [], global.CHAR.CHN : [], global.CHAR.MAR : []}
 var changesToApply = {global.CHAR.USA : [], global.CHAR.RUS : [], global.CHAR.FRA : [], global.CHAR.CHN : [], global.CHAR.MAR : []}
-
-
+var savedTimeDiscrepencyState = {global.CHAR.USA : [], global.CHAR.RUS : [], global.CHAR.FRA : [], global.CHAR.CHN : [], global.CHAR.MAR : []}
 
 export (NodePath) var node
+export (Array, NodePath) var nodeCollShapes 
+# setting this default to [] was causeing weird ass shit where it was saving its state
+#across every new(). Should report to godot community
 export (bool) var staticNode = false
 export (bool) var USA = true
 #export (NodePath) var USA_relativeNode = null

@@ -21,12 +21,9 @@ export (String) var showSoundGroup = null
 export (String) var hideSoundNode = null
 export (String) var hideSoundGroup = null
 
-export (bool) var sean_Is_Cool = true setget setterFunction, getterFunction
-
-
 
 var rectObjBelow = null
-var rectObjsAbove = []
+#var rectObjsAbove = []
 var CUSTOM_SPRITE
 var SHAPE_NODE
 var PUSH_PULL_VELOCITY_LIM = 0
@@ -44,9 +41,7 @@ var contactPosDict = {}
 
 var lvlNodeReady = false
 
-
-func setterFunction(val):
-	sean_Is_Cool = true
+var astroIsOnTop = false
 
 func getterFunction():
 	pass
@@ -328,10 +323,10 @@ func _on_STACK_AREA_body_entered(body):
 			rectObjBelow = body
 			#so if shit is stacked, make heavier
 			rectObjBelow.setForceVelLim(OBJECT_WEIGHT.HEAVY)
-	if body.is_in_group("object") || body.is_in_group("plug") || body.is_in_group("astro"):
-		if objIsAbove(body):
-			if rectObjsAbove.find(body) == -1:
-				rectObjsAbove.append(body)
+	#if body.is_in_group("object") || body.is_in_group("plug") || body.is_in_group("astro"):
+	#	if objIsAbove(body):
+	#		if rectObjsAbove.find(body) == -1:
+	#			rectObjsAbove.append(body)
 			
 		
 
@@ -341,78 +336,77 @@ func _on_STACK_AREA_body_exited(body):
 			#if shit is unstacked, set back to default forceVelLim
 			rectObjBelow.setForceVelLim()
 			rectObjBelow = null
-	if body.is_in_group("object") || body.is_in_group("plug") || body.is_in_group("astro"):
-		if rectObjsAbove.find(body) != -1:
-			rectObjsAbove.erase(body)
+	#if body.is_in_group("object") || body.is_in_group("plug") || body.is_in_group("astro"):
+	#	if rectObjsAbove.find(body) != -1:
+	#		rectObjsAbove.erase(body)
 			
 			
 	
 #keeeeep
 func CSWrapSaveStartState(CSWrap : CharacterSwitchingWrapper):
 	var currChar = global.CharacterRes.id
-#	var ignoreY = false
 	
 	
-#	if CSWrap.saveStartState[currChar].size() == 0:
-#		ignoreY = true
-#		CSWrap.saveStartState[currChar] = []
-#		print("ounweoinwoiehfiohwefhiowefiohwefhio")
-		
 	CSWrap.saveStartState[currChar].resize(2)
 	
 	
 	CSWrap.saveStartState[currChar][0] = get_global_position()
 	CSWrap.saveStartState[currChar][1] = get_global_rotation()
 	
-
-				
 	
-
+func CSWrapSaveTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, set : bool):
+	var currChar = global.CharacterRes.id
+	CSWrap.savedTimeDiscrepencyState[currChar].resize(2)
+	CSWrap.savedTimeDiscrepencyState[currChar][0] = get_global_position() if set else null
+	CSWrap.savedTimeDiscrepencyState[currChar][1] = get_global_rotation() if set else null
+	
 #keeeeep
 func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 	var currChar = global.CharacterRes.id
+	CSWrap.savedTimeDiscrepencyState[currChar].resize(2)
+	var pos = get_global_position() if CSWrap.savedTimeDiscrepencyState[currChar][0] == null else CSWrap.savedTimeDiscrepencyState[currChar][0]# - CSWrap.saveStartState[currChar][0]
+	var rot = get_global_rotation() if CSWrap.savedTimeDiscrepencyState[currChar][1] == null else CSWrap.savedTimeDiscrepencyState[currChar][1]# - CSWrap.saveStartState[currChar][1]
 	
-	var posChange = get_global_position() - CSWrap.saveStartState[currChar][0]
-	var rotChange = get_global_rotation() - CSWrap.saveStartState[currChar][1]
+	CSWrap.changesToApply[currChar].resize(3)
 	
-	CSWrap.changesToApply[currChar].resize(2)
+	CSWrap.changesToApply[currChar][0] = get_global_position()
+	CSWrap.changesToApply[currChar][1] = get_global_rotation()
+	CSWrap.changesToApply[currChar][2] = get_global_position()
+
 	
-	CSWrap.changesToApply[currChar][0] = Vector2(0, 0)
-	CSWrap.changesToApply[currChar][1] = 0
+	var posDiff = pos - CSWrap.saveStartState[currChar][0]
+	var rotDiff = rot - CSWrap.saveStartState[currChar][1]
 	
-	for depObj in rectObjsAbove:
-		for csw in global.lvl().charSwitchWrappers:
-			if depObj == global.lvl().get_node(csw.node) && !CSWrap.dependantCSWrappers[currChar].has(csw):
-				CSWrap.dependantCSWrappers[currChar].append(csw)
+	#change needs to be bigger than 5 to take place
+	if posDiff.length() < 5 && rot < 5: return
+	
+#	CSWrap.changesToApply[currChar].resize(2)
+	
 	
 	for astroChar in global.CHAR:
 		CSWrap.changesToApply[global.CHAR[astroChar]].resize(2)
 		
 		if global.charYearDict[global.CHAR[astroChar]] > global.charYearDict[currChar]:
-			if CSWrap.changesToApply[global.CHAR[astroChar]][0] == null:
-				CSWrap.changesToApply[global.CHAR[astroChar]][0] = Vector2(0, 0)
-				
-			if CSWrap.changesToApply[global.CHAR[astroChar]][1] == null:
-				CSWrap.changesToApply[global.CHAR[astroChar]][1] = 0.0
 			
-			CSWrap.changesToApply[global.CHAR[astroChar]][0] += posChange
-			CSWrap.changesToApply[global.CHAR[astroChar]][1] += rotChange
+			
+			CSWrap.changesToApply[global.CHAR[astroChar]][0] = pos 
+			CSWrap.changesToApply[global.CHAR[astroChar]][1] = rot
 	
 	
 	
 	
 func CSWrapRecieveTransformChanges(CSWrap : CharacterSwitchingWrapper, currChar, posToAdd, rotToAdd):
-	
-	CSWrap.changesToApply[currChar].resize(2)
-	
-	if CSWrap.changesToApply[currChar][0] == null:
-		CSWrap.changesToApply[currChar][0] = Vector2(0, 0)
-	
-	if CSWrap.changesToApply[currChar][1] == null:
-		CSWrap.changesToApply[currChar][1] = 0
-		
-	CSWrap.changesToApply[currChar][0] += posToAdd
-	CSWrap.changesToApply[currChar][1] += rotToAdd
+	return
+#	CSWrap.changesToApply[currChar].resize(2)
+#
+#	if CSWrap.changesToApply[currChar][0] == null:
+#		CSWrap.changesToApply[currChar][0] = Vector2(0, 0)
+#
+#	if CSWrap.changesToApply[currChar][1] == null:
+#		CSWrap.changesToApply[currChar][1] = 0
+#
+#	CSWrap.changesToApply[currChar][0] += posToAdd
+#	CSWrap.changesToApply[currChar][1] += rotToAdd
 	
 				
 
@@ -422,28 +416,31 @@ func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper, delta):
 	#var initialRotation = get_global_rotation()
 	var currChar = global.CharacterRes.id
 	
-	var dependantGroup = CSWrap.getDependantGroup()
+	#var dependantGroup = CSWrap.getDependantGroup()
 	
-	if CSWrap.changesToApply[currChar][0] != null && CSWrap.changesToApply[currChar][0] != Vector2(0, 0):
+	if CSWrap.changesToApply[currChar][0] != null:# && CSWrap.changesToApply[currChar][0] != Vector2(0, 0):
+		set_global_position(CSWrap.changesToApply[currChar][0])
+	if CSWrap.changesToApply[currChar][1] != null:# && CSWrap.changesToApply[currChar][0] != Vector2(0, 0):
+		set_global_rotation(CSWrap.changesToApply[currChar][1])
+#
+#		var collShape = null
+#		var newPos = get_global_position() + CSWrap.changesToApply[currChar][0]
+#		var kBody = null
+#		for child in get_children():
+#			if child is CollisionShape2D:
+#				collShape = child 
+#			if child is KinematicBody2D:
+#				kBody = child
+#
+#		#kBody.add_collision_exception_with(self)
+#		#kBody.add_collision_exception_with(collShape)
+#		print("foaijsdfoaijsdfoajdsfoiajsdofijasodifjaosdifjaoisdjf")
+#		CSWrap.getFinalPosAfterCollisions2(self, CSWrap.changesToApply[currChar][0], kBody, dependantGroup)
+#		#var finalPos = CSWrap.getFinalPosAfterCollisions(self, getDimensions(), get_global_position(), newPos, collShape)
+#		#set_global_position(finalPos)#get_global_position() + CSWrap.changesToApply[currChar][0])
 		
-		var collShape = null
-		var newPos = get_global_position() + CSWrap.changesToApply[currChar][0]
-		var kBody = null
-		for child in get_children():
-			if child is CollisionShape2D:
-				collShape = child 
-			if child is KinematicBody2D:
-				kBody = child
-				
-		#kBody.add_collision_exception_with(self)
-		#kBody.add_collision_exception_with(collShape)
-		print("foaijsdfoaijsdfoajdsfoiajsdofijasodifjaosdifjaoisdjf")
-		CSWrap.getFinalPosAfterCollisions2(self, CSWrap.changesToApply[currChar][0], kBody, dependantGroup)
-		#var finalPos = CSWrap.getFinalPosAfterCollisions(self, getDimensions(), get_global_position(), newPos, collShape)
-		#set_global_position(finalPos)#get_global_position() + CSWrap.changesToApply[currChar][0])
-		
-	if CSWrap.changesToApply[currChar][1] != null:
-		set_global_rotation(get_global_rotation() + CSWrap.changesToApply[currChar][1])
+#	if CSWrap.changesToApply[currChar][1] != null:
+#		set_global_rotation(get_global_rotation() + CSWrap.changesToApply[currChar][1])
 	
 	#CSWrap.changesToApply[currChar][0] = get_global_position() - initialLocation
 	#CSWrap.changesToApply[currChar][1] = get_global_rotation() - initialRotation

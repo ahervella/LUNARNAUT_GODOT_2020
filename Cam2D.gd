@@ -105,26 +105,26 @@ func CSWrapSaveStartState(CSWrap):
 func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 	var currChar = global.CharacterRes.id
 	
-	CSWrap.changesToApply[currChar].resize(2)
+	CSWrap.changesToApply[currChar].resize(1)
 	
-	CSWrap.changesToApply[currChar][0] = Vector2(0, 0)
-	CSWrap.changesToApply[currChar][1] = 0
+	CSWrap.changesToApply[currChar][0] = get_global_position()
+	#CSWrap.changesToApply[currChar][1] = 0
 	
 
 	
 func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper, delta):
 	var currChar = global.CharacterRes.id
-	var camPosChange = CSWrap.changesToApply[currChar][0]
+	CSWrap.changesToApply[currChar].resize(1)
+	if CSWrap.changesToApply[currChar][0] != null:
+		set_global_position(CSWrap.changesToApply[currChar][0])
 	
 	
-	var finalPos = get_global_position()
-	print("cam changeeeeeeeeeeeeeeeeeeeeeeeee2")
-	if camPosChange != null && camPosChange != Vector2(0, 0):
-		print("cam changeeeeeeeeeeeeeeeeeeeeeeeee")
-		print(camPosChange)
-		finalPos += camPosChange
+	#var finalPos = get_global_position()
+	#print("cam changeeeeeeeeeeeeeeeeeeeeeeeee2")
+	#if camPosChange != null && camPosChange != Vector2(0, 0):
+	#	finalPos += camPosChange
 	
-	set_global_position(finalPos)
+	#set_global_position(finalPos)
 	
 
 func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper, delta):
@@ -132,10 +132,10 @@ func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper, delta):
 
 
 func CSWrapRecieveTransformChanges(CSWrap : CharacterSwitchingWrapper, currChar, posToAdd, rotToAdd):
-	
-	CSWrap.changesToApply[currChar].resize(2)
-	
-	if CSWrap.changesToApply[currChar][0] == null:
-		CSWrap.changesToApply[currChar][0] = Vector2(0, 0)
-		
-	CSWrap.changesToApply[currChar][0] += posToAdd
+	pass
+#	CSWrap.changesToApply[currChar].resize(2)
+#
+#	if CSWrap.changesToApply[currChar][0] == null:
+#		CSWrap.changesToApply[currChar][0] = Vector2(0, 0)
+#
+#	CSWrap.changesToApply[currChar][0] += posToAdd

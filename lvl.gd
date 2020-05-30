@@ -33,8 +33,8 @@ var oneShotAddAstroAndCam = true
 
 var readyDone = false
 var processDone = true
-
-
+var timeDiscrepArea
+var timeDiscrepAreaBodyDict = {}
 
 func setAddAstroAndCam(garboVal):
 	if !Engine.editor_hint:
@@ -49,6 +49,7 @@ func setAddAllChildNodes(garboVal):
 	addAstroAndCamPerChar()
 	
 	for child in get_children():
+		if child.get_name() == "InteractFont" : return
 		var alreadyPresent = false
 		
 		for resNode in charSwitchWrappers:
@@ -59,7 +60,26 @@ func setAddAllChildNodes(garboVal):
 		if !alreadyPresent:
 			var childRes = CharacterSwitchingWrapper.new()
 			#name can actually act as a readable node path
-			childRes.node = "/root/" + child.get_parent().get_name() + "/" + child.get_name()
+			var nodePath =  child.get_name()
+			childRes.node = NodePath(nodePath)
+
+			for childChild in child.get_children():
+				if childChild is CollisionShape2D:
+					var collPathString = nodePath + "/" + childChild.get_name()
+					
+					childRes.nodeCollShapes.resize(childRes.nodeCollShapes.size()+1)
+					var index = childRes.nodeCollShapes.size() -1
+					childRes.nodeCollShapes[index] = NodePath(collPathString)
+					
+				if childChild is StaticBody2D:
+					for childChildChild in childChild.get_children():
+						if childChildChild is CollisionShape2D:
+							var childCollpath = nodePath + "/" + childChild.get_name() + "/" + childChildChild.get_name()
+							childRes.nodeCollShapes.resize(childRes.nodeCollShapes.size() + 1)
+							var index = childRes.nodeCollShapes.size()-1
+							
+							childRes.nodeCollShapes[index] = NodePath(childCollpath)
+
 			if !child.has_method("CSWrapSaveStartState"):
 				childRes.staticNode = true
 			charSwitchWrappers.append(childRes)
@@ -90,6 +110,16 @@ func addAstroAndCamPerChar():
 	if !astroPresent:
 		var astroCharRes = CharacterSwitchingWrapper.new()
 		astroCharRes.node = astroNodePath
+		for child in astro.get_children():
+			if child is CollisionShape2D:
+				#var path = astroNodePath + child.get_name()
+				var nodePath = NodePath(child.get_name())
+				astroCharRes.nodeCollShapes.resize(astroCharRes.nodeCollShapes.size() + 1)
+				var index = astroCharRes.nodeCollShapes.size() -1
+				astroCharRes.nodeCollShapes[index] = nodePath
+				
+				break
+				
 		charSwitchWrappers.append(astroCharRes)
 	
 	if !camPresent:
@@ -99,6 +129,12 @@ func addAstroAndCamPerChar():
 
 	
 func setClearAllNodes(garboVal):
+	#var size = charSwitchWrappers.size()
+	for node in charSwitchWrappers:
+		if node == null:
+			continue
+		
+		node.nodeCollShapes.resize(0)
 	charSwitchWrappers.resize(0)
 
 
@@ -108,11 +144,14 @@ func _physics_process(delta):
 		return
 
 	if readyDone && !processDone:
+		loadCSWrappersFromGlobal()
+		addCSWrapperTimeDiscrepencyAreas()
+		
+		removeDisabledCSWrapperNodes()
 		restoreCSWrapperState()
 		#restoreExtraCSWrapperState()
 		applyCSWrapperChanges(delta)
 		saveCSWrapperStartStates()
-		removeDisabledCSWrapperNodes()
 		set_physics_process(false)
 		print("iosudhfaiusdhfiaushdfiaushdfisuhf")
 		processDone = true
@@ -147,9 +186,8 @@ func _ready():
 	
 	readyDone = true
 
-func restoreCSWrapperState():
+func loadCSWrappersFromGlobal():
 	if global.CharacterRes == null: return
-	print(global.lvl().get_filename())
 	var currLvlPath = global.getScenePath(global.CharacterRes.level)
 	var currChar = global.CharacterRes.id
 	
@@ -161,60 +199,145 @@ func restoreCSWrapperState():
 		
 		if global.levelWrapperDict[currLvlPath].lvlNodesCSWrapDict.has(currChar):
 			charSwitchWrappers = global.levelWrapperDict[currLvlPath].lvlNodesCSWrapDict[currChar]
+
+func addCSWrapperTimeDiscrepencyAreas():
+	if global.CharacterRes == null: return
 	
-			for csWrap in charSwitchWrappers:
-				if csWrap.staticNode:continue
-				print(csWrap.node)
-				if csWrap.checkIfInCharLvl(currChar):
-					var nd = get_node(csWrap.node)
-					if nd.has_method("CSWrapRestoreState"):
-						nd.CSWrapRestoreState(csWrap)
+	var currChar = global.CharacterRes.id
+	var currLvlPath = global.getScenePath(global.CharacterRes.level)
+	
+	if global.levelWrapperDict.has(currLvlPath):
+		if global.levelWrapperDict[currLvlPath].lvlTimeDiscrepAreaDict.has(currChar):
+			timeDiscrepAreaBodyDict = global.levelWrapperDict[currLvlPath].lvlTimeDiscrepAreaDict[currChar][0]
+			timeDiscrepArea = global.levelWrapperDict[currLvlPath].lvlTimeDiscrepAreaDict[currChar][1].instance()
+			add_child(timeDiscrepArea)
+			timeDiscrepArea.set_owner(self)
+			timeDiscrepArea.connect("body_entered", self, "bodyEnteredTimeDiscrepArea")
+			timeDiscrepArea.connect("body_exited", self, "bodyExitedTimeDiscrepArea")
+			return
+			
+	timeDiscrepArea = Area2D.new()
+	add_child(timeDiscrepArea)
+	timeDiscrepArea.set_owner(self)
+	
+	timeDiscrepArea.connect("body_entered", self, "bodyEnteredTimeDiscrepArea")
+	timeDiscrepArea.connect("body_exited", self, "bodyExitedTimeDiscrepArea")
+	
+	for csWrap in charSwitchWrappers:
+		if !csWrap.checkIfInCharLvl(currChar):
+			for astroChar in global.CHAR:
+				if global.charYearDict[global.CHAR[astroChar]] > global.charYearDict[currChar]:
+					addCSWrapCollShape2DiscrepArea(csWrap)
+				
+			#var csWrapNode = get_node(csWrap.node)
+			#remove_child(csWrapNode)
+		
+		if get_node(csWrap.node) == astroNode:
+			for astroChar in csWrap.changesToApply.keys():
+				if astroChar == currChar : continue
+				if csWrap.changesToApply[astroChar] == null: continue
+				if global.charYearDict[astroChar] < global.charYearDict[currChar]: continue
+				#if array is has at least 3, [3] is not null, and is false
+				if csWrap.changesToApply[astroChar].size() > 2 && csWrap.changesToApply[astroChar][3] != null && !csWrap.changesToApply[astroChar][3]:
+					for collShape in csWrap.nodeCollShapes:
+						var collShapeNode = astroNode.get_node(collShape)
+						#assuming all astro chars have the same shape
+						var astroPos = csWrap.changesToApply[astroChar][0]
+						var astroRot = csWrap.changesToApply[astroChar][1]
+						var localPos = collShapeNode.get_position()
+						var localRot = collShapeNode.get_rotation()
+						var collShapeNodeDup = collShapeNode.duplicate()#DUPLICATE_USE_INSTANCING)
+						collShapeNodeDup.set_name("TIME_DISCREP_" + csWrap.node + "_" + collShapeNode.get_name())
+						for group in collShapeNodeDup.get_groups():
+							collShapeNodeDup.remove_from_group(group)
+						timeDiscrepArea.add_child(collShapeNodeDup)
+						collShapeNodeDup.set_owner(timeDiscrepArea)
+						collShapeNodeDup.set_global_position(astroPos + localPos)
+						collShapeNodeDup.set_global_rotation(astroRot + localRot)
 						
-#func restoreExtraCSWrapperState():
-#	if global.CharacterRes == null: return
-#	print(global.lvl().get_filename())
-#	var currLvlPath = global.getScenePath(global.CharacterRes.level)
-#	var currChar = global.CharacterRes.id
-#
-#	if global.levelWrapperDict.has(currLvlPath):
-#		if global.levelWrapperDict[currLvlPath].gravity.has(currChar):
-#			var gravMag = global.levelWrapperDict[currLvlPath].gravity[currChar][0]
-#			var gravDeg = global.levelWrapperDict[currLvlPath].gravity[currChar][1]
-#			global.changeGrav(gravMag, gravDeg, 0)
-#
-#		if global.levelWrapperDict[currLvlPath].lvlNodesCSWrapDict.has(currChar):
-#			charSwitchWrappers = global.levelWrapperDict[currLvlPath].lvlNodesCSWrapDict[currChar]
-#
-#			for csWrap in charSwitchWrappers:
-#				if csWrap.staticNode:continue
-#				print(csWrap.node)
-#				if csWrap.checkIfInCharLvl(currChar):
-#					var nd = get_node(csWrap.node)
-#					if nd.has_method("CSWrapRestoreExtraState"):
-#						nd.CSWrapRestoreExtraState(csWrap)
+					#save dictionary of areas!!!
+					#need to add area if restricted by area
+					#areas may only be certain character exclusives
+					
+func addCSWrapCollShape2DiscrepArea(csWrap):
+	if timeDiscrepAreaBodyDict.has(csWrap.node): return
+	
+	
+	
+	timeDiscrepAreaBodyDict[csWrap.node] = []
+	for collShape in csWrap.nodeCollShapes:
+		var collShapeNode = get_node(collShape)
+		var collShapeNodePos = collShapeNode.get_global_position()
+		var collShapeNodeScale = collShapeNode.get_global_scale()
+		var collShapeNodeRot = collShapeNode.get_global_rotation()
+		var collShapeNodeDup = collShapeNode.duplicate() #duplicate(DUPLICATE_USE_INSTANCING)
+		collShapeNodeDup.set_name("TIME_DISCREP_" + csWrap.node + "_" + collShapeNode.get_name())
+		timeDiscrepArea.add_child(collShapeNodeDup)
+		collShapeNodeDup.set_owner(timeDiscrepArea)
+		collShapeNodeDup.set_global_position(collShapeNodePos)
+		collShapeNodeDup.set_global_scale(collShapeNodeScale)
+		collShapeNodeDup.set_global_rotation(collShapeNodeRot)
+		timeDiscrepAreaBodyDict[csWrap.node].append(collShapeNodeDup.get_name())
+				
+func bodyEnteredTimeDiscrepArea(body):
+	if body.has_method("CSWrapSaveTimeDiscrepState"):
+		for cswrap in charSwitchWrappers:
+			if get_node(cswrap.node) == body:
+				body.CSWrapSaveTimeDiscrepState(cswrap, true)
+				
+				if !body.is_in_group("astro"):
+					addCSWrapCollShape2DiscrepArea(cswrap)
+				
+				#var collShapeNode = get_node(cswrap)
+				print("Worked!!!!")
+	
+	
+func bodyExitedTimeDiscrepArea(body):
+	if body.has_method("CSWrapSaveTimeDiscrepState"):
+		for cswrap in charSwitchWrappers:
+			if get_node(cswrap.node) == body:
+				
+				if timeDiscrepAreaBodyDict.has(cswrap.node):
+					var childrenToRemove = []
+					for child in timeDiscrepArea.get_children():
+						if timeDiscrepAreaBodyDict[cswrap.node].has(child.get_name()):
+							childrenToRemove.append(child)
+					
+					for child in childrenToRemove:
+						timeDiscrepArea.remove_child(child)
+						child.queue_free()
+						
+					childrenToRemove.resize(0)
+					timeDiscrepAreaBodyDict.erase(cswrap.node)
+					
+				body.CSWrapSaveTimeDiscrepState(cswrap, false)
+
+func restoreCSWrapperState():
+	if global.CharacterRes == null: return
+	var currChar = global.CharacterRes.id
+	
+	for csWrap in charSwitchWrappers:
+		if csWrap.staticNode:continue
+		print(csWrap.node)
+		if csWrap.checkIfInCharLvl(currChar):
+			var nd = get_node(csWrap.node)
+			if nd.has_method("CSWrapRestoreState"):
+				nd.CSWrapRestoreState(csWrap)
+						
 
 func applyCSWrapperChanges(delta):
 	if global.CharacterRes == null: return
-	print(global.lvl().get_filename())
-	var currLvlPath = global.getScenePath(global.CharacterRes.level)
 	var currChar = global.CharacterRes.id
+
 	
-	if global.levelWrapperDict.has(currLvlPath):
-		if global.levelWrapperDict[currLvlPath].gravity.has(currChar):
-			var gravMag = global.levelWrapperDict[currLvlPath].gravity[currChar][0]
-			var gravDeg = global.levelWrapperDict[currLvlPath].gravity[currChar][1]
-			global.changeGrav(gravMag, gravDeg, 0)
-		
-		if global.levelWrapperDict[currLvlPath].lvlNodesCSWrapDict.has(currChar):
-			charSwitchWrappers = global.levelWrapperDict[currLvlPath].lvlNodesCSWrapDict[currChar]
-	
-			for csWrap in charSwitchWrappers:
-				if csWrap.staticNode:continue
-				print(csWrap.node)
-				if csWrap.checkIfInCharLvl(currChar):
-					var nd = get_node(csWrap.node)
-					nd.CSWrapApplyChanges(csWrap, delta)
-					nd.CSWrapApplyDependantChanges(csWrap, delta)
+	for csWrap in charSwitchWrappers:
+		if csWrap.staticNode: continue
+		#print(csWrap.node)
+		if csWrap.checkIfInCharLvl(currChar):
+			if csWrap.changesToApply[currChar] == []: continue
+			var nd = get_node(csWrap.node)
+			nd.CSWrapApplyChanges(csWrap, delta)
+			nd.CSWrapApplyDependantChanges(csWrap, delta)
 
 
 
@@ -237,12 +360,6 @@ func removeDisabledCSWrapperNodes():
 			remove_child(nodeObj)
 		
 		
-
-
-
-	
-
-#
 	
 func initLevel():
 	#prevent from running in editor
