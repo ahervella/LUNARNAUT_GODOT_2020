@@ -43,6 +43,10 @@ var lvlNodeReady = false
 
 var astroIsOnTop = false
 
+var csWrap = null
+
+var changeDetected = false
+
 func getterFunction():
 	pass
 
@@ -253,6 +257,31 @@ func _integrate_forces(state):
 		var pos = state.get_contact_collider_position(i) + get_global_position()
 		contactPosDict[pos] = state.get_contact_collider_object(i)
 
+	checkForAndMarkAsChanged()
+
+
+
+func checkForAndMarkAsChanged():
+	if !changeDetected:
+		if csWrap == null:
+			var lvlNode = global.lvl()
+			for csw in lvlNode.charSwitchWrappers:
+				if lvlNode.get_node(csw.node) == self:
+					csWrap = csw
+					break
+					
+		#change can only be added to future shit if it ever gets a change
+		#to be outside timeDiscrep areas (especially if it loaded a past lvl
+		#in which it spawned in one)
+		var lvlNode = global.lvl()
+		if lvlNode.timeDiscrepBodyPresentDict.has(self):
+			if lvlNode.timeDiscrepBodyPresentDict[self].size() <= 0:
+				changeDetected = CSWrapDetectChange(csWrap)
+				
+				#if change was made, remove any time discrep area 2ds that might
+				#be present from future because changes will now take place and
+				#future spot will ref where ever this object is
+				if changeDetected: lvlNode.removeCSWrapTimeDiscepArea2D(csWrap)
 
 func setMode():
 	set_mode(rigidBodyMode)
@@ -378,7 +407,7 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 	var rotDiff = rot - CSWrap.saveStartState[currChar][1]
 	
 	#change needs to be bigger than 5 to take place
-	if posDiff.length() < 5 && rot < 5: return
+	if !changeDetected: return
 	
 #	CSWrap.changesToApply[currChar].resize(2)
 	
@@ -409,7 +438,19 @@ func CSWrapRecieveTransformChanges(CSWrap : CharacterSwitchingWrapper, currChar,
 #	CSWrap.changesToApply[currChar][1] += rotToAdd
 	
 				
-
+func CSWrapDetectChange(CSWrap : CharacterSwitchingWrapper):
+	var currChar = global.CharacterRes.id
+	var posDiff = get_global_position() - CSWrap.saveStartState[currChar][0]
+	var rotDiff = get_global_rotation() - CSWrap.saveStartState[currChar][1]
+	
+	#change needs to be bigger than 5 to take place
+	if (posDiff.length() > 5 || rotDiff > 5): 
+		var areaNode = global.lvl().area
+		
+		#if areaNode.get_overlapping
+		
+		return true
+	return false
 	
 func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper, delta):
 	#var initialLocation = get_global_position()

@@ -749,8 +749,8 @@ func CSWrapSaveTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, set : bool):
 	
 	if !set:
 		CSWrap.savedTimeDiscrepencyState[currChar] = []
-		START_PLUG.CSWrapSaveTimeDiscrepState(CSWrap.extraCSWrappers[START_PLUG.get_name()], false)
-		END_PLUG.CSWrapSaveTimeDiscrepState(CSWrap.extraCSWrappers[END_PLUG.get_name()], false)
+		START_PLUG.CSWrapSavePlugTimeDiscrepState(CSWrap.extraCSWrappers[START_PLUG.get_name()], false)
+		END_PLUG.CSWrapSavePlugTimeDiscrepState(CSWrap.extraCSWrappers[END_PLUG.get_name()], false)
 		return
 	
 	CSWrap.savedTimeDiscrepencyState[currChar].resize(7)

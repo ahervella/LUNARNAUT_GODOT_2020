@@ -512,7 +512,14 @@ func transmitEntity(entity):
 	
 	
 	
-
+func CSWrapSaveTimeDiscrepState(CSWrap: CharacterSwitchingWrapper, set : bool):
+	if parentCable != null:
+		var lvlNode = global.lvl()
+		for csw in lvlNode.charSwitchWrappers:
+			var cswNode = lvlNode.get_node(csw.node)
+			if cswNode == parentCable:
+				cswNode.CSWrapSaveTimeDiscrepState(csw, set)
+				return
 	
 func CSWrapSaveStartState(CSWrap : CharacterSwitchingWrapper):
 	var currChar = global.CharacterRes.id
@@ -551,7 +558,7 @@ func CSWrapDetectChange(CSWrap : CharacterSwitchingWrapper):
 		
 	return false
 	
-func CSWrapSaveTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, set : bool):
+func CSWrapSavePlugTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, set : bool):
 	var currChar = global.CharacterRes.id
 	
 	if !set:

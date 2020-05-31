@@ -33,8 +33,13 @@ var oneShotAddAstroAndCam = true
 
 var readyDone = false
 var processDone = true
-var timeDiscrepArea
+
+#the node that is the parent of all timeDiscrepAreas
+var timeDiscrepParentNode
+#keeps track of the area2D node that belongs to the cs wrap
 var timeDiscrepAreaBodyDict = {}
+#keeps track of the in which areas the object body is present in
+var timeDiscrepBodyPresentDict = {}
 
 func setAddAstroAndCam(garboVal):
 	if !Engine.editor_hint:
@@ -208,31 +213,36 @@ func addCSWrapperTimeDiscrepencyAreas():
 	
 	if global.levelWrapperDict.has(currLvlPath):
 		if global.levelWrapperDict[currLvlPath].lvlTimeDiscrepAreaDict.has(currChar):
-			timeDiscrepAreaBodyDict = global.levelWrapperDict[currLvlPath].lvlTimeDiscrepAreaDict[currChar][0]
-			timeDiscrepArea = global.levelWrapperDict[currLvlPath].lvlTimeDiscrepAreaDict[currChar][1].instance()
-			add_child(timeDiscrepArea)
-			timeDiscrepArea.set_owner(self)
-			timeDiscrepArea.connect("body_entered", self, "bodyEnteredTimeDiscrepArea")
-			timeDiscrepArea.connect("body_exited", self, "bodyExitedTimeDiscrepArea")
+			timeDiscrepParentNode = global.levelWrapperDict[currLvlPath].lvlTimeDiscrepAreaDict[currChar][0]
+			timeDiscrepParentNode = global.levelWrapperDict[currLvlPath].lvlTimeDiscrepAreaDict[currChar][1].instance()
+			add_child(timeDiscrepParentNode)
+			timeDiscrepParentNode.set_owner(self)
 			return
 			
-	timeDiscrepArea = Area2D.new()
-	add_child(timeDiscrepArea)
-	timeDiscrepArea.set_owner(self)
-	
-	timeDiscrepArea.connect("body_entered", self, "bodyEnteredTimeDiscrepArea")
-	timeDiscrepArea.connect("body_exited", self, "bodyExitedTimeDiscrepArea")
+			
+	timeDiscrepParentNode = Node.new()
+	timeDiscrepParentNode.set_name("TIME_DISCREP")
+#	timeDiscrepArea = Area2D.new()
+	add_child(timeDiscrepParentNode)
+	timeDiscrepParentNode.set_owner(self)
+
 	
 	for csWrap in charSwitchWrappers:
-		if !csWrap.checkIfInCharLvl(currChar):
-			for astroChar in global.CHAR:
-				if global.charYearDict[global.CHAR[astroChar]] > global.charYearDict[currChar]:
+		#only movable objects and astro have to do this shit, not cables
+		var nd = get_node(csWrap.node)
+		#if !nd.is_in_group("object") && !nd.is_in_group("astro"): continue
+		
+		for astroChar in global.CHAR:
+			if global.charYearDict[global.CHAR[astroChar]] > global.charYearDict[currChar]:
+				
+				if !csWrap.checkIfInCharLvl(currChar) || nd.is_in_group("object"):
+					
 					addCSWrapCollShape2DiscrepArea(csWrap)
 				
 			#var csWrapNode = get_node(csWrap.node)
 			#remove_child(csWrapNode)
 		
-		if get_node(csWrap.node) == astroNode:
+		if nd == astroNode:
 			for astroChar in csWrap.changesToApply.keys():
 				if astroChar == currChar : continue
 				if csWrap.changesToApply[astroChar] == null: continue
@@ -247,11 +257,19 @@ func addCSWrapperTimeDiscrepencyAreas():
 						var localPos = collShapeNode.get_position()
 						var localRot = collShapeNode.get_rotation()
 						var collShapeNodeDup = collShapeNode.duplicate()#DUPLICATE_USE_INSTANCING)
-						collShapeNodeDup.set_name("TIME_DISCREP_" + csWrap.node + "_" + collShapeNode.get_name())
+						collShapeNodeDup.set_name("TIME_DISCREP_SHAPE_" + csWrap.node + "_" + collShapeNode.get_name())
 						for group in collShapeNodeDup.get_groups():
 							collShapeNodeDup.remove_from_group(group)
-						timeDiscrepArea.add_child(collShapeNodeDup)
-						collShapeNodeDup.set_owner(timeDiscrepArea)
+							
+						var areaNode = Area2D.new()
+						areaNode.set_name("TIME_DISCREP_AREA_" + csWrap.node + "_" + collShapeNode.get_name())
+						timeDiscrepParentNode.add_child(areaNode)
+						areaNode.set_owner(timeDiscrepParentNode)
+						areaNode.connect("body_entered", self, "bodyEnteredTimeDiscrepArea", [areaNode])
+						areaNode.connect("body_exited", self, "bodyExitedTimeDiscrepArea", [areaNode])
+						
+						areaNode.add_child(collShapeNodeDup)
+						collShapeNodeDup.set_owner(areaNode)
 						collShapeNodeDup.set_global_position(astroPos + localPos)
 						collShapeNodeDup.set_global_rotation(astroRot + localRot)
 						
@@ -265,52 +283,115 @@ func addCSWrapCollShape2DiscrepArea(csWrap):
 	
 	
 	timeDiscrepAreaBodyDict[csWrap.node] = []
+	
 	for collShape in csWrap.nodeCollShapes:
 		var collShapeNode = get_node(collShape)
 		var collShapeNodePos = collShapeNode.get_global_position()
 		var collShapeNodeScale = collShapeNode.get_global_scale()
 		var collShapeNodeRot = collShapeNode.get_global_rotation()
 		var collShapeNodeDup = collShapeNode.duplicate() #duplicate(DUPLICATE_USE_INSTANCING)
-		collShapeNodeDup.set_name("TIME_DISCREP_" + csWrap.node + "_" + collShapeNode.get_name())
-		timeDiscrepArea.add_child(collShapeNodeDup)
-		collShapeNodeDup.set_owner(timeDiscrepArea)
+		collShapeNodeDup.set_name("TIME_DISCREP_SHAPE_" + csWrap.node + "_" + collShapeNode.get_name())
+		
+		var areaNode = Area2D.new()
+		areaNode.set_name("TIME_DISCREP_AREA_" + csWrap.node + "_" + collShapeNode.get_name())
+		timeDiscrepParentNode.add_child(areaNode)
+		areaNode.set_owner(timeDiscrepParentNode)
+		areaNode.connect("body_entered", self, "bodyEnteredTimeDiscrepArea", [areaNode])
+		areaNode.connect("body_exited", self, "bodyExitedTimeDiscrepArea", [areaNode])
+		
+		areaNode.add_child(collShapeNodeDup)
+		collShapeNodeDup.set_owner(areaNode)
 		collShapeNodeDup.set_global_position(collShapeNodePos)
 		collShapeNodeDup.set_global_scale(collShapeNodeScale)
 		collShapeNodeDup.set_global_rotation(collShapeNodeRot)
-		timeDiscrepAreaBodyDict[csWrap.node].append(collShapeNodeDup.get_name())
+		
+		timeDiscrepAreaBodyDict[csWrap.node].append(areaNode.get_name())
 				
-func bodyEnteredTimeDiscrepArea(body):
-	if body.has_method("CSWrapSaveTimeDiscrepState"):
-		for cswrap in charSwitchWrappers:
-			if get_node(cswrap.node) == body:
-				body.CSWrapSaveTimeDiscrepState(cswrap, true)
-				
-				if !body.is_in_group("astro"):
-					addCSWrapCollShape2DiscrepArea(cswrap)
-				
-				#var collShapeNode = get_node(cswrap)
-				print("Worked!!!!")
+func bodyEnteredTimeDiscrepArea(body, areaNode):
+	if !body.has_method("CSWrapSaveTimeDiscrepState"): return
 	
 	
-func bodyExitedTimeDiscrepArea(body):
-	if body.has_method("CSWrapSaveTimeDiscrepState"):
-		for cswrap in charSwitchWrappers:
-			if get_node(cswrap.node) == body:
+	#check if already in array
+	#var node = get_node(csWrap.node)
+
+	
+	for cswrap in charSwitchWrappers:
+		if get_node(cswrap.node) == body:
+			
+			#check if area belongs to self
+			if (timeDiscrepAreaBodyDict.has(cswrap.node) 
+				&& timeDiscrepAreaBodyDict[cswrap.node].has(areaNode.get_name())): return
+			
+			
+			if !timeDiscrepBodyPresentDict.has(body):
+				timeDiscrepBodyPresentDict[body] = []
 				
-				if timeDiscrepAreaBodyDict.has(cswrap.node):
-					var childrenToRemove = []
-					for child in timeDiscrepArea.get_children():
-						if timeDiscrepAreaBodyDict[cswrap.node].has(child.get_name()):
-							childrenToRemove.append(child)
-					
-					for child in childrenToRemove:
-						timeDiscrepArea.remove_child(child)
-						child.queue_free()
-						
-					childrenToRemove.resize(0)
-					timeDiscrepAreaBodyDict.erase(cswrap.node)
-					
+			if timeDiscrepBodyPresentDict[body].has(areaNode): return
+			timeDiscrepBodyPresentDict[body].append(areaNode)
+	
+			
+			body.CSWrapSaveTimeDiscrepState(cswrap, true)
+			
+			if !body.is_in_group("astro"):
+				addCSWrapCollShape2DiscrepArea(cswrap)
+			
+			#var collShapeNode = get_node(cswrap)
+			print("Worked!!!!")
+	
+	
+func bodyExitedTimeDiscrepArea(body, areaNode):
+	if !body.has_method("CSWrapSaveTimeDiscrepState"): return
+	
+	
+	
+	for cswrap in charSwitchWrappers:
+		
+		if get_node(cswrap.node) == body:
+			
+			#check if area belongs to self
+			if (timeDiscrepAreaBodyDict.has(cswrap.node) 
+				&& timeDiscrepAreaBodyDict[cswrap.node].has(areaNode.get_name())):
+					return
+			
+			if !timeDiscrepBodyPresentDict.has(body): return
+			if timeDiscrepBodyPresentDict[body].has(areaNode):
+				timeDiscrepBodyPresentDict[body].erase(areaNode)
+			
+			if timeDiscrepBodyPresentDict[body].size() <= 0:
+				
+				removeCSWrapTimeDiscepArea2D(cswrap)
+#				if timeDiscrepAreaBodyDict.has(cswrap.node):
+#					var bodyAreaNodeArray = timeDiscrepAreaBodyDict[cswrap.node]
+#					for bodyAreaNodeName in bodyAreaNodeArray:
+#						var bodyAreaNode = timeDiscrepParentNode.get_node(bodyAreaNodeName)
+#						var childrenToDelete = bodyAreaNode.get_children()
+#						for ind in childrenToDelete.size():
+#							bodyAreaNode.remove_child(childrenToDelete[ind])
+#							childrenToDelete[ind].queue_free()
+#
+#						timeDiscrepParentNode.remove_child(bodyAreaNode)
+#						bodyAreaNode.queue_free()
+#
+#				timeDiscrepAreaBodyDict.erase(cswrap.node)
+				timeDiscrepBodyPresentDict.erase(body)
+				
+				
 				body.CSWrapSaveTimeDiscrepState(cswrap, false)
+
+func removeCSWrapTimeDiscepArea2D(cswrap : CharacterSwitchingWrapper):
+	if timeDiscrepAreaBodyDict.has(cswrap.node):
+		var bodyAreaNodeArray = timeDiscrepAreaBodyDict[cswrap.node]
+		for bodyAreaNodeName in bodyAreaNodeArray:
+			var bodyAreaNode = timeDiscrepParentNode.get_node(bodyAreaNodeName)
+			var childrenToDelete = bodyAreaNode.get_children()
+			for ind in childrenToDelete.size():
+				bodyAreaNode.remove_child(childrenToDelete[ind])
+				childrenToDelete[ind].queue_free()
+				
+			timeDiscrepParentNode.remove_child(bodyAreaNode)
+			bodyAreaNode.queue_free()
+			
+	timeDiscrepAreaBodyDict.erase(cswrap.node)
 
 func restoreCSWrapperState():
 	if global.CharacterRes == null: return

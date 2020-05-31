@@ -82,7 +82,7 @@ func savedCurrentLvlPackedScene(currLvlPath):
 		
 	global.levelWrapperDict[currLvlPath].gravity[currChar] = [global.gravMag, rad2deg(global.gravRadAngFromNorm)]
 	global.levelWrapperDict[currLvlPath].lvlTimeDiscrepAreaDict[currChar] = [global.lvl().timeDiscrepAreaBodyDict.duplicate(true), PackedScene.new()]
-	global.levelWrapperDict[currLvlPath].lvlTimeDiscrepAreaDict[currChar][1].pack(global.lvl().timeDiscrepArea)
+	global.levelWrapperDict[currLvlPath].lvlTimeDiscrepAreaDict[currChar][1].pack(global.lvl().timeDiscrepParentNode)
 
 
 
