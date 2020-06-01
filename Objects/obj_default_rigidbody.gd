@@ -262,9 +262,10 @@ func _integrate_forces(state):
 
 
 func checkForAndMarkAsChanged():
+	var lvlNode = global.lvl()
+	if !global.lvl().processDone: return
 	if !changeDetected:
 		if csWrap == null:
-			var lvlNode = global.lvl()
 			for csw in lvlNode.charSwitchWrappers:
 				if lvlNode.get_node(csw.node) == self:
 					csWrap = csw
@@ -273,12 +274,11 @@ func checkForAndMarkAsChanged():
 		#change can only be added to future shit if it ever gets a change
 		#to be outside timeDiscrep areas (especially if it loaded a past lvl
 		#in which it spawned in one)
-		var lvlNode = global.lvl()
 		
 		var thisShapeIsInTimeDiscrepAreasOtherThanOwn = false
 		
 		for astroChar in csWrap.changesToApply.keys():
-			if lvlNode.timeDiscrepBodyPresentDict2.has(self) && lvlNode.timeDiscrepBodyPresentDict2[self].has(astroChar) && lvlNode.timeDiscrepBodyPresentDict2[self][astroChar].size() > 0:
+			if lvlNode.timeDiscrepBodyPresentDict2.has(self.get_name()) && lvlNode.timeDiscrepBodyPresentDict2[self.get_name()].has(astroChar) && lvlNode.timeDiscrepBodyPresentDict2[self.get_name()][astroChar].size() > 0:
 				thisShapeIsInTimeDiscrepAreasOtherThanOwn = true
 				break
 				
@@ -295,17 +295,17 @@ func checkForAndMarkAsChanged():
 					#if astroChar == currChar: continue
 					var thing = null
 					var areaNode = null
-					if (lvlNode.timeDiscrepCSWCharDict[csWrap.node][1].has(astroChar)):
+					if lvlNode.timeDiscrepCSWCharDict[csWrap.node][1].has(astroChar):
 						var areaParentNode = lvlNode.timeDiscrepParentNode.get_node(lvlNode.timeDiscrepCSWCharDict[csWrap.node][0])
 						areaNode = areaParentNode.get_node(lvlNode.timeDiscrepCSWCharDict[csWrap.node][1][astroChar])
 						thing = [self, areaNode]
 						lvlNode.timeDiscrepManuallyRemovingArea.append([self, areaNode])
 						
-					if lvlNode.removeCSWrapTimeDiscepArea2D(csWrap, astroChar, null):
-						self.CSWrapSaveTimeDiscrepState(csWrap, astroChar, false)
+						if lvlNode.removeCSWrapTimeDiscepArea2D(csWrap, astroChar, null):
+							self.CSWrapSaveTimeDiscrepState(csWrap, astroChar, false)
 						
-					if areaNode != null:
-						lvlNode.timeDiscrepManuallyRemovingArea.erase(thing)
+						if thing != null:
+							lvlNode.timeDiscrepManuallyRemovingArea.erase(thing)
 							
 
 func setMode():
