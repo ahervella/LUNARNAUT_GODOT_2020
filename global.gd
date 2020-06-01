@@ -211,6 +211,7 @@ func astroChar2String(astroChar):
 			return "CHN"
 		global.CHAR.MAR:
 			return "MAR"
+	return ""
 
 
 
