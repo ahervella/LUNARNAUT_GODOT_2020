@@ -383,11 +383,11 @@ func CSWrapSaveStartState(CSWrap : CharacterSwitchingWrapper):
 	CSWrap.saveStartState[currChar][1] = get_global_rotation()
 	
 	
-func CSWrapSaveTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, set : bool):
-	var currChar = global.CharacterRes.id
-	CSWrap.savedTimeDiscrepencyState[currChar].resize(2)
-	CSWrap.savedTimeDiscrepencyState[currChar][0] = get_global_position() if set else null
-	CSWrap.savedTimeDiscrepencyState[currChar][1] = get_global_rotation() if set else null
+func CSWrapSaveTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, astroChar, set : bool):
+	#var currChar = global.CharacterRes.id
+	CSWrap.savedTimeDiscrepencyState[astroChar].resize(2)
+	CSWrap.savedTimeDiscrepencyState[astroChar][0] = get_global_position() if set else null
+	CSWrap.savedTimeDiscrepencyState[astroChar][1] = get_global_rotation() if set else null
 	
 #keeeeep
 func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
@@ -396,11 +396,11 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 	var pos = get_global_position() if CSWrap.savedTimeDiscrepencyState[currChar][0] == null else CSWrap.savedTimeDiscrepencyState[currChar][0]# - CSWrap.saveStartState[currChar][0]
 	var rot = get_global_rotation() if CSWrap.savedTimeDiscrepencyState[currChar][1] == null else CSWrap.savedTimeDiscrepencyState[currChar][1]# - CSWrap.saveStartState[currChar][1]
 	
-	CSWrap.changesToApply[currChar].resize(3)
+	CSWrap.changesToApply[currChar].resize(2)
 	
 	CSWrap.changesToApply[currChar][0] = get_global_position()
 	CSWrap.changesToApply[currChar][1] = get_global_rotation()
-	CSWrap.changesToApply[currChar][2] = get_global_position()
+	#CSWrap.changesToApply[currChar][2] = get_global_position()
 
 	
 	var posDiff = pos - CSWrap.saveStartState[currChar][0]
