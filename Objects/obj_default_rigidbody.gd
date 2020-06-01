@@ -274,14 +274,39 @@ func checkForAndMarkAsChanged():
 		#to be outside timeDiscrep areas (especially if it loaded a past lvl
 		#in which it spawned in one)
 		var lvlNode = global.lvl()
-		if lvlNode.timeDiscrepBodyPresentDict.has(self):
-			if lvlNode.timeDiscrepBodyPresentDict[self].size() <= 0:
-				changeDetected = CSWrapDetectChange(csWrap)
+		
+		var thisShapeIsInTimeDiscrepAreasOtherThanOwn = false
+		
+		for astroChar in csWrap.changesToApply.keys():
+			if lvlNode.timeDiscrepBodyPresentDict2.has(self) && lvlNode.timeDiscrepBodyPresentDict2[self].has(astroChar) && lvlNode.timeDiscrepBodyPresentDict2[self][astroChar].size() > 0:
+				thisShapeIsInTimeDiscrepAreasOtherThanOwn = true
+				break
 				
-				#if change was made, remove any time discrep area 2ds that might
-				#be present from future because changes will now take place and
-				#future spot will ref where ever this object is
-				if changeDetected: lvlNode.removeCSWrapTimeDiscepArea2D(csWrap)
+				
+		if !thisShapeIsInTimeDiscrepAreasOtherThanOwn:
+			changeDetected = CSWrapDetectChange(csWrap)
+			
+			#if change was made, remove any time discrep area 2ds that might
+			#be present from future because changes will now take place and
+			#future spot will ref where ever this object is
+			if changeDetected:
+				for astroChar in csWrap.changesToApply.keys():
+					
+					#if astroChar == currChar: continue
+					var thing = null
+					var areaNode = null
+					if (lvlNode.timeDiscrepCSWCharDict[csWrap.node][1].has(astroChar)):
+						var areaParentNode = lvlNode.timeDiscrepParentNode.get_node(lvlNode.timeDiscrepCSWCharDict[csWrap.node][0])
+						areaNode = areaParentNode.get_node(lvlNode.timeDiscrepCSWCharDict[csWrap.node][1][astroChar])
+						thing = [self, areaNode]
+						lvlNode.timeDiscrepManuallyRemovingArea.append([self, areaNode])
+						
+					if lvlNode.removeCSWrapTimeDiscepArea2D(csWrap, astroChar, null):
+						self.CSWrapSaveTimeDiscrepState(csWrap, astroChar, false)
+						
+					if areaNode != null:
+						lvlNode.timeDiscrepManuallyRemovingArea.erase(thing)
+							
 
 func setMode():
 	set_mode(rigidBodyMode)
@@ -440,12 +465,13 @@ func CSWrapRecieveTransformChanges(CSWrap : CharacterSwitchingWrapper, currChar,
 				
 func CSWrapDetectChange(CSWrap : CharacterSwitchingWrapper):
 	var currChar = global.CharacterRes.id
+	if CSWrap.saveStartState[currChar] == null || CSWrap.saveStartState[currChar] == []: return false
 	var posDiff = get_global_position() - CSWrap.saveStartState[currChar][0]
 	var rotDiff = get_global_rotation() - CSWrap.saveStartState[currChar][1]
 	
 	#change needs to be bigger than 5 to take place
 	if (posDiff.length() > 5 || rotDiff > 5): 
-		var areaNode = global.lvl().area
+		#var areaNode = global.lvl().area
 		
 		#if areaNode.get_overlapping
 		
