@@ -417,9 +417,6 @@ func CSWrapSaveTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, astroChar, s
 #keeeeep
 func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 	var currChar = global.CharacterRes.id
-	CSWrap.savedTimeDiscrepencyState[currChar].resize(2)
-	var pos = get_global_position() if CSWrap.savedTimeDiscrepencyState[currChar][0] == null else CSWrap.savedTimeDiscrepencyState[currChar][0]# - CSWrap.saveStartState[currChar][0]
-	var rot = get_global_rotation() if CSWrap.savedTimeDiscrepencyState[currChar][1] == null else CSWrap.savedTimeDiscrepencyState[currChar][1]# - CSWrap.saveStartState[currChar][1]
 	
 	CSWrap.changesToApply[currChar].resize(2)
 	
@@ -428,8 +425,6 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 	#CSWrap.changesToApply[currChar][2] = get_global_position()
 
 	
-	var posDiff = pos - CSWrap.saveStartState[currChar][0]
-	var rotDiff = rot - CSWrap.saveStartState[currChar][1]
 	
 	#change needs to be bigger than 5 to take place
 	if !changeDetected: return
@@ -437,14 +432,18 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 #	CSWrap.changesToApply[currChar].resize(2)
 	
 	
-	for astroChar in global.CHAR:
-		CSWrap.changesToApply[global.CHAR[astroChar]].resize(2)
+	for astroChar in CSWrap.changesToApply.keys():
+		CSWrap.changesToApply[astroChar].resize(2)
 		
-		if global.charYearDict[global.CHAR[astroChar]] > global.charYearDict[currChar]:
+		if global.charYearDict[astroChar] > global.charYearDict[currChar]:
+			
+			CSWrap.savedTimeDiscrepencyState[astroChar].resize(2)
+			var pos = get_global_position() if CSWrap.savedTimeDiscrepencyState[astroChar][0] == null else CSWrap.savedTimeDiscrepencyState[astroChar][0]# - CSWrap.saveStartState[currChar][0]
+			var rot = get_global_rotation() if CSWrap.savedTimeDiscrepencyState[astroChar][1] == null else CSWrap.savedTimeDiscrepencyState[astroChar][1]# - CSWrap.saveStartState[currChar][1]
 			
 			
-			CSWrap.changesToApply[global.CHAR[astroChar]][0] = pos 
-			CSWrap.changesToApply[global.CHAR[astroChar]][1] = rot
+			CSWrap.changesToApply[astroChar][0] = pos 
+			CSWrap.changesToApply[astroChar][1] = rot
 	
 	
 	
@@ -493,30 +492,9 @@ func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper, delta):
 		set_global_position(CSWrap.changesToApply[currChar][0])
 	if CSWrap.changesToApply[currChar][1] != null:# && CSWrap.changesToApply[currChar][0] != Vector2(0, 0):
 		set_global_rotation(CSWrap.changesToApply[currChar][1])
-#	
-	#yield(get_tree(),"physics_frame")
-	#call_deferred("delayedFricReset", savedFric)
-#		var collShape = null
-#		var newPos = get_global_position() + CSWrap.changesToApply[currChar][0]
-#		var kBody = null
-#		for child in get_children():
-#			if child is CollisionShape2D:
-#				collShape = child 
-#			if child is KinematicBody2D:
-#				kBody = child
-#
-#		#kBody.add_collision_exception_with(self)
-#		#kBody.add_collision_exception_with(collShape)
-#		print("foaijsdfoaijsdfoajdsfoiajsdofijasodifjaosdifjaoisdjf")
-#		CSWrap.getFinalPosAfterCollisions2(self, CSWrap.changesToApply[currChar][0], kBody, dependantGroup)
-#		#var finalPos = CSWrap.getFinalPosAfterCollisions(self, getDimensions(), get_global_position(), newPos, collShape)
-#		#set_global_position(finalPos)#get_global_position() + CSWrap.changesToApply[currChar][0])
 		
-#	if CSWrap.changesToApply[currChar][1] != null:
-#		set_global_rotation(get_global_rotation() + CSWrap.changesToApply[currChar][1])
-	
-	#CSWrap.changesToApply[currChar][0] = get_global_position() - initialLocation
-	#CSWrap.changesToApply[currChar][1] = get_global_rotation() - initialRotation
+	delayedFricReset(savedFric)
+		
 func delayedFricReset(savedFric):
 	var physMat = get_physics_material_override()
 	physMat.friction = savedFric

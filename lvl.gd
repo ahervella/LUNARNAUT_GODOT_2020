@@ -321,7 +321,7 @@ func addCSWrapCollShape2DiscrepArea(csWrap, astroChar, areaCSW):
 		areaNode.add_child(collShapeNodeDup)
 		collShapeNodeDup.set_owner(areaNode)
 		collShapeNodeDup.set_global_position(collShapeNodePos + parentNodePos)
-		collShapeNodeDup.set_global_scale(collShapeNodeScale)#* 0.98)
+		collShapeNodeDup.set_global_scale(collShapeNodeScale* 0.98)
 		collShapeNodeDup.set_global_rotation(collShapeNodeRot + parentNodeRot)
 	return true
 
