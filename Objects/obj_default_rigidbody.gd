@@ -485,11 +485,17 @@ func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper, delta):
 	
 	#var dependantGroup = CSWrap.getDependantGroup()
 	
+	var physMat = get_physics_material_override()
+	var savedFric = physMat.friction
+	physMat.friction = 0
+	
 	if CSWrap.changesToApply[currChar][0] != null:# && CSWrap.changesToApply[currChar][0] != Vector2(0, 0):
 		set_global_position(CSWrap.changesToApply[currChar][0])
 	if CSWrap.changesToApply[currChar][1] != null:# && CSWrap.changesToApply[currChar][0] != Vector2(0, 0):
 		set_global_rotation(CSWrap.changesToApply[currChar][1])
-#
+#	
+	#yield(get_tree(),"physics_frame")
+	#call_deferred("delayedFricReset", savedFric)
 #		var collShape = null
 #		var newPos = get_global_position() + CSWrap.changesToApply[currChar][0]
 #		var kBody = null
@@ -511,7 +517,9 @@ func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper, delta):
 	
 	#CSWrap.changesToApply[currChar][0] = get_global_position() - initialLocation
 	#CSWrap.changesToApply[currChar][1] = get_global_rotation() - initialRotation
-	
+func delayedFricReset(savedFric):
+	var physMat = get_physics_material_override()
+	physMat.friction = savedFric
 	
 func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper, delta):
 	CSWrap.dependantCSWrappers[global.CharacterRes.id] = []

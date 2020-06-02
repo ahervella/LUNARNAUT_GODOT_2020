@@ -105,20 +105,42 @@ func CSWrapSaveStartState(CSWrap):
 func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 	var currChar = global.CharacterRes.id
 	
-	CSWrap.changesToApply[currChar].resize(1)
-	
-	CSWrap.changesToApply[currChar][0] = get_global_position()
+	CSWrap.changesToApply[currChar] = get_global_position()
 	#CSWrap.changesToApply[currChar][1] = 0
 	
 
 	
 func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper, delta):
 	var currChar = global.CharacterRes.id
-	CSWrap.changesToApply[currChar].resize(1)
-	if CSWrap.changesToApply[currChar][0] != null:
-		set_global_position(CSWrap.changesToApply[currChar][0])
+	#CSWrap.changesToApply[currChar].resize(1)
+	#if CSWrap.changesToApply[currChar][0] != null:
+	print("cam222dddd")
+	print(get_global_position())
+	set_enable_follow_smoothing(false)
+	set_global_position(CSWrap.changesToApply[currChar])
+	call_deferred("secondDefferedCamPos")
+	print(get_global_position())
 	
+func secondDefferedCamPos(inhh = 0):#blah = false, bljnlj = false):
+#	if inhh > 600:
+#		#print("oohio")
+	yield(get_tree(),"physics_frame")
+	call_deferred("set_enable_follow_smoothing", true)
+	#else:
+	#	call_deferred("secondDefferedCamPos", (inhh+1))
 	
+#	if blah && bljnlj:
+#		call_deferred("set_enable_follow_smoothing", true)
+#
+#	if blah:
+#		call_deferred("secondDefferedCamPos", true, true)
+#	elif global.lvl().processDone:
+#		call_deferred("secondDefferedCamPos", true)
+#	else:
+#		call_deferred("secondDefferedCamPos", false)
+#
+#	if blah:
+#		call_deferred("set_enable_follow_smoothing", true)
 	#var finalPos = get_global_position()
 	#print("cam changeeeeeeeeeeeeeeeeeeeeeeeee2")
 	#if camPosChange != null && camPosChange != Vector2(0, 0):
