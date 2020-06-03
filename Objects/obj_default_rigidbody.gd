@@ -267,7 +267,7 @@ func checkForAndMarkAsChanged():
 	if !changeDetected:
 		if csWrap == null:
 			for csw in lvlNode.charSwitchWrappers:
-				if lvlNode.get_node(csw.node) == self:
+				if lvlNode.get_node(csw.nodePath) == self:
 					csWrap = csw
 					break
 					
@@ -295,9 +295,9 @@ func checkForAndMarkAsChanged():
 					#if astroChar == currChar: continue
 					var thing = null
 					var areaNode = null
-					if lvlNode.timeDiscrepCSWCharDict[csWrap.node][1].has(astroChar):
-						var areaParentNode = lvlNode.timeDiscrepParentNode.get_node(lvlNode.timeDiscrepCSWCharDict[csWrap.node][0])
-						areaNode = areaParentNode.get_node(lvlNode.timeDiscrepCSWCharDict[csWrap.node][1][astroChar])
+					if lvlNode.timeDiscrepCSWCharDict[csWrap.nodePath][1].has(astroChar):
+						#var areaParentNode = lvlNode.get_node(lvlNode.timeDiscrepCSWCharDict[csWrap.nodePath][0])
+						areaNode = lvlNode.get_node(lvlNode.timeDiscrepCSWCharDict[csWrap.nodePath][1][astroChar])
 						thing = [self, areaNode]
 						lvlNode.timeDiscrepManuallyRemovingArea.append([self, areaNode])
 						
@@ -509,7 +509,7 @@ func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper, delta):
 #			var posChange = CSWrap.changesToApply[currChar][0]
 #			var rotChange = CSWrap.changesToApply[currChar][1]
 #
-#			global.lvl().get_node(dependantCSW.node).CSWrapRecieveTransformChanges(dependantCSW, currChar, posChange, rotChange)
+#			global.lvl().get_node(dependantCSW.nodePath).CSWrapRecieveTransformChanges(dependantCSW, currChar, posChange, rotChange)
 #
 #	CSWrap.changesToApply[currChar][0] = Vector2(0, 0)
 #	CSWrap.changesToApply[currChar][1] = 0

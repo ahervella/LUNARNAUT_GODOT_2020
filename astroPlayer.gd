@@ -1119,7 +1119,7 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 	
 	#add camera node as dependant of astro pos
 	for csw in global.lvl().charSwitchWrappers:
-		if csw.node == "Cam2D" || CAMERA_NODE == global.lvl().get_node(csw.node):
+		if csw.nodePath == "Cam2D" || CAMERA_NODE == global.lvl().get_node(csw.nodePath):
 			
 			if !CSWrap.dependantCSWrappers.has(currChar):
 				CSWrap.dependantCSWrappers[currChar] = []
@@ -1188,7 +1188,7 @@ func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper, delta):
 	if CSWrap.dependantCSWrappers[global.CharacterRes.id] != null && CSWrap.dependantCSWrappers[global.CharacterRes.id].size() > 0:
 				for dependantCSWrap in CSWrap.dependantCSWrappers[global.CharacterRes.id]:
 					
-					global.lvl().get_node(dependantCSWrap.node).CSWrapRecieveTransformChanges(dependantCSWrap, global.CharacterRes.id, posChange, rotChange)
+					global.lvl().get_node(dependantCSWrap.nodePath).CSWrapRecieveTransformChanges(dependantCSWrap, global.CharacterRes.id, posChange, rotChange)
 
 func CSWrapRecieveTransformChanges(CSWrap : CharacterSwitchingWrapper, currChar, posToAdd, rotToAdd):
 	pass
@@ -1230,14 +1230,14 @@ func CSWrapRecieveTransformChanges(CSWrap : CharacterSwitchingWrapper, currChar,
 #	var astroCSWrap
 #
 #	for csWrap in global.lvl().charSwitchWrappers:
-#		if csWrap.node == astroAnimCSWrapNodePath || get_node(csWrap.node) == get_node(astroAnimName):
+#		if csWrap.nodePath == astroAnimCSWrapNodePath || get_node(csWrap.nodePath) == get_node(astroAnimName):
 #			astroAnimCSWrapExists = true
 #			print("got animatedSprite 2")
 #			print(astroAnimCSWrapNodePath)
-#			print(csWrap.node)
+#			print(csWrap.nodePath)
 #			break
 #
-##		if csWrap.node == get_name() || get_node(csWrap.node) == self:
+##		if csWrap.nodePath == get_name() || get_node(csWrap.nodePath) == self:
 ##			astroCSWrap = csWrap
 #
 #
@@ -1245,7 +1245,7 @@ func CSWrapRecieveTransformChanges(CSWrap : CharacterSwitchingWrapper, currChar,
 #	if !astroAnimCSWrapExists:
 #		print("got animatedSprite 3")
 #		var astroAnimCSWrap = CharacterSwitchingWrapper.new()
-#		astroAnimCSWrap.node = get_name() + "/" + astroAnimName
+#		astroAnimCSWrap.nodePath = get_name() + "/" + astroAnimName
 #
 #		var ogAstroPos = charSwitchWrapper.charNodeFormerPosDict[global.CharacterRes.id]
 #

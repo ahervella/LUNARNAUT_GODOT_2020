@@ -516,15 +516,13 @@ func CSWrapSaveTimeDiscrepState(CSWrap: CharacterSwitchingWrapper, astroChar, se
 	if parentCable != null:
 		var lvlNode = global.lvl()
 		for csw in lvlNode.charSwitchWrappers:
-			var cswNode = lvlNode.get_node(csw.node)
+			var cswNode = lvlNode.get_node(csw.nodePath)
 			if cswNode == parentCable:
 				cswNode.CSWrapSaveTimeDiscrepState(csw, astroChar, set, self.get_name())
 				return
 	
 func CSWrapSaveStartState(CSWrap : CharacterSwitchingWrapper):
 	var currChar = global.CharacterRes.id
-	
-	
 	
 	CSWrap.saveStartState[currChar].resize(6)
 	
