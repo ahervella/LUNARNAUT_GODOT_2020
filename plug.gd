@@ -512,17 +512,19 @@ func transmitEntity(entity):
 	
 	
 	
-func CSWrapSaveTimeDiscrepState(CSWrap: CharacterSwitchingWrapper, set : bool):
+func CSWrapSaveTimeDiscrepState(CSWrap: CharacterSwitchingWrapper, astroChar, set : bool):
 	if parentCable != null:
 		var lvlNode = global.lvl()
 		for csw in lvlNode.charSwitchWrappers:
 			var cswNode = lvlNode.get_node(csw.node)
 			if cswNode == parentCable:
-				cswNode.CSWrapSaveTimeDiscrepState(csw, set)
+				cswNode.CSWrapSaveTimeDiscrepState(csw, astroChar, set, self.get_name())
 				return
 	
 func CSWrapSaveStartState(CSWrap : CharacterSwitchingWrapper):
 	var currChar = global.CharacterRes.id
+	
+	
 	
 	CSWrap.saveStartState[currChar].resize(6)
 	
@@ -533,15 +535,18 @@ func CSWrapSaveStartState(CSWrap : CharacterSwitchingWrapper):
 	CSWrap.saveStartState[currChar][4] = parentCable
 	CSWrap.saveStartState[currChar][5] = get_parent()
 	
-	
+	for otherChar in CSWrap.savedTimeDiscrepencyState.keys():
+		CSWrap.savedTimeDiscrepencyState[otherChar].resize(6)
+		for i in CSWrap.savedTimeDiscrepencyState[otherChar].size():
+			CSWrap.savedTimeDiscrepencyState[otherChar][i] = -1
 	
 func CSWrapDetectChange(CSWrap : CharacterSwitchingWrapper):
 	var currChar = global.CharacterRes.id
 	
-	if (CSWrap.saveStartState[currChar][0] - get_global_position()).length > 5:
+	if (CSWrap.saveStartState[currChar][5].get_global_position() + CSWrap.saveStartState[currChar][0] - get_global_position()).length() > 5:
 		return true
 			
-	if (CSWrap.saveStartState[currChar][1] - get_global_position()).rotation > PI/16:
+	if (CSWrap.saveStartState[currChar][5].get_global_rotation() + CSWrap.saveStartState[currChar][1] - get_global_rotation()) > PI/16:
 		return true
 		
 	if (CSWrap.saveStartState[currChar][2] != connPlug):
@@ -558,99 +563,77 @@ func CSWrapDetectChange(CSWrap : CharacterSwitchingWrapper):
 		
 	return false
 	
-func CSWrapSavePlugTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, set : bool):
-	var currChar = global.CharacterRes.id
+func CSWrapSavePlugTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, astroChar, set : bool):
+	CSWrap.savedTimeDiscrepencyState[astroChar].resize(6)
 	
 	if !set:
-		CSWrap.savedTimeDiscrepencyState[currChar] = []
+		for i in CSWrap.savedTimeDiscrepencyState[astroChar].size():
+			CSWrap.savedTimeDiscrepencyState[astroChar][i] = -1
 		return
 	
-	CSWrap.savedTimeDiscrepencyState[currChar].resize(6)
+	CSWrap.savedTimeDiscrepencyState[astroChar].resize(6)
 	
-	CSWrap.savedTimeDiscrepencyState[currChar][0] = get_global_position()
-	CSWrap.savedTimeDiscrepencyState[currChar][1] = get_global_rotation()
-	CSWrap.savedTimeDiscrepencyState[currChar][2] = connPlug
-	CSWrap.savedTimeDiscrepencyState[currChar][3] = sourcePlug
-	CSWrap.savedTimeDiscrepencyState[currChar][4] = parentCable
-	CSWrap.savedTimeDiscrepencyState[currChar][5] = get_parent()
+	CSWrap.savedTimeDiscrepencyState[astroChar][0] = get_position()
+	CSWrap.savedTimeDiscrepencyState[astroChar][1] = get_rotation()
+	CSWrap.savedTimeDiscrepencyState[astroChar][2] = connPlug
+	CSWrap.savedTimeDiscrepencyState[astroChar][3] = sourcePlug
+	CSWrap.savedTimeDiscrepencyState[astroChar][4] = parentCable
+	CSWrap.savedTimeDiscrepencyState[astroChar][5] = get_parent()
 	
-func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper, changeDetected : bool):
+func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper, changeDetected):
 	var currChar = global.CharacterRes.id
-	
-
-	
-	CSWrap.changesToApply[currChar].resize(2)
-	#if new, set original setup
-	if CSWrap.changesToApply[currChar] == [null, null]:
-		CSWrap.changesToApply[currChar] = [[], []] 
-		CSWrap.changesToApply[currChar][0].resize(5)
-		CSWrap.changesToApply[currChar][1].resize(5)
-		
-		CSWrap.changesToApply[currChar][1][0] = -1
-		CSWrap.changesToApply[currChar][1][1] = -1
-		CSWrap.changesToApply[currChar][1][2] = -1
-		CSWrap.changesToApply[currChar][1][3] = -1
-		CSWrap.changesToApply[currChar][1][4] = -1
-	
-	var restoreStates = []
-	#var statesToApply = []
-	
-	restoreStates.resize(6)
-	#statesToApply.resize(6)
 	var parentNode = get_parent()
+	CSWrap.changesToApply[currChar].resize(6)
 	
-	restoreStates[0] = get_global_position()
-	restoreStates[1] = get_global_rotation()
-	restoreStates[2] = connPlug.get_name() if connPlug != null else null
-	restoreStates[3] = sourcePlug.get_name() if sourcePlug != null else null
-	restoreStates[4] = parentCable.get_name() if parentCable != null else null
-	restoreStates[5] = parentNode.get_name()
+	CSWrap.changesToApply[currChar][0] = get_position()
+	CSWrap.changesToApply[currChar][1] = get_rotation()
+	CSWrap.changesToApply[currChar][2] = connPlug.get_name() if connPlug != null else null
+	CSWrap.changesToApply[currChar][3] = sourcePlug.get_name() if sourcePlug != null else null
+	CSWrap.changesToApply[currChar][4] = parentCable.get_name() if parentCable != null else null
+	CSWrap.changesToApply[currChar][5] = parentNode.get_name()
 	
-	CSWrap.changesToApply[currChar][0] = restoreStates
+	if !changeDetected: return
 	
-	if !changeDetected:
-		return
-	
-	#statesToApply = restoreStates.duplicate(true)
-	
-	for otherChar in CSWrap.changestoApply.keys():
+	for otherChar in CSWrap.changesToApply.keys():
 		if otherChar == currChar : continue
 		if global.charYearDict[otherChar] > global.charYearDict[currChar]:
-			CSWrap.changestoApply[otherChar].resize(2)
-			CSWrap.changestoApply[otherChar][1] = restoreStates.duplicate(true)
+			CSWrap.changesToApply[otherChar].resize(6)
+			for i in CSWrap.changesToApply[otherChar].size():
+				CSWrap.changesToApply[otherChar][i] = CSWrap.changesToApply[currChar][i] if CSWrap.savedTimeDiscrepencyState[currChar][i] is int else CSWrap.savedTimeDiscrepencyState[currChar][i]
 
 	
 func CSWrapRecieveTransformChanges(CSWrap : CharacterSwitchingWrapper, currChar, posToAdd, rotToAdd):
 	pass
 	
 func CSWrapRestoreState(CSWrap : CharacterSwitchingWrapper):
-	var currChar = global.CharacterRes.id
-	var currLvl = global.lvl()
-	var restorations = CSWrap.changesToApply[currChar][0]
-	
-	#resolve parent first
-	var parentNode = currLvl.find_node(restorations[5], true, false)
-	
-	if parentNode != get_parent():
-		var selfNode = self
-		get_parent().remove_child(selfNode)
-		parentNode.add_child(selfNode)
-		set_owner(parentNode)
-	
-	#then apply pos and rot
-	set_global_position(restorations[0])
-	set_global_rotation(restorations[1])
-	connPlug = currLvl.find_node(restorations[2], true, false) if restorations[2] != null else null
-	sourcePlug = currLvl.find_node(restorations[3], true, false) if restorations[3] != null else null
-	parentCable = currLvl.find_node(restorations[4], true, false) if restorations[4] != null else null
+	return
+#	var currChar = global.CharacterRes.id
+#	var currLvl = global.lvl()
+#	var restorations = CSWrap.changesToApply[currChar][0]
+#
+#	#resolve parent first
+#	var parentNode = currLvl.find_node(restorations[5], true, false)
+#
+#	if parentNode != get_parent():
+#		var selfNode = self
+#		get_parent().remove_child(selfNode)
+#		parentNode.add_child(selfNode)
+#		set_owner(parentNode)
+#
+#	#then apply pos and rot
+#	set_global_position(restorations[0])
+#	set_global_rotation(restorations[1])
+#	connPlug = currLvl.find_node(restorations[2], true, false) if restorations[2] != null else null
+#	sourcePlug = currLvl.find_node(restorations[3], true, false) if restorations[3] != null else null
+#	parentCable = currLvl.find_node(restorations[4], true, false) if restorations[4] != null else null
 
 	
 	
-func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper, wasLastTouchedPlug):
+func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
 	var currChar = global.CharacterRes.id
 	var currLvl = global.lvl()
 	
-	var changes = CSWrap.changesToApply[currChar][1]
+	var changes = CSWrap.changesToApply[currChar]
 	
 	if changes == []: return
 	
@@ -662,8 +645,8 @@ func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper, wasLastTouchedPlug):
 	set_owner(parentNode)
 	
 	
-	set_global_position(changes[0])
-	set_global_rotation(changes[1])
+	set_position(changes[0])
+	set_rotation(changes[1])
 	#connPlug = currLvl.find_node(changes[2], true, false) if changes[2] != null else null
 
 	

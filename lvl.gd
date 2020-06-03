@@ -62,7 +62,8 @@ func setAddAllChildNodes(garboVal):
 	addAstroAndCamPerChar()
 	
 	for child in get_children():
-		if child.get_name() == "InteractFont" : return
+		print(child.get_name())
+		if child.get_name() == "InteractFont" : continue
 		var alreadyPresent = false
 		
 		for resNode in charSwitchWrappers:
@@ -129,8 +130,10 @@ func addAstroAndCamPerChar():
 				var nodePath = (child.get_name())
 				astroCharRes.nodeCollShapes.resize(astroCharRes.nodeCollShapes.size() + 1)
 				var index = astroCharRes.nodeCollShapes.size() -1
-				astroCharRes.nodeCollShapes[index] = NodePath(astroNode.get_name() + "/" + nodePath)
-				
+				if astroNode != null:
+					astroCharRes.nodeCollShapes[index] = NodePath(astroNode.get_name() + "/" + nodePath)
+				else:
+					astroCharRes.nodeCollShapes[index] = NodePath(astroNodePath.get_name(astroNodePath.get_name_count()-1) + "/" + nodePath)
 				break
 				
 		charSwitchWrappers.append(astroCharRes)
@@ -222,17 +225,6 @@ func addCSWrapperTimeDiscrepencyAreas():
 	var currChar = global.CharacterRes.id
 	var currLvlPath = global.getScenePath(global.CharacterRes.level)
 	
-#	if global.levelWrapperDict.has(currLvlPath):
-#		if global.levelWrapperDict[currLvlPath].lvlTimeDiscrepAreaDict.has(currChar):
-#			var timeDiscrepDatas = global.levelWrapperDict[currLvlPath].lvlTimeDiscrepAreaDict[currChar][0]
-#			timeDiscrepCSWCharDict = timeDiscrepDatas[0]
-#			timeDiscrepBodyPresentDict2 = timeDiscrepDatas[1]
-#			timeDiscrepManuallyRemovingArea = timeDiscrepDatas[2]
-#			timeDiscrepParentNode = global.levelWrapperDict[currLvlPath].lvlTimeDiscrepAreaDict[currChar][1].instance()
-#			add_child(timeDiscrepParentNode)
-#			timeDiscrepParentNode.set_owner(self)
-#			return
-			
 			
 	timeDiscrepParentNode = Node.new()
 	timeDiscrepParentNode.set_name("TIME_DISCREP")
@@ -254,9 +246,9 @@ func addCSWrapperTimeDiscrepencyAreas():
 	
 	print("done")
 
-func addCSWrapCollShape2DiscrepArea(csWrap, astroChar, areaCSW):
+func addCSWrapCollShape2DiscrepArea(csWrap, astroChar, areaCSW, interactWithOthers : bool = true):
 	var currChar = global.CharacterRes.id
-	var cswNode = get_node(csWrap.node)
+	var cswNode = find_node(csWrap.node, true, false)
 	
 	
 	if global.charYearDict[astroChar] <= global.charYearDict[currChar]: return false
@@ -276,13 +268,23 @@ func addCSWrapCollShape2DiscrepArea(csWrap, astroChar, areaCSW):
 		return false
 	
 	if timeDiscrepCSWCharDict.has(csWrap.node) && timeDiscrepCSWCharDict[csWrap.node][1].has(astroChar): return false
-
 	
+	
+	if !interactWithOthers:
+		if !timeDiscrepCSWCharDict.has(csWrap.node):
+			timeDiscrepCSWCharDict[csWrap.node] = [csWrap.get_name(), {}]
+		if !timeDiscrepCSWCharDict[csWrap.node][1].has(astroChar):
+			timeDiscrepCSWCharDict[csWrap.node][1][astroChar] = "noArea"
+		return true
+		
 	var cswTimeDiscrepNode = timeDiscrepParentNode.get_node(timeDiscrepCSWCharDict[csWrap.node][0])
-	
 	
 	for collShape in csWrap.nodeCollShapes:
 		var collShapeNode = get_node(collShape)
+		if collShapeNode == null: collShapeNode = cswNode.get_node(collShape)
+		if collShapeNode == null: collShapeNode = find_node(collShape, true, false)
+		if collShapeNode == null: collShapeNode = cswNode.find_node(collShape, true, false)
+		
 		var collShapeNodePos = collShapeNode.get_position()
 		var collShapeNodeRot = collShapeNode.get_rotation()
 		var collShapeNodeScale = collShapeNode.get_global_scale()
@@ -310,8 +312,11 @@ func addCSWrapCollShape2DiscrepArea(csWrap, astroChar, areaCSW):
 			areaNode.set_name("TIME_DISCREP_AREA_%s_%s" % [csWrap.node, global.astroChar2String(astroChar)])
 			cswTimeDiscrepNode.add_child(areaNode)
 			areaNode.set_owner(cswTimeDiscrepNode)
+			
 			areaNode.connect("body_entered", self, "bodyEnteredTimeDiscrepArea", [areaNode, astroChar, csWrap])
+			areaNode.connect("area_entered", self, "areaEnteredTimeDiscrepArea", [areaNode, astroChar, csWrap])
 			areaNode.connect("body_exited", self, "bodyExitedTimeDiscrepArea", [areaNode, astroChar, csWrap])
+			areaNode.connect("area_exited", self, "areaExitedTimeDiscrepArea", [areaNode, astroChar, csWrap])
 			
 			timeDiscrepCSWCharDict[csWrap.node][1][astroChar] = areaNode.get_name()
 			
@@ -329,10 +334,10 @@ func addCSWrapCollShape2DiscrepArea(csWrap, astroChar, areaCSW):
 
 
 
-func removeCSWrapTimeDiscepArea2D(csWrap : CharacterSwitchingWrapper, astroChar, areaCSW):
+func removeCSWrapTimeDiscepArea2D(csWrap : CharacterSwitchingWrapper, astroChar, areaCSW, interactWithOthers : bool = true):
 	
 	var currChar = global.CharacterRes.id
-	var cswNode = get_node(csWrap.node)
+	var cswNode = find_node(csWrap.node, true, false)
 	
 	if global.charYearDict[astroChar] <= global.charYearDict[currChar]: return false
 	
@@ -347,8 +352,6 @@ func removeCSWrapTimeDiscepArea2D(csWrap : CharacterSwitchingWrapper, astroChar,
 		#if the area exiting from does not exist in the astroChar timeline, ignore
 		if !areaCSW.checkIfInCharLvl(astroChar): return false
 		#if not in anything, then don't remove
-		#if !timeDiscrepBodyPresentDict2.has(cswNode.get_name()): return false
-		#if !timeDiscrepBodyPresentDict2[cswNode.get_name()].has(astroChar): return false
 	
 	
 #	if the item exiting is still present in other timeDicrep areas for said timeline, don't remove
@@ -358,10 +361,16 @@ func removeCSWrapTimeDiscepArea2D(csWrap : CharacterSwitchingWrapper, astroChar,
 	if !timeDiscrepCSWCharDict.has(csWrap.node): return false
 	#if cswNode == astroNode: return false
 	
-	var cswTimeDiscrepNode = timeDiscrepParentNode.get_node(timeDiscrepCSWCharDict[csWrap.node][0])
 	
 	
 	if !timeDiscrepCSWCharDict[csWrap.node][1].has(astroChar): return false
+	
+	if !interactWithOthers:
+		timeDiscrepCSWCharDict[csWrap.node][1].erase(astroChar)
+		return true
+	
+	var cswTimeDiscrepNode = timeDiscrepParentNode.get_node(timeDiscrepCSWCharDict[csWrap.node][0])
+	
 	var charAreaNode = cswTimeDiscrepNode.get_node(timeDiscrepCSWCharDict[csWrap.node][1][astroChar])
 	if charAreaNode == null: return false
 	
@@ -385,16 +394,50 @@ func removeCSWrapTimeDiscepArea2D(csWrap : CharacterSwitchingWrapper, astroChar,
 
 func bodyEnteredTimeDiscrepArea(body, areaNode, astroChar, areaCSW):
 	if !body.has_method("CSWrapSaveTimeDiscrepState"): return
+	if body.is_in_group("cablePoint2"):
+		print("cablePoint2")
+	if body.is_in_group("cablePoint"):
+		print("cablePoint")
 	if body == astroNode: return
 	
+	var interactWithOthers = true
+	var cswrap = null
+	
+	if body.is_in_group("cablePoint"):
+		if areaCSW.node == "astro": return
+		interactWithOthers = false
+		var cswww = body.get_parent().csWrap
+		var extraWraps = cswww.extraCSWrappers
+		cswrap = extraWraps[body.get_name()]
+	else:
+		for csw in charSwitchWrappers:
+			if get_node(csw.node) == body:
+				cswrap = csw
+				break
+	
+	cswEnteredTimeDiscrepArea(cswrap, body, areaNode, astroChar, areaCSW, interactWithOthers)
+	
+	
+	
+func areaEnteredTimeDiscrepArea(area, areaNode, astroChar, areaCSW): 
+	if !area.is_in_group("plug"): return
+	
+	if areaCSW.node == "astro": return
+	
+	var plug = area.get_parent()
+	if plug.parentCable == null: return
+	
+	var csw = null
+	for csWrap in charSwitchWrappers:
+		if get_node(csWrap.node) == plug.parentCable:
+			csw = csWrap
+	
+	cswEnteredTimeDiscrepArea(csw, plug.parentCable, areaNode, astroChar, areaCSW, false)
+	
+	
+func cswEnteredTimeDiscrepArea(cswrap, body, areaNode, astroChar, areaCSW, interactWithOthers = true):
 	var currChar = global.CharacterRes.id
 	
-	var cswrap = null
-	for csw in charSwitchWrappers:
-		if get_node(csw.node) == body:
-			cswrap = csw
-			break
-			
 	if cswrap == null: return
 	if cswrap == areaCSW || cswrap.node == areaCSW.node:
 		return
@@ -417,8 +460,10 @@ func bodyEnteredTimeDiscrepArea(body, areaNode, astroChar, areaCSW):
 					
 				timeDiscrepBodyPresentDict2[body.get_name()][astroChar].append(areaNode)
 		
-		if addCSWrapCollShape2DiscrepArea(cswrap, astroChar, areaCSW):
+		if addCSWrapCollShape2DiscrepArea(cswrap, astroChar, areaCSW, interactWithOthers):
 			body.CSWrapSaveTimeDiscrepState(cswrap, astroChar, true)
+	
+	
 	
 	
 func bodyExitedTimeDiscrepArea(body, areaNode, astroChar, areaCSW):
@@ -427,18 +472,42 @@ func bodyExitedTimeDiscrepArea(body, areaNode, astroChar, areaCSW):
 	if timeDiscrepManuallyRemovingArea.has([body, areaNode]): return
 	if !body.has_method("CSWrapSaveTimeDiscrepState"): return
 	if body == astroNode: return
-#	if !timeDiscrepBodyPresentDict.has(body):
-#		timeDiscrepBodyPresentDict[body] = []
-#	if !timeDiscrepBodyPresentDict[body].has(areaNode): return
 
+	var cswrap = null
+	var interactWithOthers = true
+	
+	if body.is_in_group("cablePoint"):
+		if areaCSW.node == "astro": return
+		interactWithOthers = false
+		cswrap = body.get_parent().csWrap.extraCSWrappers[body.get_name()]
+	else:
+		for csw in charSwitchWrappers:
+			if get_node(csw.node) == body:
+				cswrap = csw
+				break
+			
+	cswExitedTimeDiscrepArea(cswrap, body, areaNode, astroChar, areaCSW, interactWithOthers)
+	
+	
+func areaExitedTimeDiscrepArea(area, areaNode, astroChar, areaCSW):
+	if !area.is_in_group("plug"): return
+	
+	if areaCSW.node == "astro": return
+	
+	var plug = area.get_parent()
+	if plug.parentCable == null: return
+	
+	var csw = null
+	for csWrap in charSwitchWrappers:
+		if get_node(csWrap.node) == plug.parentCable:
+			csw = csWrap
+	
+	cswExitedTimeDiscrepArea(csw, plug.parentCable, areaNode, astroChar, areaCSW, false)
+
+
+func cswExitedTimeDiscrepArea(cswrap, body, areaNode, astroChar, areaCSW, interactWithOthers = true):
 	var currChar = global.CharacterRes.id
 	
-	var cswrap = null
-	for csw in charSwitchWrappers:
-		if get_node(csw.node) == body:
-			cswrap = csw
-			break
-			
 	if cswrap == null: return
 	
 	if cswrap == areaCSW || cswrap.node == areaCSW.node: return
@@ -457,19 +526,10 @@ func bodyExitedTimeDiscrepArea(body, areaNode, astroChar, areaCSW):
 						if timeDiscrepBodyPresentDict2[body.get_name()][astroChar].has(areaNode):
 							timeDiscrepBodyPresentDict2[body.get_name()][astroChar].erase(areaNode)
 						
-#				var shitToRemove = []
-#				for key in timeDiscrepBodyPresentDict2[body.get_name()][astroChar].keys():
-#					if key == null: shitToRemove.append(key)
-#
-#				for thing in shitToRemove:
-#					timeDiscrepBodyPresentDict2.erase
 					
 		
-		if removeCSWrapTimeDiscepArea2D(cswrap, astroChar, areaCSW):
+		if removeCSWrapTimeDiscepArea2D(cswrap, astroChar, areaCSW, interactWithOthers):
 			body.CSWrapSaveTimeDiscrepState(cswrap, astroChar, false)
-			
-			
-			
 
 
 

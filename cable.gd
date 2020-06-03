@@ -55,6 +55,8 @@ var tempEndNodePos
 var endMonitor = null
 var startMonitor = null
 
+var csWrap = null
+var changeDetected = false
 
 #used for determining which plugs changes between character switching takes
 #priority
@@ -260,6 +262,9 @@ func _physics_process(delta):
 	
 	ropeLengthLimit(delta)
 	
+	
+	checkForAndMarkAsChanged()
+	#CSWrapDetectChange
 #	if (getRopeLength() > CABLE_LENGTH):
 #		pos = prevPos
 #		posOld = prevPosOld
@@ -269,12 +274,67 @@ func _physics_process(delta):
 			
 		
 	
-	
-	
-	
 	renderLines()
 	#startMonitor = setgetTotalCableStartPlugPin(true, true)
 	#endMonitor = setgetTotalCableEndPlugPin(true, true)
+	
+	
+func checkForAndMarkAsChanged():
+	
+	var lvlNode = global.lvl()
+	if !global.lvl().processDone: return
+	if !changeDetected:
+		if csWrap == null:
+			for csw in lvlNode.charSwitchWrappers:
+				if lvlNode.get_node(csw.node) == self:
+					csWrap = csw
+					break
+					
+		#change can only be added to future shit if it ever gets a change
+		#to be outside timeDiscrep areas (especially if it loaded a past lvl
+		#in which it spawned in one)
+		
+		var thisCableIsInTimeDiscrepAreasOtherThanOwn = false
+		
+		for astroChar in csWrap.changesToApply.keys():
+			if lvlNode.timeDiscrepBodyPresentDict2.has(self.get_name()) && lvlNode.timeDiscrepBodyPresentDict2[self.get_name()].has(astroChar) && lvlNode.timeDiscrepBodyPresentDict2[self.get_name()][astroChar].size() > 0:
+				thisCableIsInTimeDiscrepAreasOtherThanOwn = true
+				break
+				
+				#var lvl = global.lvl()
+			for nodeName in  csWrap.extraCSWrappers.keys():
+				if lvlNode.timeDiscrepBodyPresentDict2.has(nodeName):
+					if lvlNode.timeDiscrepBodyPresentDict2[nodeName].has(astroChar):
+						if lvlNode.timeDiscrepBodyPresentDict2[nodeName][astroChar].size() > 0:
+							thisCableIsInTimeDiscrepAreasOtherThanOwn = true
+							break
+			if thisCableIsInTimeDiscrepAreasOtherThanOwn:
+				break
+				
+				
+		if !thisCableIsInTimeDiscrepAreasOtherThanOwn:
+			changeDetected = CSWrapDetectChange(csWrap)
+			
+			#if change was made, remove any time discrep area 2ds that might
+			#be present from future because changes will now take place and
+			#future spot will ref where ever this object is
+			if changeDetected:
+				for astroChar in csWrap.changesToApply.keys():
+					
+					#if astroChar == currChar: continue
+					var thing = null
+					var areaNode = null
+					if lvlNode.timeDiscrepCSWCharDict[csWrap.node][1].has(astroChar):
+						
+						if lvlNode.removeCSWrapTimeDiscepArea2D(csWrap, astroChar, null, false):
+							self.CSWrapSaveTimeDiscrepState(csWrap, astroChar, false)
+						
+					for nodeName in  csWrap.extraCSWrappers.keys():
+						var csw = csWrap.extraCSWrappers[nodeName]
+						if lvlNode.timeDiscrepCSWCharDict[csWrap.node][1].has(astroChar):
+							if lvlNode.removeCSWrapTimeDiscepArea2D(csWrap, astroChar, null, false):
+								self.CSWrapSaveTimeDiscrepState(csWrap, astroChar, false, nodeName)
+							
 func ropeLengthLimit(delta):
 	
 	var head = getUltimateParentCable()
@@ -706,12 +766,20 @@ func CSWrapSaveStartState(CSWrap : CharacterSwitchingWrapper):
 	
 	CSWrap.saveStartState[currChar][6] = cNodesFlipped
 	
+	for otherChar in CSWrap.savedTimeDiscrepencyState.keys():
+		CSWrap.savedTimeDiscrepencyState[otherChar].resize(11)
+		for i in CSWrap.savedTimeDiscrepencyState[otherChar].size():
+			CSWrap.savedTimeDiscrepencyState[otherChar][i] = -1
+	
 	#CSWrap.extraCSWrappers.resize(2)
 	
 	#if still new, make dictionary values
 	if !CSWrap.extraCSWrappers is Dictionary:
 		CSWrap.extraCSWrappers = {START_PLUG.get_name() : CharacterSwitchingWrapper.new(), END_PLUG.get_name() : CharacterSwitchingWrapper.new()}
 		
+		for cn in cableNodes:
+			CSWrap.extraCSWrappers[cn.get_name()] = CharacterSwitchingWrapper.new()
+			CSWrap.extraCSWrappers[cn.get_name()].node = cn.get_name()
 		#plugs may children of other cnodes in other cables so this is pointless
 		#CSWrap.extraCSWrappers[START_PLUG.get_name()].node = cableNodes[0].get_name() + "/" + START_PLUG.get_name()
 		#CSWrap.extraCSWrappers[END_PLUG.get_name()].node = cableNodes[cableNodes.size()-1].get_name() + "/" + END_PLUG.get_name()
@@ -724,105 +792,138 @@ func CSWrapSaveStartState(CSWrap : CharacterSwitchingWrapper):
 func CSWrapDetectChange(CSWrap : CharacterSwitchingWrapper):
 	var currChar = global.CharacterRes.id
 	
-	if CSWrap.saveStartState[currChar][0] == START_PLUG : return true
-	if CSWrap.saveStartState[currChar][1] == START_PIN : return true
+	if CSWrap.saveStartState[currChar][0] != START_PLUG : return true
+	if CSWrap.saveStartState[currChar][1] != START_PIN : return true
 		#start pin
-	if CSWrap.saveStartState[currChar][2] == END_PLUG : return true
-	if CSWrap.saveStartState[currChar][3] == END_PIN : return true
+	if CSWrap.saveStartState[currChar][2] != END_PLUG : return true
+	if CSWrap.saveStartState[currChar][3] != END_PIN : return true
 		
 		#initial save spots need to be saved because first frame (due to these methods being called
 		#on the first frame by the lvl.gd), points will jump
 		#to initially set pins (which will change after frame 1)
-	if CSWrap.saveStartState[currChar][4] == childLinkCable : return true
-	if CSWrap.saveStartState[currChar][5] == parentLinkCable : return true
+	if CSWrap.saveStartState[currChar][4] != childLinkCable : return true
+	if CSWrap.saveStartState[currChar][5] != parentLinkCable : return true
 		
-	if CSWrap.saveStartState[currChar][6] == cNodesFlipped : return true
+	if CSWrap.saveStartState[currChar][6] != cNodesFlipped : return true
 	
 	if START_PLUG.CSWrapDetectChange(CSWrap.extraCSWrappers[START_PLUG.get_name()]) : return true
 	if END_PLUG.CSWrapDetectChange(CSWrap.extraCSWrappers[END_PLUG.get_name()]) : return true
 	
+	
 	return false
 	
-func CSWrapSaveTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, set : bool):
-	#pass
-	var currChar = global.CharacterRes.id
+func CSWrapSaveTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, astroChar, set : bool, comeFromExtraCSWNodeName = null):
+	
+	if !changeDetected: return
+	
+	CSWrap.savedTimeDiscrepencyState[astroChar].resize(11)
+	
+	
 	
 	if !set:
-		CSWrap.savedTimeDiscrepencyState[currChar] = []
-		START_PLUG.CSWrapSavePlugTimeDiscrepState(CSWrap.extraCSWrappers[START_PLUG.get_name()], false)
-		END_PLUG.CSWrapSavePlugTimeDiscrepState(CSWrap.extraCSWrappers[END_PLUG.get_name()], false)
+		
+		var lvl = global.lvl()
+		for nodeName in  CSWrap.extraCSWrappers.keys():
+			if comeFromExtraCSWNodeName != null && comeFromExtraCSWNodeName == nodeName: continue
+			if lvl.timeDiscrepBodyPresentDict2.has(nodeName):
+				if lvl.timeDiscrepBodyPresentDict2[nodeName].has(astroChar):
+					if lvl.timeDiscrepBodyPresentDict2[nodeName][astroChar].size() > 0:
+						return
+		
+		CSWrap.savedTimeDiscrepencyState[astroChar].resize(11)
+		
+		for i in CSWrap.savedTimeDiscrepencyState[astroChar].size():
+			CSWrap.savedTimeDiscrepencyState[astroChar][i] = -1
+			
+		START_PLUG.CSWrapSavePlugTimeDiscrepState(CSWrap.extraCSWrappers[START_PLUG.get_name()], astroChar, false)
+		END_PLUG.CSWrapSavePlugTimeDiscrepState(CSWrap.extraCSWrappers[END_PLUG.get_name()], astroChar, false)
+		
+		var debugTimeDiscrepLine = get_node(get_name() + "_DEBUG_LINE")
+		if debugTimeDiscrepLine != null:
+			debugTimeDiscrepLine.points = []
 		return
 	
-	CSWrap.savedTimeDiscrepencyState[currChar].resize(7)
 	
 	
-	#start plug
-	CSWrap.savedTimeDiscrepencyState[currChar][0] = START_PLUG
-	CSWrap.savedTimeDiscrepencyState[currChar][1] = START_PIN
-	#start pin
-	CSWrap.savedTimeDiscrepencyState[currChar][2] = END_PLUG
-	CSWrap.savedTimeDiscrepencyState[currChar][3] = END_PIN
+	if CSWrap.savedTimeDiscrepencyState[astroChar].size() == 11:
+		if !CSWrap.savedTimeDiscrepencyState[astroChar][0] is int:
+			return
 	
-	#initial save spots need to be saved because first frame (due to these methods being called
-	#on the first frame by the lvl.gd), points will jump
-	#to initially set pins (which will change after frame 1)
-	CSWrap.savedTimeDiscrepencyState[currChar][4] = childLinkCable
-	CSWrap.savedTimeDiscrepencyState[currChar][5] = parentLinkCable
-	
-	CSWrap.savedTimeDiscrepencyState[currChar][6] = cNodesFlipped
-	
-	
-	#if still new, make dictionary values
-	if !CSWrap.extraCSWrappers is Dictionary:
-		CSWrap.extraCSWrappers = {START_PLUG.get_name() : CharacterSwitchingWrapper.new(), END_PLUG.get_name() : CharacterSwitchingWrapper.new()}
-		
-	START_PLUG.CSWrapSaveTimeDiscrepState(CSWrap.extraCSWrappers[START_PLUG.get_name()], true)
-	END_PLUG.CSWrapSaveTimeDiscrepState(CSWrap.extraCSWrappers[END_PLUG.get_name()], true)
-	#savedTimeDiscrepencyState
-
-#keeeeep
-func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
-	var currChar = global.CharacterRes.id
-	CSWrap.changesToApply[currChar].resize(18)
-	
-	#for applying to other future astros
-	#-1 is used to indicate no change (because null can still be a valid change, ex: pins)
-	CSWrap.changesToApply[currChar][0] = -1
-	CSWrap.changesToApply[currChar][1] = -1
-	CSWrap.changesToApply[currChar][2] = -1
-	CSWrap.changesToApply[currChar][3] = -1
-	CSWrap.changesToApply[currChar][4] = -1
-	CSWrap.changesToApply[currChar][5] = -1 
-	CSWrap.changesToApply[currChar][6] = -1
-
-
-	#for restoring
+	CSWrap.savedTimeDiscrepencyState[astroChar].resize(11)
+	#if CSWrap.savedTimeDiscrepencyState[astroChar][0] is int && CSWrap.savedTimeDiscrepencyState[astroChar][0] == null: return
 	
 	var startPinName = START_PIN.get_name() if START_PIN != null else null
 	var endPinName = END_PIN.get_name() if END_PIN != null else null
 	var clcName = childLinkCable.get_name() if childLinkCable != null else null
 	var plcName = parentLinkCable.get_name() if parentLinkCable != null else null
 	
-	CSWrap.changesToApply[currChar][7] = START_PLUG.get_name()
-	CSWrap.changesToApply[currChar][8] = startPinName
-	CSWrap.changesToApply[currChar][9] = END_PLUG.get_name()
-	CSWrap.changesToApply[currChar][10] = endPinName
-	CSWrap.changesToApply[currChar][11] = clcName
-	CSWrap.changesToApply[currChar][12] = plcName
-	CSWrap.changesToApply[currChar][13] = cNodesFlipped
-	CSWrap.changesToApply[currChar][14] = pos
-	CSWrap.changesToApply[currChar][15] = posOld
-	CSWrap.changesToApply[currChar][16] = []
-	CSWrap.changesToApply[currChar][17] = []
+	CSWrap.savedTimeDiscrepencyState[astroChar][0] = START_PLUG.get_name()
+	CSWrap.savedTimeDiscrepencyState[astroChar][1] = startPinName
+	CSWrap.savedTimeDiscrepencyState[astroChar][2] = END_PLUG.get_name()
+	CSWrap.savedTimeDiscrepencyState[astroChar][3] = endPinName
+	CSWrap.savedTimeDiscrepencyState[astroChar][4] = clcName
+	CSWrap.savedTimeDiscrepencyState[astroChar][5] = plcName
+	CSWrap.savedTimeDiscrepencyState[astroChar][6] = cNodesFlipped
+	CSWrap.savedTimeDiscrepencyState[astroChar][7] = pos
+	CSWrap.savedTimeDiscrepencyState[astroChar][8] = posOld
+	CSWrap.savedTimeDiscrepencyState[astroChar][9] = []
+	CSWrap.savedTimeDiscrepencyState[astroChar][10] = []
 	for cn in cableNodes:
-		CSWrap.changesToApply[currChar][16].append(cn.get_global_position())
-		CSWrap.changesToApply[currChar][17].append(cn.get_global_rotation())
+		CSWrap.savedTimeDiscrepencyState[astroChar][9].append(cn.get_global_position())
+		CSWrap.savedTimeDiscrepencyState[astroChar][10].append(cn.get_global_rotation())
+	
+	
+	#if still new, make dictionary values
+	if !CSWrap.extraCSWrappers is Dictionary:
+		CSWrap.extraCSWrappers = {START_PLUG.get_name() : CharacterSwitchingWrapper.new(), END_PLUG.get_name() : CharacterSwitchingWrapper.new()}
+		
+		for cn in cableNodes:
+			CSWrap.extraCSWrappers[cn.get_name()] = CharacterSwitchingWrapper.new()
+			CSWrap.extraCSWrappers[cn.get_name()].node = cn.get_name()
+		
+	START_PLUG.CSWrapSavePlugTimeDiscrepState(CSWrap.extraCSWrappers[START_PLUG.get_name()], astroChar, true)
+	END_PLUG.CSWrapSavePlugTimeDiscrepState(CSWrap.extraCSWrappers[END_PLUG.get_name()], astroChar, true)
+	#savedTimeDiscrepencyState
+	
+	
+	var debugTimeDiscrepLine = get_node(get_name() + "_DEBUG_LINE")
+	if debugTimeDiscrepLine == null:
+		debugTimeDiscrepLine = Line2D.new()
+		debugTimeDiscrepLine.set_name(get_name() + "_DEBUG_LINE")
+		add_child(debugTimeDiscrepLine)
+	debugTimeDiscrepLine.points = pos
+	
+#keeeeep
+func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
+	var currChar = global.CharacterRes.id
+	CSWrap.changesToApply[currChar].resize(11)
+	
+	
+	var startPinName = START_PIN.get_name() if START_PIN != null else null
+	var endPinName = END_PIN.get_name() if END_PIN != null else null
+	var clcName = childLinkCable.get_name() if childLinkCable != null else null
+	var plcName = parentLinkCable.get_name() if parentLinkCable != null else null
+	
+	CSWrap.changesToApply[currChar][0] = START_PLUG.get_name()
+	CSWrap.changesToApply[currChar][1] = startPinName
+	CSWrap.changesToApply[currChar][2] = END_PLUG.get_name()
+	CSWrap.changesToApply[currChar][3] = endPinName
+	CSWrap.changesToApply[currChar][4] = clcName
+	CSWrap.changesToApply[currChar][5] = plcName
+	CSWrap.changesToApply[currChar][6] = cNodesFlipped
+	CSWrap.changesToApply[currChar][7] = pos
+	CSWrap.changesToApply[currChar][8] = posOld
+	CSWrap.changesToApply[currChar][9] = []
+	CSWrap.changesToApply[currChar][10] = []
+	for cn in cableNodes:
+		CSWrap.changesToApply[currChar][9].append(cn.get_global_position())
+		CSWrap.changesToApply[currChar][10].append(cn.get_global_rotation())
 		
 	
-	if !CSWrapDetectChange(CSWrap):
-		START_PLUG.CSWrapAddChanges(CSWrap.extraCSWrappers[START_PLUG.get_name()], false)
-		END_PLUG.CSWrapAddChanges(CSWrap.extraCSWrappers[END_PLUG.get_name()], false)
-		return
+	START_PLUG.CSWrapAddChanges(CSWrap.extraCSWrappers[START_PLUG.get_name()], changeDetected)
+	END_PLUG.CSWrapAddChanges(CSWrap.extraCSWrappers[END_PLUG.get_name()], changeDetected)
+	
+	if !changeDetected: return
 	
 	for astroChar in global.CHAR:
 		var otherChar = global.CHAR[astroChar]
@@ -831,35 +932,13 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 		if global.charYearDict[otherChar] > global.charYearDict[currChar]:
 			
 			#set to default -1 s if otherChar changes are still new
-			if CSWrap.changesToApply[otherChar].size() == 0:
-				CSWrap.changesToApply[otherChar].resize(18)
+			#if CSWrap.changesToApply[otherChar].size() != 11:
+			CSWrap.changesToApply[otherChar].resize(11)
 			
-				#start plug should never be null so should always have a name
-				CSWrap.changesToApply[otherChar][0] = START_PLUG.get_name()
-				
-			#start pin, this can either be the name or null since pins may be null
-				CSWrap.changesToApply[otherChar][1] = startPinName
+			for i in CSWrap.changesToApply[otherChar].size():
+				CSWrap.changesToApply[otherChar][i] = CSWrap.changesToApply[currChar][i] if CSWrap.savedTimeDiscrepencyState[otherChar][i] is int else CSWrap.savedTimeDiscrepencyState[otherChar][i]
 			
-			#end plug
-				CSWrap.changesToApply[otherChar][2] = END_PLUG.get_name()
-				
-			#end pin
-				CSWrap.changesToApply[otherChar][3] = endPinName
-				
-			#cNodesFlipped, cNodesFlipped is only ever true of false, never null
-				CSWrap.changesToApply[otherChar][4] = cNodesFlipped
-
-				#this can either be the name or null since link cables may be null
-				CSWrap.changesToApply[otherChar][5] = clcName
-				CSWrap.changesToApply[otherChar][6] = plcName
 	
-
-	START_PLUG.CSWrapAddChanges(CSWrap.extraCSWrappers[START_PLUG.get_name()], true)
-	END_PLUG.CSWrapAddChanges(CSWrap.extraCSWrappers[END_PLUG.get_name()], true)
-	
-	if lastTouchedPlugIsStart:
-		var posChange = get_global_position() - CSWrap.saveStartState[currChar][0]
-		#var rotChange = 
 	
 func CSWrapRecieveTransformChanges(CSWrap : CharacterSwitchingWrapper, currChar, posToAdd, rotToAdd):
 	return
@@ -876,51 +955,7 @@ func CSWrapRecieveTransformChanges(CSWrap : CharacterSwitchingWrapper, currChar,
 	
 				
 func CSWrapRestoreState(CSWrap : CharacterSwitchingWrapper):
-	var currChar = global.CharacterRes.id
-	var changes = CSWrap.changesToApply[currChar]
-	var lvlNode = global.lvl()
-	
-	var START_PLUGname = CSWrap.changesToApply[currChar][7]
-	var START_PINname = CSWrap.changesToApply[currChar][8]
-	var END_PLUGname = CSWrap.changesToApply[currChar][9]
-	var END_PINname = CSWrap.changesToApply[currChar][10]
-	var clcName = CSWrap.changesToApply[currChar][11]
-	var plcName = CSWrap.changesToApply[currChar][12]
-	
-	#return to initial set up, because frame one fucks this up
-	#start and end plug should never be null, so will always have a name
-	#find_node needs to be recursive (first, true), but owner does not need to valid (second, false)
-	START_PLUG = lvlNode.find_node(START_PLUGname, true, false)
-	START_PIN = lvlNode.find_node(START_PINname, true, false) if START_PINname != null else null
-	END_PLUG = lvlNode.find_node(END_PLUGname, true, false)
-	END_PIN = lvlNode.find_node(END_PINname, true, false) if END_PINname != null else null
-	childLinkCable = lvlNode.find_node(clcName, true, false) if !clcName != null else null
-	parentLinkCable = lvlNode.find_node(plcName, true, false) if !plcName != null else null
-	cNodesFlipped = CSWrap.changesToApply[currChar][13]
-	pos = CSWrap.changesToApply[currChar][14]
-	posOld = CSWrap.changesToApply[currChar][15]
-	
-	if cNodesFlipped:
-		cableNodes.invert()
-	
-	for index in cableNodes.size():
-		cableNodes[index].set_global_position(CSWrap.changesToApply[currChar][16][index])
-		cableNodes[index].set_global_rotation(CSWrap.changesToApply[currChar][17][index])
-		
-	
-
-	START_PLUG.CSWrapRestoreState(CSWrap.extraCSWrappers[START_PLUG.get_name()])
-	END_PLUG.CSWrapRestoreState(CSWrap.extraCSWrappers[END_PLUG.get_name()])
-	
-	#at the beginning of reloading currChar, nothing has been touched
-	lastTouchedPlugIsStart = null
-	
-	
-	
-	
-	#TODO: make sure changes are applied in order?? or does it matter....
-	
-	
+	return
 	
 	
 	
@@ -932,365 +967,28 @@ func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper, delta):
 	var changes = CSWrap.changesToApply[currChar]
 	var lvlNode = global.lvl()
 	
-	if !changes[0] is int:
-		START_PLUG = lvlNode.find_node(changes[0], true, false)
-	if !changes[1] is int:
-		START_PIN = lvlNode.find_node(changes[1], true, false) if changes[1] != null else null
-	if !changes[2] is int:
-		END_PLUG = lvlNode.find_node(changes[2], true, false)
-	if !changes[3] is int:
-		END_PIN = lvlNode.find_node(changes[3], true, false) if changes[3] != null else null
-	if !changes[4] is int:
-		cNodesFlipped = changes[4]
-	if !changes[5] is int:
-		childLinkCable = lvlNode.find_node(changes[5], true, false) if changes[5] != null else null
-	if !changes[6] is int:
-		parentLinkCable = lvlNode.find_node(changes[6], true, false) if changes[6] != null else null
-
+	START_PLUG = lvlNode.find_node(changes[0], true, false)
+	START_PIN = lvlNode.find_node(changes[1], true, false) if changes[1] != null else null
+	if START_PIN == global.lvl().astroNode: 	START_PIN = null
 	
-	
-	START_PLUG.CSWrapApplyChanges(CSWrap.extraCSWrappers[START_PLUG.get_name()], lastTouchedPlugIsStart)
-	END_PLUG.CSWrapApplyChanges(CSWrap.extraCSWrappers[START_PLUG.get_name()], !lastTouchedPlugIsStart)
-#
-		
-	
-func attemptMovePlug(targetPos):
-	
-	if parentLinkCable != null && childLinkCable != null: return
-	#if lastTouchedPlugIsStart == null: return
-	
-	var plug = getUltimateParentCable().cableNodes[0] if lastTouchedPlugIsStart else getUltimateChildCable().cableNodes[cableNodes.size()-1]
-	
-	#need to start with the nodes closest to the plug and find the first one
-	#that is above the target and colliding with shit
-	var currCable = getUltimateParentCable() if lastTouchedPlugIsStart else getUltimateChildCable()
-	var cNodeIndex = null
-	var maxSlack = 0
-	while currCable != null:
-		
-		var lengthPerNode = currCable.CABLE_LENGTH/(currCable.NODE_COUNT-1)
-		cNodeIndex = currCable.getLastCollCableNode(targetPos)
-		
-		if cNodeIndex == null:
-			maxSlack += currCable.CABLE_LENGTH
-			cNodeIndex =  cableNodes.size()-1 if lastTouchedPlugIsStart else 0
-		else:
-			maxSlack += lengthPerNode * (currCable.NODE_COUNT - (cNodeIndex+1))
-			break
-			
-		currCable = currCable.childLinkCable if lastTouchedPlugIsStart else currCable.parentLinkCable
-		
-	if currCable == null:
-		currCable = getUltimateChildCable() if lastTouchedPlugIsStart else getUltimateParentCable()
-		
-	var maxSlackPlusPoints = getRemainderSlack(currCable, cNodeIndex)
-	
-	maxSlack += maxSlackPlusPoints[0]
-	
-	var cablePathPoints = maxSlackPlusPoints[1]
-	#var totalDistToTrav = (targetPos - plug.get_global_position()).length()
-	var movePlugPoints = movePlug(plug, targetPos, maxSlack, currCable.cableNodes[cNodeIndex].get_global_position())
-	
-	for i in movePlugPoints.size():
-		cablePathPoints.append(movePlugPoints[i])
-	
-	
-	#now adjust cableNodes, pos, and posOld
-	var totalCurveLength = totalDistTraveled(Vector2(0, 0), cablePathPoints)
-	var lengthPerNode = getOverallLengthPerNode()
-	var indexOffset = -cNodeIndex
-	
-	while currCable != null:
-		for i in currCable.cableNodes.size():
-			var k = currCable.cableNodes.size() - i - 1 if lastTouchedPlugIsStart else i
-			var g = k + indexOffset
-			if g < 0: continue
-			#var k = i if lastTouchedPlugIsStart else (currCable.cableNodes.size()-i-1)
-			#to compensate whether the start or end plug was pulled
-			var distForPoint = k * lengthPerNode
-			var newPoint = getPointFromCurve(cablePathPoints, distForPoint)
-			currCable.cableNodes[i].set_global_position(newPoint)
-			currCable.pos[i] = newPoint
-			currCable.posOld[i] = newPoint
-		
-		indexOffset += currCable.cableNodes.size()
-		#need to move up to get closer to the plugs chaing
-		currCable = parentLinkCable if lastTouchedPlugIsStart else childLinkCable
-		
-func getRemainderSlack(currCable, cNodeIndex):
-	
-	var ogCable = currCable
-	var criticalPoints = [currCable.cableNodes[cNodeIndex].get_global_position()]
-	
-	var lastPos = currCable.cableNodes[cNodeIndex].get_global_position()
-	
-	var totalLength = 0
-	
-	while currCable != null:
-		for i in currCable.cableNodes.size():
-			var k = i if lastTouchedPlugIsStart else currCable.cableNodes.size()-i-1
-			if lastTouchedPlugIsStart:
-				if i <= cNodeIndex && currCable == ogCable : continue
-			else:
-				if i >= cNodeIndex && currCable == ogCable : continue
-			
-			
-			
-			var currNode = currCable.cableNodes[k]
-			
-			if (k != 0):
-				var prevNode = currCable.cableNodes[k-1]
-				totalLength += (currNode.get_global_position() - prevNode.get_global_position()).length()
-			
-			var lastPoint = criticalPoints[criticalPoints.size()-1]
-			var coll = currNode.move_and_collide(currNode.get_global_position() - lastPoint, false, true, true)
-			if coll != null:
-				criticalPoints.append(coll.get_position())
-			
-			lastPos = currNode.get_global_positino()
-		
-		currCable = childLinkCable if lastTouchedPlugIsStart else parentLinkCable
-
-		
-	criticalPoints.append(lastPos)
-	
-	var totalCriticalLength = 0
-	
-		#need to reverse points to be able to add correctly with the points
-	# movePlug returns
-	var criticalPointsReversed = []
-
-	for i in criticalPoints.size():
-		
-		var k = criticalPoints.size() - i - 1
-		criticalPointsReversed.append(criticalPoints[k])
-		
-		if i == 0: continue
-		
-		totalCriticalLength += (criticalPoints[i]-criticalPoints[i-1]).length()
-	
-
-	
-	
-	
-	
-	return [totalLength - totalCriticalLength, criticalPointsReversed]
-		
-	
-	
-	
-func getOverallLengthPerNode():
-	var currCable = self
-	var totalCableLength = 0
-	var totalNodes = 0
-	var numberOfCables = 0
-	
-	while currCable != null:
-		numberOfCables += 1
-		totalCableLength += currCable.CABLE_LENGTH
-		totalNodes += currCable.NODE_COUNT
-		currCable = childLinkCable if lastTouchedPlugIsStart else parentLinkCable
-	
-	#assuming each connected cable shares a point
-	return totalCableLength/(totalNodes-numberOfCables)
-	
-	
-func getPointFromCurve(points, distance):
-	
-	var distCovered = 0
-	var currP = 0
-	for i in points.size():
-		if i == 0 : continue
-		
-		var localDist = (points[i] - points[i-1]).length()
-		if distCovered + localDist > distance:
-			var remainder = distance - distCovered
-			var vect = (points[i] - points[i-1]).normalized() * remainder
-			return points[i-1] + vect
-			
-		distCovered += localDist
-		
-		
-		
-#optimized way of doing this
-
-#func getPointFromCurve2(cablePathPoints):
-#	var totalCurveLength = totalDistTraveled(Vector2(0, 0), cablePathPoints)
-#	var lengthPerNode = CABLE_LENGTH/(NODE_COUNT-1)
-#
-#	for i in cableNodes.size():
-#		i = i if lastTouchedPlugIsStart else (cableNodes.size()-i-1)
-#		var distForPoint = i * lengthPerNode
-#		cableNodes
-#
-#
-#
-#	var distCovered = 0
-#	var currP = 0
-#	var currCNInd = 0
-#	var currCN = cableNodes[currCNInd]
-#	var distance = 0
-#
-#	for i in cablePathPoints.size():
-#		if i == 0 : continue
-#
-#		var localDist = (cablePathPoints[i] - cablePathPoints[i-1]).length()
-#		if distCovered + localDist > distance:
-#			var remainder = distance - distCovered
-#			var vect = (cablePathPoints[i] - cablePathPoints[i-1]).normalized() * remainder
-#
-#			currCN.set_global_position(cablePathPoints[i-1] + vect)
-#			currCNInd += 1
-#			currCN = cableNodes[currCNInd]
-#			distance += lengthPerNode
-#
-#		distCovered += localDist
-	
-	
-func getLastCollCableNode(targetPos):
-	
-	var cNode = null
-	var cNodeIndex = null
-	
+	END_PLUG = lvlNode.find_node(changes[2], true, false)
+	END_PIN = lvlNode.find_node(changes[3], true, false) if changes[3] != null else null
+	if END_PIN == global.lvl().astroNode: 	END_PIN = null
+	childLinkCable = lvlNode.find_node(changes[4], true, false) if changes[4] != null else null
+	parentLinkCable = lvlNode.find_node(changes[5], true, false) if changes[5] != null else null
+	cNodesFlipped = changes[6]
+	pos = changes[7]
+	posOld = changes[8]
 	for i in cableNodes.size():
-		var k = i if lastTouchedPlugIsStart else cableNodes.size() - i - 1
-		var cn = cableNodes[k]
-		
-		if cn.getCollidingBodies().size() == 0:
-			continue
-		
-		#setting last argument to false makes it a test move, doesn;t
-		#actually move the kinematicbody node
-		var coll = cn.move_and_collide(targetPos, false, true, true)
-		
-		if coll != null:
-			var collObj = coll.get_collider()
-			
-			if cn.getCollidingBodies().has(collObj):
-				
-				if lastTouchedPlugIsStart:
-					cNodeIndex = k-1 if i!= 0 else null
-				else:
-					cNodeIndex = k+1 if k != cableNodes.size()-1 else null
-					
-				cNode = cableNodes[cNodeIndex] if cNodeIndex != null else null
-	
-	return cNodeIndex
-	
-func movePlug(plug, targetPos, maxSlack, slackAnchorPos):
-	
-	var totalDistToTrav = (targetPos - plug.get_global_position()).length()
-	
-	#if totalDistToTrav > maxSlack: return []
-	
-	var overrideDir = null
-	var step = 10
-	var coll = null
-	var currCollObj = null
-	var collidedObjsPointDict = {}
-	var pathPoints = []
-	var anchorPoints = [slackAnchorPos]
-	#while there is still distance to cover, keep incrementing
-	while totalDistToTrav > 0:
-		
-		pathPoints.append(plug.get_global_position())
-		
-		if pathPoints.size() > 500:
-			
-			var keys = collidedObjsPointDict.keys()
-			var point = keys[keys.size()-1][0]
-			anchorPoints = collidedObjsPointDict[currCollObj][5]
-			
-			plug.set_global_position(point)
-			break
-		
-		var dirToTarget = targetPos - plug.get_global_position()
-		var dirVect = null
-		
-		if totalDistTraveled(plug.get_global_position(), anchorPoints) >= maxSlack:
-			if currCollObj == null:
-				break
-			plug.set_global_position(collidedObjsPointDict[currCollObj][0])
-			dirVect = collidedObjsPointDict[currCollObj][1]
-			dirVect = dirVect.rotated(deg2rad(collidedObjsPointDict[currCollObj][2]))
+		cableNodes[i].set_global_position(changes[9][i])
+		cableNodes[i].set_global_rotation(changes[10][i])
 
-			pathPoints = collidedObjsPointDict[currCollObj][4]
-			anchorPoints = collidedObjsPointDict[currCollObj][5]
-			
-			if collidedObjsPointDict[currCollObj][3]:
-				#finish
-				break
-			else: 
-				collidedObjsPointDict[currCollObj][3] = true
-			
-			coll = null
+	
+	
+	START_PLUG.CSWrapApplyChanges(CSWrap.extraCSWrappers[START_PLUG.get_name()])
+	END_PLUG.CSWrapApplyChanges(CSWrap.extraCSWrappers[END_PLUG.get_name()])
+#
 		
-		if coll != null:
-			var collObj = coll.get_collider()
-			#when colliding into a shape, chose the initial path by seeing which
-			#direction will theoretically bring you closer to the target position
-			dirVect = coll.get_normal().normalized()
-
-			
-			if !collidedObjsPointDict.has(collObj):
-
-				
-				var theoryVecA = dirVect.rotated(deg2rad(90))
-				var theoryPosA = plug.get_global_position() + theoryVecA
-				var theoryDistA = (targetPos - theoryPosA).length()
-				
-				var theoryVecB = dirVect.rotated(deg2rad(-90))
-				var theoryPosB = plug.get_global_position() + theoryVecB
-				var theoryDistB =  (targetPos - theoryPosB).length()
-				
-				dirVect = theoryVecA if theoryDistA < theoryDistB else theoryVecB
-				var rotationDeg = 90 if theoryDistA < theoryDistB else -90
-				
-				var secondDirTry = false
-				
-				collidedObjsPointDict[collObj] = [plug.get_global_position(), dirVect, rotationDeg, secondDirTry, pathPoints, anchorPoints]
-				
-				
-			else:
-				dirVect = dirVect.rotated(deg2rad(collidedObjsPointDict[collObj][2]))
-				
-				
-				
-				
-		if dirVect != null:
-			step = step if totalDistToTrav > 10 else totalDistToTrav
-	
-			coll = plug.move_and_collide(dirVect * step, false)
-			
-			if coll != null:
-				continue
-				
-		#plug.set_global_position(plug.get_global_position() + collObj.get_normal().normalized() * 2)
-	
-	
-		
-		coll = plug.move_and_collide(dirToTarget, false)
-		
-			
-		var lastAnchorPoint = anchorPoints[anchorPoints.size()-1]
-		var coll3 = plug.move_and_collide(lastAnchorPoint - plug.get_global_position(), false, true, true)
-		if coll3 != null:
-			anchorPoints.append(plug.get_global_position())
-			
-			
-		totalDistToTrav = (targetPos - plug.get_global_position()).length()
-		
-	anchorPoints.append(plug.get_global_position())
-	return anchorPoints
-
-func totalDistTraveled(currPlugPos, anchorPoints):
-	var total = 0
-	
-	for ind in anchorPoints.size():
-		if ind == 0: continue
-		total += (anchorPoints[ind] - anchorPoints[ind-1]).length()
-	
-	return total + (currPlugPos - anchorPoints[anchorPoints.size()-1]).length()
 	
 
 	
