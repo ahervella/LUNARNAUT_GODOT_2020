@@ -417,6 +417,7 @@ func CSWrapSaveTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, astroChar, s
 #keeeeep
 func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 	var currChar = global.CharacterRes.id
+	var lvl = global.lvl()
 	
 	CSWrap.changesToApply[currChar].resize(2)
 	
@@ -445,6 +446,34 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 			CSWrap.changesToApply[astroChar][0] = pos 
 			CSWrap.changesToApply[astroChar][1] = rot
 	
+	for astroChar in CSWrap.dependantCSWrappers.keys():
+		for csw in CSWrap.dependantCSWrappers[astroChar]:
+			if lvl.get_node(csw.nodePath) == lvl.astroNode:
+				for ncsp in csw.nodeCollShapePaths:
+					for child in get_children():
+						var shape = lvl.get_node(ncsp)
+						if child.get_name() == shape.get_name():
+							
+							var localShapePos = shape.get_position()
+							var localShapeRot = shape.get_rotation()
+							
+							var shapePos = child.get_global_position()
+							var shapeRot = child.get_global_rotation()
+							
+							csw.changesToApply[astroChar][0] = shapePos - localShapePos
+							csw.changesToApply[astroChar][1] = shapeRot - localShapeRot
+							
+							remove_child(child)
+							break
+							
+	
+	if astroIsOnTop:
+
+		for csw in lvl.charSwitchWrappers:
+			if lvl.get_node(csw.nodePath) == lvl.astroNode:
+				CSWrap.dependantCSWrappers[currChar].append(csw)
+				break
+				
 	
 	
 	
@@ -477,7 +506,7 @@ func CSWrapDetectChange(CSWrap : CharacterSwitchingWrapper):
 		return true
 	return false
 	
-func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper, delta):
+func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
 	#var initialLocation = get_global_position()
 	#var initialRotation = get_global_rotation()
 	var currChar = global.CharacterRes.id
@@ -499,7 +528,7 @@ func delayedFricReset(savedFric):
 	var physMat = get_physics_material_override()
 	physMat.friction = savedFric
 	
-func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper, delta):
+func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper):
 	CSWrap.dependantCSWrappers[global.CharacterRes.id] = []
 	
 #	var currChar = global.CharacterRes.id

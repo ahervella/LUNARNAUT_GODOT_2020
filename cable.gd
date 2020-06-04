@@ -965,7 +965,7 @@ func CSWrapRestoreState(CSWrap : CharacterSwitchingWrapper):
 	
 	
 	
-func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper, delta):
+func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
 	var currChar = global.CharacterRes.id
 	var changes = CSWrap.changesToApply[currChar]
 	var lvlNode = global.lvl()
@@ -995,7 +995,7 @@ func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper, delta):
 	
 
 	
-func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper, delta):
+func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper):
 	return
 	#CSWrap.dependantCSWrappers[global.CharacterRes.id] = []
 	

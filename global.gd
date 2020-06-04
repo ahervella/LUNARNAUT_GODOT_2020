@@ -39,6 +39,7 @@ var tempCharSwitchWrapperList = null
 
 var levelWrapperDict = {}
 
+var changingScene = false
 
 #var currChar = astroCharDict[CHAR.USA]
 var interactNode #$"/root/Control/astro/InteractFont"
@@ -218,6 +219,8 @@ func astroChar2String(astroChar):
 func getScenePath(sceneName):
 	return "res://SCENES/%s.tscn" % sceneName
 	
+func getScriptPath(scriptFileName) -> String:
+	return "res://SCRIPTS/" + scriptFileName
 #
 func _ready():
 	init()
@@ -252,17 +255,20 @@ func loadLevel(lvlNum):
 
 	
 func goto_scene(path):
-	
+	changingScene = true
 	for child in lvl().get_children():
 		child.set_physics_process(false)
 		
 	DestroyAllChildren()
+	
 	print(path)
 	if path is PackedScene:
 		get_tree().change_scene_to(path)
+		changingScene = false
 		return
 	
 	get_tree().change_scene(path)
+	changingScene = false
 	
 	
 #used to get the specific level variables, funcs, and attributes

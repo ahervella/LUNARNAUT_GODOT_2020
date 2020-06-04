@@ -578,7 +578,10 @@ func CSWrapSavePlugTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, astroCha
 	CSWrap.savedTimeDiscrepencyState[astroChar][4] = parentCable
 	CSWrap.savedTimeDiscrepencyState[astroChar][5] = get_parent()
 	
-func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper, changeDetected):
+func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper, changeDetected = null):
+	if changeDetected == null:
+		changeDetected = CSWrapDetectChange(CSWrap)
+	
 	var currChar = global.CharacterRes.id
 	var parentNode = get_parent()
 	CSWrap.changesToApply[currChar].resize(6)
@@ -711,7 +714,7 @@ func attemptConnectionSpecificPlug(specPlug):
 	
 	
 	
-func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper, delta):
+func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper):
 	pass
 	
 	

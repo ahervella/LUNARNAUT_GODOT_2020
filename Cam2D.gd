@@ -110,7 +110,7 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 	
 
 	
-func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper, delta):
+func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
 	var currChar = global.CharacterRes.id
 	#CSWrap.changesToApply[currChar].resize(1)
 	#if CSWrap.changesToApply[currChar][0] != null:
@@ -149,7 +149,7 @@ func secondDefferedCamPos(inhh = 0):#blah = false, bljnlj = false):
 	#set_global_position(finalPos)
 	
 
-func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper, delta):
+func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper):
 	pass
 
 

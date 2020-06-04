@@ -35,6 +35,10 @@ export (bool) var CHN = true
 export (bool) var MAR = true
 #export (NodePath) var MAR_relativeNode = null
 
+
+		
+	
+
 func setPlugConfiguration(val):
 	addPlugConfig = false
 	setConfig("/plugArea/plugAreaShape")
