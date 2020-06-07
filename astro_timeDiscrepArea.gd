@@ -1,5 +1,8 @@
 extends Node2D
-
+#ALEJANDRO - Jun.7.2020:
+#This mini script is attached to astro timediscrep areas when astro is ontop of
+#a movable object in the future. Used to manage when and where it draws
+#timeDiscrep 2D areas
 
 var astroChar
 var refNode
@@ -18,7 +21,10 @@ func refNotNull():
 func _init():
 	diactivated = false
 	presentShit = []
+	
+	#ended up not using but keeping in case
 	refIsRolling = false
+	
 	connect("body_entered", self, "bodyEntered")
 	connect("body_exited", self, "bodyExited")
 	connect("area_entered", self, "areaEntered")
@@ -26,17 +32,10 @@ func _init():
 	set_physics_process(true)
 	
 	
-	#print("ISET THE PROCESS TO TRUEEEEEEEEEEE")
-	
 func _physics_process(delta):
 	if diactivated: return
 	if refNode != null && diffPos != null && is_instance_valid(refNode):
-		#if refIsRolling:
 		set_global_position(refNode.get_global_position() + diffPos)
-		#else:
-			#set_global_position(refNode.get_global_position() + diffPos.rotated(refNode.get_global_rotation()))
-		#astroCSW.changesToApply[astroChar][0] = get_global_position()
-		
 		
 
 
@@ -48,8 +47,6 @@ func bodyEntered(body):
 	presentShit.append(body)
 	if presentShit.size() == 1:
 		addCopyArea()
-	
-	#global.lvl().cswEnteredTimeDiscrepArea(astroCSW, self, body, astroChar, areaCSW, true)#areaEnteredTimeDiscrepArea(self, null, astroChar, areaCSW, body)
 	
 func bodyExited(body):
 	if diactivated: return

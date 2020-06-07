@@ -31,8 +31,10 @@ extends Node
 
 enum CHAR {USA, RUS, FRA, CHN, MAR}
 
-var availableChar = [CHAR.USA, CHAR.RUS]
-var astroCharDict = {CHAR.USA : "res://RESOURCES/CHARACTERS/CHAR_USA.tres", CHAR.RUS : "res://RESOURCES/CHARACTERS/CHAR_RUS.tres"}
+var availableChar = [CHAR.USA, CHAR.RUS, CHAR.FRA]
+var astroCharDict = {CHAR.USA : "res://RESOURCES/CHARACTERS/CHAR_USA.tres",
+					CHAR.RUS : "res://RESOURCES/CHARACTERS/CHAR_RUS.tres", 
+					CHAR.FRA : "res://RESOURCES/CHARACTERS/CHAR_FRA.tres"}
 var charYearDict = {CHAR.USA : 1984, CHAR.RUS : 1973, CHAR.FRA : 1996, CHAR.CHN : 2021, CHAR.MAR : 2073}
 
 var tempCharSwitchWrapperList = null

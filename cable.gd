@@ -943,27 +943,6 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 			
 	
 	
-func CSWrapRecieveTransformChanges(CSWrap : CharacterSwitchingWrapper, currChar, posToAdd, rotToAdd):
-	return
-#	CSWrap.changesToApply[currChar].resize(3)
-#
-#	if CSWrap.changesToApply[currChar][0] == null:
-#		CSWrap.changesToApply[currChar][0] = Vector2(0, 0)
-#
-#	if CSWrap.changesToApply[currChar][1] == null:
-#		CSWrap.changesToApply[currChar][1] = 0
-#
-#	CSWrap.changesToApply[currChar][0] += posToAdd
-#	CSWrap.changesToApply[currChar][1] += rotToAdd
-	
-				
-func CSWrapRestoreState(CSWrap : CharacterSwitchingWrapper):
-	return
-	
-	
-	
-	
-	
 	
 func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
 	var currChar = global.CharacterRes.id
@@ -985,28 +964,13 @@ func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
 	for i in cableNodes.size():
 		cableNodes[i].set_global_position(changes[9][i])
 		cableNodes[i].set_global_rotation(changes[10][i])
-
 	
 	
 	START_PLUG.CSWrapApplyChanges(CSWrap.extraCSWrappers[START_PLUG.get_name()])
 	END_PLUG.CSWrapApplyChanges(CSWrap.extraCSWrappers[END_PLUG.get_name()])
-#
-		
+	
 	
 
 	
 func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper):
 	return
-	#CSWrap.dependantCSWrappers[global.CharacterRes.id] = []
-	
-#	var currChar = global.CharacterRes.id
-#	if CSWrap.dependantCSWrappers.has(currChar) && CSWrap.dependantCSWrappers[currChar].size() > 0:
-#		for dependantCSW in CSWrap.dependantCSWrappers[currChar]:
-#
-#			var posChange = CSWrap.changesToApply[currChar][0]
-#			var rotChange = CSWrap.changesToApply[currChar][1]
-#
-#			global.lvl().get_node(dependantCSW.nodePath).CSWrapRecieveTransformChanges(dependantCSW, currChar, posChange, rotChange)
-#
-#	CSWrap.changesToApply[currChar][0] = Vector2(0, 0)
-#	CSWrap.changesToApply[currChar][1] = 0

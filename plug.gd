@@ -602,34 +602,6 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper, changeDetected = null)
 			for i in CSWrap.changesToApply[otherChar].size():
 				CSWrap.changesToApply[otherChar][i] = CSWrap.changesToApply[currChar][i] if CSWrap.savedTimeDiscrepencyState[currChar][i] is int else CSWrap.savedTimeDiscrepencyState[currChar][i]
 
-	
-func CSWrapRecieveTransformChanges(CSWrap : CharacterSwitchingWrapper, currChar, posToAdd, rotToAdd):
-	pass
-	
-func CSWrapRestoreState(CSWrap : CharacterSwitchingWrapper):
-	return
-#	var currChar = global.CharacterRes.id
-#	var currLvl = global.lvl()
-#	var restorations = CSWrap.changesToApply[currChar][0]
-#
-#	#resolve parent first
-#	var parentNode = currLvl.find_node(restorations[5], true, false)
-#
-#	if parentNode != get_parent():
-#		var selfNode = self
-#		get_parent().remove_child(selfNode)
-#		parentNode.add_child(selfNode)
-#		set_owner(parentNode)
-#
-#	#then apply pos and rot
-#	set_global_position(restorations[0])
-#	set_global_rotation(restorations[1])
-#	connPlug = currLvl.find_node(restorations[2], true, false) if restorations[2] != null else null
-#	sourcePlug = currLvl.find_node(restorations[3], true, false) if restorations[3] != null else null
-#	parentCable = currLvl.find_node(restorations[4], true, false) if restorations[4] != null else null
-
-	
-	
 func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
 	var currChar = global.CharacterRes.id
 	var currLvl = global.lvl()
@@ -648,8 +620,7 @@ func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
 	
 	set_position(changes[0])
 	set_rotation(changes[1])
-	#connPlug = currLvl.find_node(changes[2], true, false) if changes[2] != null else null
-
+	
 	
 	var newConnPlug = currLvl.find_node(changes[2], true, false) if changes[2] != null else null
 	attemptConnectionSpecificPlug(newConnPlug)

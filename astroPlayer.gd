@@ -353,9 +353,6 @@ func ProcessMoveInput():
 	if(Input.is_action_pressed("ui_left") || TOUCH_CONTROL_NODE.stickDir.x < 0): #or vJoy == -1):
 		directional_force += DIRECTION.LEFT
 
-	#if directional_force.x == 0:
-		#restrictMovingRight = null
-
 	#For testing astro death
 	if(Input.is_action_pressed("ui_down") && !global.playTest):
 		InitDeath()
@@ -1134,31 +1131,39 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 	
 	for otherChar in CSWrap.changesToApply.keys():
 		if otherChar == currChar: continue
+		if global.charYearDict[otherChar] < global.charYearDict[currChar]: continue
 		
+		
+		#first check if has a savedTimeDiscrep area
 		if CSWrap.savedTimeDiscrepencyState[otherChar] != null && CSWrap.savedTimeDiscrepencyState[otherChar] != []:
-			CSWrap.changesToApply[otherChar] = CSWrap.savedTimeDiscrepencyState[otherChar].duplicate(true)
+			
+			CSWrap.changesToApply[otherChar].resize(4)
+			
+			for i in CSWrap.savedTimeDiscrepencyState[otherChar].size():
+				CSWrap.changesToApply[otherChar][i] = CSWrap.savedTimeDiscrepencyState[otherChar][i]
 		
+		#then check if has a savedTimeDiscrep area
 		elif lvl.timeDiscrepAstroShapes.has(otherChar):
+			
+			CSWrap.changesToApply[otherChar].resize(4)
+			
 			var astroTimeDiscrepArea = lvl.timeDiscrepAstroShapes[otherChar]
 			CSWrap.changesToApply[otherChar][0] = astroTimeDiscrepArea.get_global_position()
 			CSWrap.changesToApply[otherChar][1] = astroTimeDiscrepArea.get_global_rotation()
+			if CSWrap.changesToApply[otherChar][2] == null: $"ASTRO_ANIM2".is_flipped_h()
 			if astroTimeDiscrepArea.refNode is Area2D:
 				CSWrap.changesToApply[otherChar][3] = false
 			else:
 				CSWrap.changesToApply[otherChar][3] = true
 				
-			astroTimeDiscrepArea.disableActivity()
+			#astroTimeDiscrepArea.disableActivity()
 				
-	#add camera node as dependant of astro pos
+		#else:
+		#	CSWrap.changesToApply[otherChar] = CSWrap.changesToApply[currChar].duplicate(true)
+				
+			
 	for csw in lvl.charSwitchWrappers:
 		var cswNode = lvl.get_node(csw.nodePath)
-#		if cswNode == CAMERA_NODE:
-#
-#			if !CSWrap.dependantCSWrappers.has(currChar):
-#				CSWrap.dependantCSWrappers[currChar] = []
-#			if !CSWrap.dependantCSWrappers[currChar].has(csw):
-#				CSWrap.dependantCSWrappers[currChar].append(csw)
-		
 		
 		if objectStandinOn.size() > 0 && cswNode == objectStandinOn[objectStandinOn.size()-1]:
 			if !CSWrap.dependantCSWrappers.has(currChar):
@@ -1176,16 +1181,13 @@ func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
 	var astroRotChange = null
 	var astroAnim2Flip = null
 	
-	#if CSWrap.changesToApply[currChar].has(0):
 	astroPosChange = CSWrap.changesToApply[currChar][0]
 		
-	#if CSWrap.changesToApply[currChar].has(1):
 	astroRotChange = CSWrap.changesToApply[currChar][1]
 		
 
 	astroAnim2Flip = CSWrap.changesToApply[currChar][2]
 	
-	#var camPos = CSWrap.changesToApply[currChar][3]
 	
 	$"ASTRO_ANIM2".set_flip_h(astroAnim2Flip)
 	flipPushPullArea(astroAnim2Flip)
@@ -1193,10 +1195,8 @@ func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
 	set_global_position(astroPosChange)
 	
 	
-	#if astroRotChange != null && astroRotChange != 0:
 	set_global_rotation(astroRotChange)
 		
-	#CAMERA_NODE.set_global_position(camPos)
 	
 func CSWrapSaveTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, astroChar, set : bool):
 	if !set:
@@ -1212,18 +1212,14 @@ func CSWrapSaveTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, astroChar, s
 	CSWrap.savedTimeDiscrepencyState[astroChar][3] = objectStandinOn.size() > 0
 
 func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper):
-	var currChar = global.CharacterRes.id
-	
-	var posChange = CSWrap.changesToApply[currChar][0]
-	var rotChange = CSWrap.changesToApply[currChar][1]
-	
-	
-	if CSWrap.dependantCSWrappers[global.CharacterRes.id] != null && CSWrap.dependantCSWrappers[global.CharacterRes.id].size() > 0:
-				for dependantCSWrap in CSWrap.dependantCSWrappers[global.CharacterRes.id]:
-					
-					global.lvl().get_node(dependantCSWrap.nodePath).CSWrapRecieveTransformChanges(dependantCSWrap, global.CharacterRes.id, posChange, rotChange)
-
-func CSWrapRecieveTransformChanges(CSWrap : CharacterSwitchingWrapper, currChar, posToAdd, rotToAdd):
 	pass
+#	var currChar = global.CharacterRes.id
+#
+#	var posChange = CSWrap.changesToApply[currChar][0]
+#	var rotChange = CSWrap.changesToApply[currChar][1]
 	
-	
+#
+#	if CSWrap.dependantCSWrappers[global.CharacterRes.id] != null && CSWrap.dependantCSWrappers[global.CharacterRes.id].size() > 0:
+#				for dependantCSWrap in CSWrap.dependantCSWrappers[global.CharacterRes.id]:
+#
+#					global.lvl().get_node(dependantCSWrap.nodePath).CSWrapRecieveTransformChanges(dependantCSWrap, global.CharacterRes.id, posChange, rotChange)

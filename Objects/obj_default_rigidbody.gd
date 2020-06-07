@@ -45,11 +45,14 @@ var astroIsOnTop = false
 
 var csWrap = null
 
-var changeDetected = false
+var changeDetected = {}
 
 var translateOffset = null
 var translateOffsetDeg = null
 var transChange = null
+var transJustChanged = false
+var transJustChangedPos = null
+var deactivated = false
 
 func getterFunction():
 	pass
@@ -204,38 +207,49 @@ func _physics_process(delta):
 		setCustomSprite()
 		return
 		
+		
+#the deactivate and activate are needed so that objects
+#don't collide with one another during the few frames that they are adjusting
+#position based on the new transform given from applying charSwitching wrapper
+#changes
+func deactivate():
+	var lvl = global.lvl()
+	deactivated = true
+	for cswnd in lvl.charSwitchWrappers:
+		#incase there was one we had already set
+		if get_colliding_bodies().has(cswnd):continue
+		
+		add_collision_exception_with(lvl.get_node(cswnd.nodePath))
+		
+func activate():
+	deactivated = false
+	var collBodyExcep = get_collision_exceptions()
+	for thing in collBodyExcep:
+		remove_collision_exception_with(thing)
+		
+		
 func _integrate_forces(state):
 	
-##	if translateOffsetDeg != null:
-##		var blsh = state.get_transform().rotated(translateOffsetDeg)
-##		#blsh.rotation_degrees = translateOffsetDeg
-##		state.set_transform(blsh)
-##		translateOffsetDeg = null
-#	if translateOffset != null:
-#		var blsh = state.get_transform().translated(translateOffset-get_global_position())
-#
-#
-#		state.set_transform(blsh)
-#		#state.set_transform(state.get_transform().set_position(translateOffset))
-#		print("TRANSFFFFORMMMM")
-#		print(blsh.get_origin())
-#		translateOffset = null
-#		print(state.get_transform())
-#
-#	if translateOffsetDeg != null:
-#		#blsh = blsh.rotated(translateOffsetDeg- blsh.get_rotation())
-#		set_global_rotation(translateOffsetDeg)
-#		translateOffsetDeg = null
+	if transJustChangedPos != null && transJustChanged && transJustChangedPos != get_position():
+		activate()
+		CSWrapSaveStartState(csWrap)
+		transJustChanged = false
 	
 	if transChange != null:
+		deactivate()
 		state.set_transform(transChange)
 		transChange = null
-	#print("bbbb" + get_name())
-	#print(get_global_position())
-#	if !lvlNodeReady:
-#		var currLvlPath = "res://SCENES/%s.tscn" % global.CharacterRes.level
-#		lvlNodeReady = !global.levelWrapperDict.has(currLvlPath)
-#		return
+		if csWrap == null:
+			var lvl = global.lvl()
+			for csw in lvl.charSwitchWrappers:
+				if lvl.get_node(csw.nodePath) == self:
+					csWrap = csw
+					break
+		transJustChanged = true
+		transJustChangedPos = get_position()
+		#CSWrapSaveStartState(csWrap)
+		
+	if deactivated: return
 	
 	#translate linear velocity back to standard setup
 	var vel = state.get_linear_velocity().rotated(-global.gravRadAngFromNorm)
@@ -290,47 +304,51 @@ func _integrate_forces(state):
 
 
 func checkForAndMarkAsChanged():
+	if transChange != null && !transJustChanged: return
 	var lvlNode = global.lvl()
 	if !global.lvl().processDone: return
-	if !changeDetected:
-		if csWrap == null:
-			for csw in lvlNode.charSwitchWrappers:
-				if lvlNode.get_node(csw.nodePath) == self:
-					csWrap = csw
-					break
+	
+	if csWrap == null:
+		for csw in lvlNode.charSwitchWrappers:
+			if lvlNode.get_node(csw.nodePath) == self:
+				csWrap = csw
+				break
+		if csWrap == null: return
+	
+	for otherChar in csWrap.changesToApply.keys():
+		if !changeDetected.has(otherChar):
+			changeDetected[otherChar] = false
+	
+		if !changeDetected[otherChar]:
 					
 		#change can only be added to future shit if it ever gets a change
 		#to be outside timeDiscrep areas (especially if it loaded a past lvl
 		#in which it spawned in one)
 		
-		var thisShapeIsInTimeDiscrepAreasOtherThanOwn = false
-		
-		for astroChar in csWrap.changesToApply.keys():
-			if lvlNode.timeDiscrepBodyPresentDict2.has(self.get_name()) && lvlNode.timeDiscrepBodyPresentDict2[self.get_name()].has(astroChar) && lvlNode.timeDiscrepBodyPresentDict2[self.get_name()][astroChar].size() > 0:
+			var thisShapeIsInTimeDiscrepAreasOtherThanOwn = false
+			if lvlNode.timeDiscrepBodyPresentDict2.has(self.get_name()) && lvlNode.timeDiscrepBodyPresentDict2[self.get_name()].has(otherChar) && lvlNode.timeDiscrepBodyPresentDict2[self.get_name()][otherChar].size() > 0:
 				thisShapeIsInTimeDiscrepAreasOtherThanOwn = true
-				break
 				
 				
-		if !thisShapeIsInTimeDiscrepAreasOtherThanOwn:
-			changeDetected = CSWrapDetectChange(csWrap)
-			
-			#if change was made, remove any time discrep area 2ds that might
-			#be present from future because changes will now take place and
-			#future spot will ref where ever this object is
-			if changeDetected:
-				for astroChar in csWrap.changesToApply.keys():
-					
+			if !thisShapeIsInTimeDiscrepAreasOtherThanOwn:
+				changeDetected[otherChar] = CSWrapDetectChange(csWrap)
+				
+				#if change was made, remove any time discrep area 2ds that might
+				#be present from future because changes will now take place and
+				#future spot will ref where ever this object is
+				if changeDetected[otherChar]:
+						
 					#if astroChar == currChar: continue
 					var thing = null
 					var areaNode = null
-					if lvlNode.timeDiscrepCSWCharDict[csWrap.nodePath][1].has(astroChar):
+					if lvlNode.timeDiscrepCSWCharDict[csWrap.nodePath][1].has(otherChar):
 						#var areaParentNode = lvlNode.get_node(lvlNode.timeDiscrepCSWCharDict[csWrap.nodePath][0])
-						areaNode = lvlNode.get_node(lvlNode.timeDiscrepCSWCharDict[csWrap.nodePath][1][astroChar])
+						areaNode = lvlNode.get_node(lvlNode.timeDiscrepCSWCharDict[csWrap.nodePath][1][otherChar])
 						thing = [self, areaNode]
 						lvlNode.timeDiscrepManuallyRemovingArea.append([self, areaNode])
 						
-						if lvlNode.removeCSWrapTimeDiscepArea2D(csWrap, astroChar, null):
-							self.CSWrapSaveTimeDiscrepState(csWrap, astroChar, false)
+						if lvlNode.removeCSWrapTimeDiscepArea2D(csWrap, otherChar, null):
+							self.CSWrapSaveTimeDiscrepState(csWrap, otherChar, false)
 						
 						if thing != null:
 							lvlNode.timeDiscrepManuallyRemovingArea.erase(thing)
@@ -405,11 +423,6 @@ func _on_STACK_AREA_body_entered(body):
 			rectObjBelow = body
 			#so if shit is stacked, make heavier
 			rectObjBelow.setForceVelLim(OBJECT_WEIGHT.HEAVY)
-	#if body.is_in_group("object") || body.is_in_group("plug") || body.is_in_group("astro"):
-	#	if objIsAbove(body):
-	#		if rectObjsAbove.find(body) == -1:
-	#			rectObjsAbove.append(body)
-			
 		
 
 func _on_STACK_AREA_body_exited(body):
@@ -418,13 +431,9 @@ func _on_STACK_AREA_body_exited(body):
 			#if shit is unstacked, set back to default forceVelLim
 			rectObjBelow.setForceVelLim()
 			rectObjBelow = null
-	#if body.is_in_group("object") || body.is_in_group("plug") || body.is_in_group("astro"):
-	#	if rectObjsAbove.find(body) != -1:
-	#		rectObjsAbove.erase(body)
 			
 			
 	
-#keeeeep
 func CSWrapSaveStartState(CSWrap : CharacterSwitchingWrapper):
 	var currChar = global.CharacterRes.id
 	
@@ -437,7 +446,6 @@ func CSWrapSaveStartState(CSWrap : CharacterSwitchingWrapper):
 	
 	
 func CSWrapSaveTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, astroChar, set : bool):
-	#var currChar = global.CharacterRes.id
 	CSWrap.savedTimeDiscrepencyState[astroChar] = []
 	CSWrap.savedTimeDiscrepencyState[astroChar].resize(3)
 	
@@ -445,7 +453,6 @@ func CSWrapSaveTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, astroChar, s
 	CSWrap.savedTimeDiscrepencyState[astroChar][1] = get_global_rotation() if set else null
 	CSWrap.savedTimeDiscrepencyState[astroChar][2] = get_transform() if set else null	
 	
-#keeeeep
 func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 	var currChar = global.CharacterRes.id
 	var lvl = global.lvl()
@@ -456,12 +463,8 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 	CSWrap.changesToApply[currChar][1] = get_global_rotation()
 	CSWrap.changesToApply[currChar][2] = get_transform()
 
-	
-	
-	#change needs to be bigger than 5 to take place
 	if !CSWrapDetectChange(CSWrap): return
 	
-#	CSWrap.changesToApply[currChar].resize(3)
 	
 	
 	for astroChar in CSWrap.changesToApply.keys():
@@ -478,25 +481,6 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 			CSWrap.changesToApply[astroChar][1] = rot
 			CSWrap.changesToApply[astroChar][2] = tran
 	
-#	for astroChar in CSWrap.dependantCSWrappers.keys():
-#		for csw in CSWrap.dependantCSWrappers[astroChar]:
-#			if lvl.get_node(csw.nodePath) == lvl.astroNode:
-#				for ncsp in csw.nodeCollShapePaths:
-#					for child in get_children():
-#						var shape = lvl.get_node(ncsp)
-#						if child.get_name() == shape.get_name():
-#
-#							var localShapePos = shape.get_position()
-#							var localShapeRot = shape.get_rotation()
-#
-#							var shapePos = child.get_global_position()
-#							var shapeRot = child.get_global_rotation()
-#
-#							csw.changesToApply[astroChar][0] = shapePos - localShapePos
-#							csw.changesToApply[astroChar][1] = shapeRot - localShapeRot
-#
-#							remove_child(child)
-#							break
 							
 	
 	if astroIsOnTop:
@@ -508,21 +492,6 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 				
 	
 	
-	
-func CSWrapRecieveTransformChanges(CSWrap : CharacterSwitchingWrapper, currChar, posToAdd, rotToAdd):
-	return
-#	CSWrap.changesToApply[currChar].resize(2)
-#
-#	if CSWrap.changesToApply[currChar][0] == null:
-#		CSWrap.changesToApply[currChar][0] = Vector2(0, 0)
-#
-#	if CSWrap.changesToApply[currChar][1] == null:
-#		CSWrap.changesToApply[currChar][1] = 0
-#
-#	CSWrap.changesToApply[currChar][0] += posToAdd
-#	CSWrap.changesToApply[currChar][1] += rotToAdd
-	
-				
 func CSWrapDetectChange(CSWrap : CharacterSwitchingWrapper):
 	var currChar = global.CharacterRes.id
 	if CSWrap.saveStartState[currChar] == null || CSWrap.saveStartState[currChar] == []: return false
@@ -530,34 +499,21 @@ func CSWrapDetectChange(CSWrap : CharacterSwitchingWrapper):
 	var rotDiff = get_global_rotation() - CSWrap.saveStartState[currChar][1]
 	
 	#change needs to be bigger than 5 to take place
-	if (posDiff.length() > 5 || rotDiff > 5): 
-		#var areaNode = global.lvl().area
-		
-		#if areaNode.get_overlapping
-		
-		return true
+	if (posDiff.length() > 10 || rotDiff > deg2rad(10)): return true
+	
 	return false
 	
 func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
-	#var initialLocation = get_global_position()
-	#var initialRotation = get_global_rotation()
 	var currChar = global.CharacterRes.id
 	
-	#var dependantGroup = CSWrap.getDependantGroup()
 	
 	var physMat = get_physics_material_override()
 	var savedFric = physMat.friction
 	physMat.friction = 0
 	
-	if CSWrap.changesToApply[currChar][0] != null:# && CSWrap.changesToApply[currChar][0] != Vector2(0, 0):
-		#set_global_position(CSWrap.changesToApply[currChar][0])
-		translateOffset = CSWrap.changesToApply[currChar][0]
-	if CSWrap.changesToApply[currChar][1] != null:# && CSWrap.changesToApply[currChar][0] != Vector2(0, 0):
-		#set_global_rotation(CSWrap.changesToApply[currChar][1])
-		translateOffsetDeg = CSWrap.changesToApply[currChar][1]
-	if CSWrap.changesToApply[currChar][1] != null:# && CSWrap.changesToApply[currChar][0] != Vector2(0, 0):
-		#set_global_rotation(CSWrap.changesToApply[currChar][1])
-		transChange = CSWrap.changesToApply[currChar][2]
+	if CSWrap.changesToApply[currChar][0] != null: translateOffset = CSWrap.changesToApply[currChar][0]
+	if CSWrap.changesToApply[currChar][1] != null: translateOffsetDeg = CSWrap.changesToApply[currChar][1]
+	if CSWrap.changesToApply[currChar][1] != null: transChange = CSWrap.changesToApply[currChar][2]
 		
 	delayedFricReset(savedFric)
 		
@@ -567,23 +523,6 @@ func delayedFricReset(savedFric):
 	
 func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper):
 	CSWrap.dependantCSWrappers[global.CharacterRes.id] = []
-	
-#	var currChar = global.CharacterRes.id
-#	if CSWrap.dependantCSWrappers.has(currChar) && CSWrap.dependantCSWrappers[currChar].size() > 0:
-#		for dependantCSW in CSWrap.dependantCSWrappers[currChar]:
-#
-#			var posChange = CSWrap.changesToApply[currChar][0]
-#			var rotChange = CSWrap.changesToApply[currChar][1]
-#
-#			global.lvl().get_node(dependantCSW.nodePath).CSWrapRecieveTransformChanges(dependantCSW, currChar, posChange, rotChange)
-#
-#	CSWrap.changesToApply[currChar][0] = Vector2(0, 0)
-#	CSWrap.changesToApply[currChar][1] = 0
-	
-	
-	
-	
-	
 	
 	
 	
