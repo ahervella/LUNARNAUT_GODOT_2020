@@ -10,6 +10,12 @@ var saveStartState = {global.CHAR.USA : [], global.CHAR.RUS : [], global.CHAR.FR
 var changesToApply = {global.CHAR.USA : [], global.CHAR.RUS : [], global.CHAR.FRA : [], global.CHAR.CHN : [], global.CHAR.MAR : []}
 var savedTimeDiscrepencyState = {global.CHAR.USA : [], global.CHAR.RUS : [], global.CHAR.FRA : [], global.CHAR.CHN : [], global.CHAR.MAR : []}
 
+#var dependantCSWrappers = {global.CHAR.USA : [], global.CHAR.RUS : []}
+#var extraCSWrappers = []
+#var saveStartState = {global.CHAR.USA : [], global.CHAR.RUS : []}
+#var changesToApply = {global.CHAR.USA : [], global.CHAR.RUS : []}
+#var savedTimeDiscrepencyState = {global.CHAR.USA : [], global.CHAR.RUS : []}
+
 
 export (NodePath) var nodePath
 export (String) var customNodePath

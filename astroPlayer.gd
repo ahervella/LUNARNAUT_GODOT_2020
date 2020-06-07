@@ -140,7 +140,7 @@ func _ready():
 
 	$"ASTRO_ANIM2"._set_playing(true)
 	
-
+	set_physics_process(false)
 		
 
 	#need to do this for anything that is doing global.playTest
@@ -296,10 +296,7 @@ func _physics_process(delta):
 			restrictMovingRight = false
 	
 	if (restrictAndMove2Point == null):
-		#var coll = move_and_collide(velFinal, true, true, true)
 		
-		#if coll.get_normal() != null:
-			
 		
 		vel = move_and_slide(velFinal, global.gravVect() * -1, true, 4, deg2rad(30), false)#(vel, Vector2(0, 1), Vector2.UP, false, 4, deg2rad(120), false)
 		#vel = move_and_slide(vel, Vector2.UP, 5, 4, deg2rad(30))#(vel, Vector2(0, 1), Vector2.UP, false, 4, deg2rad(120), false)
@@ -577,9 +574,9 @@ func ProcessMenuInput():
 		if MENU_NODE == null:
 			MENU_NODE = MENU_SCENE.instance()
 			
-			CAMERA_NODE.add_child(MENU_NODE)
+			CAMERA_NODE.get_node("CanvasLayer").add_child(MENU_NODE)
 		else:
-			CAMERA_NODE.remove_child(MENU_NODE)
+			CAMERA_NODE.get_node("CanvasLayer").remove_child(MENU_NODE)
 			MENU_NODE = null
 		
 	
@@ -1126,28 +1123,44 @@ func CSWrapSaveStartState(CSWrap : CharacterSwitchingWrapper):
 	
 func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 	var currChar = global.CharacterRes.id
+	var lvl = global.lvl()
 	
 	CSWrap.changesToApply[currChar].resize(4)
 	
-	CSWrap.changesToApply[currChar][0] = get_global_position()
+	CSWrap.changesToApply[currChar][0] = get_global_position()# + Vector2(20,-20)
 	CSWrap.changesToApply[currChar][1] = get_global_rotation()
 	CSWrap.changesToApply[currChar][2] = $"ASTRO_ANIM2".is_flipped_h()
 	CSWrap.changesToApply[currChar][3] = objectStandinOn.size() > 0
 	
-
-	
+	for otherChar in CSWrap.changesToApply.keys():
+		if otherChar == currChar: continue
+		
+		if CSWrap.savedTimeDiscrepencyState[otherChar] != null && CSWrap.savedTimeDiscrepencyState[otherChar] != []:
+			CSWrap.changesToApply[otherChar] = CSWrap.savedTimeDiscrepencyState[otherChar].duplicate(true)
+		
+		elif lvl.timeDiscrepAstroShapes.has(otherChar):
+			var astroTimeDiscrepArea = lvl.timeDiscrepAstroShapes[otherChar]
+			CSWrap.changesToApply[otherChar][0] = astroTimeDiscrepArea.get_global_position()
+			CSWrap.changesToApply[otherChar][1] = astroTimeDiscrepArea.get_global_rotation()
+			if astroTimeDiscrepArea.refNode is Area2D:
+				CSWrap.changesToApply[otherChar][3] = false
+			else:
+				CSWrap.changesToApply[otherChar][3] = true
+				
+			astroTimeDiscrepArea.disableActivity()
+				
 	#add camera node as dependant of astro pos
-	for csw in global.lvl().charSwitchWrappers:
-		var cswNode = global.lvl().get_node(csw.nodePath)
-		if cswNode == CAMERA_NODE:
-			
-			if !CSWrap.dependantCSWrappers.has(currChar):
-				CSWrap.dependantCSWrappers[currChar] = []
-			if !CSWrap.dependantCSWrappers[currChar].has(csw):
-				CSWrap.dependantCSWrappers[currChar].append(csw)
+	for csw in lvl.charSwitchWrappers:
+		var cswNode = lvl.get_node(csw.nodePath)
+#		if cswNode == CAMERA_NODE:
+#
+#			if !CSWrap.dependantCSWrappers.has(currChar):
+#				CSWrap.dependantCSWrappers[currChar] = []
+#			if !CSWrap.dependantCSWrappers[currChar].has(csw):
+#				CSWrap.dependantCSWrappers[currChar].append(csw)
 		
 		
-		elif objectStandinOn.size() > 0 && cswNode == objectStandinOn[objectStandinOn.size()-1]:
+		if objectStandinOn.size() > 0 && cswNode == objectStandinOn[objectStandinOn.size()-1]:
 			if !CSWrap.dependantCSWrappers.has(currChar):
 				CSWrap.dependantCSWrappers[currChar] = []
 			if !CSWrap.dependantCSWrappers[currChar].has(csw):
@@ -1185,8 +1198,18 @@ func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
 		
 	#CAMERA_NODE.set_global_position(camPos)
 	
-func CSWrapSaveTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, set : bool):
-	pass
+func CSWrapSaveTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, astroChar, set : bool):
+	if !set:
+		CSWrap.savedTimeDiscrepencyState[astroChar] = null
+		return
+		
+	CSWrap.savedTimeDiscrepencyState[astroChar] = []
+	CSWrap.savedTimeDiscrepencyState[astroChar].resize(4)
+	
+	CSWrap.savedTimeDiscrepencyState[astroChar][0] = get_global_position()
+	CSWrap.savedTimeDiscrepencyState[astroChar][1] = get_global_rotation()
+	CSWrap.savedTimeDiscrepencyState[astroChar][2] = $"ASTRO_ANIM2".is_flipped_h()
+	CSWrap.savedTimeDiscrepencyState[astroChar][3] = objectStandinOn.size() > 0
 
 func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper):
 	var currChar = global.CharacterRes.id

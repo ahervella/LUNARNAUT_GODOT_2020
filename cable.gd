@@ -928,8 +928,8 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 	
 	if !changeDetected: return
 	
-	for astroChar in global.CHAR:
-		var otherChar = global.CHAR[astroChar]
+	for otherChar in CSWrap.changesToApply.keys():
+		#var otherChar = global.CHAR[astroChar]
 		
 		#apple changes to future astros
 		if global.charYearDict[otherChar] > global.charYearDict[currChar]:

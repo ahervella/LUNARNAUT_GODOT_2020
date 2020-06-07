@@ -47,6 +47,10 @@ var csWrap = null
 
 var changeDetected = false
 
+var translateOffset = null
+var translateOffsetDeg = null
+var transChange = null
+
 func getterFunction():
 	pass
 
@@ -140,7 +144,7 @@ func _ready():
 	setForceVelLim()
 	
 	setInteractVars()
-	
+	set_physics_process(false)
 	#if get_name() == "PROTO_OBJ_RECT2":
 	#	set_global_position(get_global_position() - Vector2(0, 100))
 	
@@ -202,6 +206,30 @@ func _physics_process(delta):
 		
 func _integrate_forces(state):
 	
+##	if translateOffsetDeg != null:
+##		var blsh = state.get_transform().rotated(translateOffsetDeg)
+##		#blsh.rotation_degrees = translateOffsetDeg
+##		state.set_transform(blsh)
+##		translateOffsetDeg = null
+#	if translateOffset != null:
+#		var blsh = state.get_transform().translated(translateOffset-get_global_position())
+#
+#
+#		state.set_transform(blsh)
+#		#state.set_transform(state.get_transform().set_position(translateOffset))
+#		print("TRANSFFFFORMMMM")
+#		print(blsh.get_origin())
+#		translateOffset = null
+#		print(state.get_transform())
+#
+#	if translateOffsetDeg != null:
+#		#blsh = blsh.rotated(translateOffsetDeg- blsh.get_rotation())
+#		set_global_rotation(translateOffsetDeg)
+#		translateOffsetDeg = null
+	
+	if transChange != null:
+		state.set_transform(transChange)
+		transChange = null
 	#print("bbbb" + get_name())
 	#print(get_global_position())
 #	if !lvlNodeReady:
@@ -410,61 +438,65 @@ func CSWrapSaveStartState(CSWrap : CharacterSwitchingWrapper):
 	
 func CSWrapSaveTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, astroChar, set : bool):
 	#var currChar = global.CharacterRes.id
-	CSWrap.savedTimeDiscrepencyState[astroChar].resize(2)
+	CSWrap.savedTimeDiscrepencyState[astroChar] = []
+	CSWrap.savedTimeDiscrepencyState[astroChar].resize(3)
+	
 	CSWrap.savedTimeDiscrepencyState[astroChar][0] = get_global_position() if set else null
 	CSWrap.savedTimeDiscrepencyState[astroChar][1] = get_global_rotation() if set else null
+	CSWrap.savedTimeDiscrepencyState[astroChar][2] = get_transform() if set else null	
 	
 #keeeeep
 func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 	var currChar = global.CharacterRes.id
 	var lvl = global.lvl()
 	
-	CSWrap.changesToApply[currChar].resize(2)
+	CSWrap.changesToApply[currChar].resize(3)
 	
 	CSWrap.changesToApply[currChar][0] = get_global_position()
 	CSWrap.changesToApply[currChar][1] = get_global_rotation()
-	#CSWrap.changesToApply[currChar][2] = get_global_position()
+	CSWrap.changesToApply[currChar][2] = get_transform()
 
 	
 	
 	#change needs to be bigger than 5 to take place
-	if !changeDetected: return
+	if !CSWrapDetectChange(CSWrap): return
 	
-#	CSWrap.changesToApply[currChar].resize(2)
+#	CSWrap.changesToApply[currChar].resize(3)
 	
 	
 	for astroChar in CSWrap.changesToApply.keys():
-		CSWrap.changesToApply[astroChar].resize(2)
+		CSWrap.changesToApply[astroChar].resize(3)
 		
 		if global.charYearDict[astroChar] > global.charYearDict[currChar]:
 			
-			CSWrap.savedTimeDiscrepencyState[astroChar].resize(2)
+			CSWrap.savedTimeDiscrepencyState[astroChar].resize(3)
 			var pos = get_global_position() if CSWrap.savedTimeDiscrepencyState[astroChar][0] == null else CSWrap.savedTimeDiscrepencyState[astroChar][0]# - CSWrap.saveStartState[currChar][0]
 			var rot = get_global_rotation() if CSWrap.savedTimeDiscrepencyState[astroChar][1] == null else CSWrap.savedTimeDiscrepencyState[astroChar][1]# - CSWrap.saveStartState[currChar][1]
-			
+			var tran = get_transform() if CSWrap.savedTimeDiscrepencyState[astroChar][2] == null else CSWrap.savedTimeDiscrepencyState[astroChar][2]
 			
 			CSWrap.changesToApply[astroChar][0] = pos 
 			CSWrap.changesToApply[astroChar][1] = rot
+			CSWrap.changesToApply[astroChar][2] = tran
 	
-	for astroChar in CSWrap.dependantCSWrappers.keys():
-		for csw in CSWrap.dependantCSWrappers[astroChar]:
-			if lvl.get_node(csw.nodePath) == lvl.astroNode:
-				for ncsp in csw.nodeCollShapePaths:
-					for child in get_children():
-						var shape = lvl.get_node(ncsp)
-						if child.get_name() == shape.get_name():
-							
-							var localShapePos = shape.get_position()
-							var localShapeRot = shape.get_rotation()
-							
-							var shapePos = child.get_global_position()
-							var shapeRot = child.get_global_rotation()
-							
-							csw.changesToApply[astroChar][0] = shapePos - localShapePos
-							csw.changesToApply[astroChar][1] = shapeRot - localShapeRot
-							
-							remove_child(child)
-							break
+#	for astroChar in CSWrap.dependantCSWrappers.keys():
+#		for csw in CSWrap.dependantCSWrappers[astroChar]:
+#			if lvl.get_node(csw.nodePath) == lvl.astroNode:
+#				for ncsp in csw.nodeCollShapePaths:
+#					for child in get_children():
+#						var shape = lvl.get_node(ncsp)
+#						if child.get_name() == shape.get_name():
+#
+#							var localShapePos = shape.get_position()
+#							var localShapeRot = shape.get_rotation()
+#
+#							var shapePos = child.get_global_position()
+#							var shapeRot = child.get_global_rotation()
+#
+#							csw.changesToApply[astroChar][0] = shapePos - localShapePos
+#							csw.changesToApply[astroChar][1] = shapeRot - localShapeRot
+#
+#							remove_child(child)
+#							break
 							
 	
 	if astroIsOnTop:
@@ -518,9 +550,14 @@ func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
 	physMat.friction = 0
 	
 	if CSWrap.changesToApply[currChar][0] != null:# && CSWrap.changesToApply[currChar][0] != Vector2(0, 0):
-		set_global_position(CSWrap.changesToApply[currChar][0])
+		#set_global_position(CSWrap.changesToApply[currChar][0])
+		translateOffset = CSWrap.changesToApply[currChar][0]
 	if CSWrap.changesToApply[currChar][1] != null:# && CSWrap.changesToApply[currChar][0] != Vector2(0, 0):
-		set_global_rotation(CSWrap.changesToApply[currChar][1])
+		#set_global_rotation(CSWrap.changesToApply[currChar][1])
+		translateOffsetDeg = CSWrap.changesToApply[currChar][1]
+	if CSWrap.changesToApply[currChar][1] != null:# && CSWrap.changesToApply[currChar][0] != Vector2(0, 0):
+		#set_global_rotation(CSWrap.changesToApply[currChar][1])
+		transChange = CSWrap.changesToApply[currChar][2]
 		
 	delayedFricReset(savedFric)
 		
