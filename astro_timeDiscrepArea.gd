@@ -67,7 +67,7 @@ func bodyEnterExitCheck(body):
 	var lvl = global.lvl()
 	var bodyCSW = null
 	
-	for csw in lvl.charSwitchWrappers:
+	for csw in lvl.charSwitchWrappers.values():
 		if lvl.get_node(csw.nodePath) == body:
 			bodyCSW = csw
 			break

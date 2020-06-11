@@ -46,6 +46,7 @@ var astroIsOnTop = false
 var csWrap = null
 
 var changeDetected = {}
+var thisObjChangeDetected = false
 
 var translateOffset = null
 var translateOffsetDeg = null
@@ -215,7 +216,7 @@ func _physics_process(delta):
 func deactivate():
 	var lvl = global.lvl()
 	deactivated = true
-	for cswnd in lvl.charSwitchWrappers:
+	for cswnd in lvl.charSwitchWrappers.values():
 		#incase there was one we had already set
 		if get_colliding_bodies().has(cswnd):continue
 		
@@ -241,7 +242,7 @@ func _integrate_forces(state):
 		transChange = null
 		if csWrap == null:
 			var lvl = global.lvl()
-			for csw in lvl.charSwitchWrappers:
+			for csw in lvl.charSwitchWrappers.values():
 				if lvl.get_node(csw.nodePath) == self:
 					csWrap = csw
 					break
@@ -300,7 +301,8 @@ func _integrate_forces(state):
 		contactPosDict[pos] = state.get_contact_collider_object(i)
 
 	checkForAndMarkAsChanged()
-
+	thisObjectCheckChange()
+	
 
 
 func checkForAndMarkAsChanged():
@@ -309,7 +311,7 @@ func checkForAndMarkAsChanged():
 	if !global.lvl().processDone: return
 	
 	if csWrap == null:
-		for csw in lvlNode.charSwitchWrappers:
+		for csw in lvlNode.charSwitchWrappers.values():
 			if lvlNode.get_node(csw.nodePath) == self:
 				csWrap = csw
 				break
@@ -353,6 +355,11 @@ func checkForAndMarkAsChanged():
 						if thing != null:
 							lvlNode.timeDiscrepManuallyRemovingArea.erase(thing)
 							
+
+func thisObjectCheckChange():
+	if thisObjChangeDetected: return
+	if csWrap != null:
+		thisObjChangeDetected = CSWrapDetectChange(csWrap)
 
 func setMode():
 	set_mode(rigidBodyMode)
@@ -463,7 +470,7 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 	CSWrap.changesToApply[currChar][1] = get_global_rotation()
 	CSWrap.changesToApply[currChar][2] = get_transform()
 
-	if !CSWrapDetectChange(CSWrap): return
+	if !thisObjChangeDetected: return
 	
 	
 	
@@ -485,7 +492,7 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 	
 	if astroIsOnTop:
 
-		for csw in lvl.charSwitchWrappers:
+		for csw in lvl.charSwitchWrappers.values():
 			if lvl.get_node(csw.nodePath) == lvl.astroNode:
 				CSWrap.dependantCSWrappers[currChar].append(csw)
 				break

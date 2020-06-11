@@ -56,7 +56,8 @@ var endMonitor = null
 var startMonitor = null
 
 var csWrap = null
-var changeDetected = false
+var changeDetected = {}
+var thisObjChangeDetected = false
 
 #used for determining which plugs changes between character switching takes
 #priority
@@ -243,7 +244,14 @@ func init_position():
 #supposedly need to to this instead of _process in order for move_and_slide
 #to work alright, but I didn't really notice a difference with just _proccess
 func _physics_process(delta):
-	if !readyDone || parentLinkCable != null:
+	if !readyDone:
+		return
+	
+	if parentLinkCable != null:
+		#even if cable calculations are done via a different cable
+		#when attached, still need to check for changes
+		checkForAndMarkAsChanged()
+		thisObjectCheckChange()
 		return
 	
 	gravity = GRAVITY.rotated(global.gravRadAngFromNorm) * global.gravMag
@@ -264,14 +272,7 @@ func _physics_process(delta):
 	
 	
 	checkForAndMarkAsChanged()
-	#CSWrapDetectChange
-#	if (getRopeLength() > CABLE_LENGTH):
-#		pos = prevPos
-#		posOld = prevPosOld
-#
-#		for i in range(NODE_COUNT):
-#			setCNPos(i, pos[i])
-			
+	thisObjectCheckChange()
 		
 	
 	renderLines()
@@ -280,61 +281,70 @@ func _physics_process(delta):
 	
 	
 func checkForAndMarkAsChanged():
-	
 	var lvlNode = global.lvl()
 	if !global.lvl().processDone: return
-	if !changeDetected:
-		if csWrap == null:
-			for csw in lvlNode.charSwitchWrappers:
-				if lvlNode.get_node(csw.nodePath) == self:
-					csWrap = csw
-					break
+	
+	if csWrap == null:
+		for csw in lvlNode.charSwitchWrappers.values():
+			if lvlNode.get_node(csw.nodePath) == self:
+				csWrap = csw
+				break
+		if csWrap == null: return
+	
+	if !checkIfPlugsCompletedApplyingChanges(): return
+	
+	for otherChar in csWrap.changesToApply.keys():
+		if !changeDetected.has(otherChar):
+			changeDetected[otherChar] = false
+	
+		if !changeDetected[otherChar]:
 					
 		#change can only be added to future shit if it ever gets a change
 		#to be outside timeDiscrep areas (especially if it loaded a past lvl
 		#in which it spawned in one)
 		
-		var thisCableIsInTimeDiscrepAreasOtherThanOwn = false
-		
-		for astroChar in csWrap.changesToApply.keys():
-			if lvlNode.timeDiscrepBodyPresentDict2.has(self.get_name()) && lvlNode.timeDiscrepBodyPresentDict2[self.get_name()].has(astroChar) && lvlNode.timeDiscrepBodyPresentDict2[self.get_name()][astroChar].size() > 0:
-				thisCableIsInTimeDiscrepAreasOtherThanOwn = true
-				break
-				
-				#var lvl = global.lvl()
-			for nodeName in  csWrap.extraCSWrappers.keys():
-				if lvlNode.timeDiscrepBodyPresentDict2.has(nodeName):
-					if lvlNode.timeDiscrepBodyPresentDict2[nodeName].has(astroChar):
-						if lvlNode.timeDiscrepBodyPresentDict2[nodeName][astroChar].size() > 0:
-							thisCableIsInTimeDiscrepAreasOtherThanOwn = true
-							break
-			if thisCableIsInTimeDiscrepAreasOtherThanOwn:
-				break
+			var thisShapeIsInTimeDiscrepAreasOtherThanOwn = false
+			if lvlNode.timeDiscrepBodyPresentDict2.has(self.get_name()) && lvlNode.timeDiscrepBodyPresentDict2[self.get_name()].has(otherChar) && lvlNode.timeDiscrepBodyPresentDict2[self.get_name()][otherChar].size() > 0:
+				thisShapeIsInTimeDiscrepAreasOtherThanOwn = true
 				
 				
-		if !thisCableIsInTimeDiscrepAreasOtherThanOwn:
-			changeDetected = CSWrapDetectChange(csWrap)
-			
-			#if change was made, remove any time discrep area 2ds that might
-			#be present from future because changes will now take place and
-			#future spot will ref where ever this object is
-			if changeDetected:
-				for astroChar in csWrap.changesToApply.keys():
-					
-					#if astroChar == currChar: continue
+				
+			if !thisShapeIsInTimeDiscrepAreasOtherThanOwn:
+				changeDetected[otherChar] = CSWrapDetectChange(csWrap)
+				
+				#if change was made, remove any time discrep area 2ds that might
+				#be present from future because changes will now take place and
+				#future spot will ref where ever this object is
+				if changeDetected[otherChar]:
+						
 					var thing = null
 					var areaNode = null
-					if lvlNode.timeDiscrepCSWCharDict[csWrap.nodePath][1].has(astroChar):
+					
+					if lvlNode.removeCSWrapTimeDiscepArea2D(csWrap, otherChar, null, false):
+						self.CSWrapSaveTimeDiscrepState(csWrap, otherChar, false)
 						
-						if lvlNode.removeCSWrapTimeDiscepArea2D(csWrap, astroChar, null, false):
-							self.CSWrapSaveTimeDiscrepState(csWrap, astroChar, false)
 						
-					for nodeName in  csWrap.extraCSWrappers.keys():
-						var csw = csWrap.extraCSWrappers[nodeName]
-						if lvlNode.timeDiscrepCSWCharDict[csWrap.nodePath][1].has(astroChar):
-							if lvlNode.removeCSWrapTimeDiscepArea2D(csWrap, astroChar, null, false):
-								self.CSWrapSaveTimeDiscrepState(csWrap, astroChar, false, nodeName)
+func checkIfPlugsCompletedApplyingChanges():
+	#need to check if any changes would have taken place upon loading this
+	#astro, if not, triedConn will always be false
+	#null means it never went through  an applyChanges method
+	#false means it hasn't finished the entirety of applyChanges
+	if (START_PLUG.triedConn != null && !START_PLUG.triedConn) || (END_PLUG.triedConn != null && !END_PLUG.triedConn): return false
+	return true
 							
+func thisObjectCheckChange():
+	
+	if thisObjChangeDetected: return
+	if !global.lvl().processDone: return
+	var currChar = global.CharacterRes.id
+	
+	if !checkIfPlugsCompletedApplyingChanges(): return
+	
+	
+#
+	if csWrap != null:
+		thisObjChangeDetected = CSWrapDetectChange(csWrap)
+		
 func ropeLengthLimit(delta):
 	
 	var head = getUltimateParentCable()
@@ -345,7 +355,6 @@ func ropeLengthLimit(delta):
 		var diff = ropeLength - resLength
 		var astro = global.lvl().astroNode
 		if START_PIN == astro:
-			#print("wooooop1111")
 			var diffVect = astro.get_global_position() - tempStartNodePos
 			diffVect = diffVect.normalized() * diff
 			astro.restrictAndMove2Point = tempStartNodePos - diffVect
@@ -359,7 +368,6 @@ func ropeLengthLimit(delta):
 		
 		
 		elif ultimateCC.END_PIN == astro:
-			#print("wooooop222")
 			var diffVect = astro.get_global_position() - tempEndNodePos
 			diffVect = diffVect.normalized() * diff
 			astro.restrictAndMove2Point = (tempEndNodePos - diffVect)
@@ -766,12 +774,6 @@ func CSWrapSaveStartState(CSWrap : CharacterSwitchingWrapper):
 	
 	CSWrap.saveStartState[currChar][6] = cNodesFlipped
 	
-	for otherChar in CSWrap.savedTimeDiscrepencyState.keys():
-		CSWrap.savedTimeDiscrepencyState[otherChar].resize(11)
-		for i in CSWrap.savedTimeDiscrepencyState[otherChar].size():
-			CSWrap.savedTimeDiscrepencyState[otherChar][i] = -1
-	
-	#CSWrap.extraCSWrappers.resize(2)
 	
 	#if still new, make dictionary values
 	if !CSWrap.extraCSWrappers is Dictionary:
@@ -811,16 +813,19 @@ func CSWrapDetectChange(CSWrap : CharacterSwitchingWrapper):
 	
 	
 	return false
+func CSWrapINITSaveTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, astroChar, set : bool, comeFromExtraCSWNodeName = null):
+	pass
 	
-func CSWrapSaveTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, astroChar, set : bool, comeFromExtraCSWNodeName = null):
+func CSWrapSaveTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, astroChar, set : bool, comeFromExtraCSWNodeName = null, INITChanges = null):
 	
-	if !changeDetected: return
+	if (!changeDetected.has(astroChar) || !changeDetected[astroChar]) && INITChanges == null: return
 	
-	CSWrap.savedTimeDiscrepencyState[astroChar].resize(11)
 	
+	#CSWrap.savedTimeDiscrepencyState[astroChar].size() > 11 && CSWrap.savedTimeDiscrepencyState[astroChar]
 	
 	
 	if !set:
+		CSWrap.savedTimeDiscrepencyState[astroChar].resize(11)
 		
 		var lvl = global.lvl()
 		for nodeName in  CSWrap.extraCSWrappers.keys():
@@ -838,15 +843,17 @@ func CSWrapSaveTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, astroChar, s
 		START_PLUG.CSWrapSavePlugTimeDiscrepState(CSWrap.extraCSWrappers[START_PLUG.get_name()], astroChar, false)
 		END_PLUG.CSWrapSavePlugTimeDiscrepState(CSWrap.extraCSWrappers[END_PLUG.get_name()], astroChar, false)
 		
-		var debugTimeDiscrepLine = get_node(get_name() + "_DEBUG_LINE")
+		var debugTimeDiscrepLine = get_node(get_name() + "_DEBUG_LINE_" + global.astroChar2String(astroChar))
 		if debugTimeDiscrepLine != null:
 			debugTimeDiscrepLine.points = []
 		return
 	
+	#if CSWrap.savedTimeDiscrepencyState[astroChar].size() < 11: return
 	
 	
-	if CSWrap.savedTimeDiscrepencyState[astroChar].size() == 11:
-		if !CSWrap.savedTimeDiscrepencyState[astroChar][0] is int:
+	
+	if CSWrap.savedTimeDiscrepencyState[astroChar].size() == 11 && !CSWrap.savedTimeDiscrepencyState[astroChar][0] is int:
+		if INITChanges == null:
 			return
 	
 	CSWrap.savedTimeDiscrepencyState[astroChar].resize(11)
@@ -857,20 +864,23 @@ func CSWrapSaveTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, astroChar, s
 	var clcName = childLinkCable.get_name() if childLinkCable != null else null
 	var plcName = parentLinkCable.get_name() if parentLinkCable != null else null
 	
-	CSWrap.savedTimeDiscrepencyState[astroChar][0] = START_PLUG.get_name()
-	CSWrap.savedTimeDiscrepencyState[astroChar][1] = startPinName
-	CSWrap.savedTimeDiscrepencyState[astroChar][2] = END_PLUG.get_name()
-	CSWrap.savedTimeDiscrepencyState[astroChar][3] = endPinName
-	CSWrap.savedTimeDiscrepencyState[astroChar][4] = clcName
-	CSWrap.savedTimeDiscrepencyState[astroChar][5] = plcName
-	CSWrap.savedTimeDiscrepencyState[astroChar][6] = cNodesFlipped
-	CSWrap.savedTimeDiscrepencyState[astroChar][7] = pos
-	CSWrap.savedTimeDiscrepencyState[astroChar][8] = posOld
-	CSWrap.savedTimeDiscrepencyState[astroChar][9] = []
-	CSWrap.savedTimeDiscrepencyState[astroChar][10] = []
-	for cn in cableNodes:
-		CSWrap.savedTimeDiscrepencyState[astroChar][9].append(cn.get_global_position())
-		CSWrap.savedTimeDiscrepencyState[astroChar][10].append(cn.get_global_rotation())
+	CSWrap.savedTimeDiscrepencyState[astroChar][0] = START_PLUG.get_name() if INITChanges == null else INITChanges[0]
+	CSWrap.savedTimeDiscrepencyState[astroChar][1] = startPinName if INITChanges == null else INITChanges[1]
+	CSWrap.savedTimeDiscrepencyState[astroChar][2] = END_PLUG.get_name() if INITChanges == null else INITChanges[2]
+	CSWrap.savedTimeDiscrepencyState[astroChar][3] = endPinName if INITChanges == null else INITChanges[3]
+	CSWrap.savedTimeDiscrepencyState[astroChar][4] = clcName if INITChanges == null else INITChanges[4]
+	CSWrap.savedTimeDiscrepencyState[astroChar][5] = plcName if INITChanges == null else INITChanges[5]
+	CSWrap.savedTimeDiscrepencyState[astroChar][6] = cNodesFlipped if INITChanges == null else INITChanges[6]
+	CSWrap.savedTimeDiscrepencyState[astroChar][7] = pos if INITChanges == null else INITChanges[7]
+	CSWrap.savedTimeDiscrepencyState[astroChar][8] = posOld if INITChanges == null else INITChanges[8]
+	CSWrap.savedTimeDiscrepencyState[astroChar][9] = [] if INITChanges == null else INITChanges[9].duplicate(true)
+	CSWrap.savedTimeDiscrepencyState[astroChar][10] = [] if INITChanges == null else INITChanges[10].duplicate(true)
+	
+	if INITChanges == null:
+		for cn in cableNodes:
+			CSWrap.savedTimeDiscrepencyState[astroChar][9].append(cn.get_global_position())
+			CSWrap.savedTimeDiscrepencyState[astroChar][10].append(cn.get_global_rotation())
+	
 	
 	
 	#if still new, make dictionary values
@@ -883,18 +893,18 @@ func CSWrapSaveTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, astroChar, s
 			for group in cn.get_groups():
 				CSWrap.extraCSWrappers[cn.get_name()].groups.append(group)
 		
-	START_PLUG.CSWrapSavePlugTimeDiscrepState(CSWrap.extraCSWrappers[START_PLUG.get_name()], astroChar, true)
-	END_PLUG.CSWrapSavePlugTimeDiscrepState(CSWrap.extraCSWrappers[END_PLUG.get_name()], astroChar, true)
+	START_PLUG.CSWrapSavePlugTimeDiscrepState(CSWrap.extraCSWrappers[START_PLUG.get_name()], astroChar, true, INITChanges != null)
+	END_PLUG.CSWrapSavePlugTimeDiscrepState(CSWrap.extraCSWrappers[END_PLUG.get_name()], astroChar, true, INITChanges != null)
 	#savedTimeDiscrepencyState
 	
 	if !get_tree().is_debugging_collisions_hint(): return
 	
-	var debugTimeDiscrepLine = get_node(get_name() + "_DEBUG_LINE")
+	var debugTimeDiscrepLine = get_node(get_name() + "_DEBUG_LINE_" + global.astroChar2String(astroChar))
 	if debugTimeDiscrepLine == null:
 		debugTimeDiscrepLine = Line2D.new()
-		debugTimeDiscrepLine.set_name(get_name() + "_DEBUG_LINE")
+		debugTimeDiscrepLine.set_name(get_name() + "_DEBUG_LINE_" + global.astroChar2String(astroChar))
 		add_child(debugTimeDiscrepLine)
-	debugTimeDiscrepLine.points = pos
+	debugTimeDiscrepLine.points = CSWrap.savedTimeDiscrepencyState[astroChar][7]
 	
 #keeeeep
 func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
@@ -923,10 +933,11 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 		CSWrap.changesToApply[currChar][10].append(cn.get_global_rotation())
 		
 	
-	START_PLUG.CSWrapAddChanges(CSWrap.extraCSWrappers[START_PLUG.get_name()], changeDetected)
-	END_PLUG.CSWrapAddChanges(CSWrap.extraCSWrappers[END_PLUG.get_name()], changeDetected)
+	START_PLUG.CSWrapAddChanges(CSWrap.extraCSWrappers[START_PLUG.get_name()], thisObjChangeDetected)
+	END_PLUG.CSWrapAddChanges(CSWrap.extraCSWrappers[END_PLUG.get_name()], thisObjChangeDetected)
 	
-	if !changeDetected: return
+	if !thisObjChangeDetected:
+		 return
 	
 	for otherChar in CSWrap.changesToApply.keys():
 		#var otherChar = global.CHAR[astroChar]
@@ -937,6 +948,11 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 			#set to default -1 s if otherChar changes are still new
 			#if CSWrap.changesToApply[otherChar].size() != 11:
 			CSWrap.changesToApply[otherChar].resize(11)
+			
+			if CSWrap.savedTimeDiscrepencyState[otherChar] == null || CSWrap.savedTimeDiscrepencyState[otherChar].size() == 0:
+				CSWrap.savedTimeDiscrepencyState[otherChar].resize(11)
+				for i in CSWrap.savedTimeDiscrepencyState[otherChar].size():
+					CSWrap.savedTimeDiscrepencyState[otherChar][i] = -1
 			
 			for i in CSWrap.changesToApply[otherChar].size():
 				CSWrap.changesToApply[otherChar][i] = CSWrap.changesToApply[currChar][i] if CSWrap.savedTimeDiscrepencyState[otherChar][i] is int else CSWrap.savedTimeDiscrepencyState[otherChar][i]
@@ -950,15 +966,16 @@ func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
 	var lvlNode = global.lvl()
 	
 	START_PLUG = lvlNode.find_node(changes[0], true, false)
-	START_PIN = lvlNode.find_node(changes[1], true, false) if changes[1] != null else null
-	if START_PIN == global.lvl().astroNode: 	START_PIN = null
+	START_PIN = lvlNode.get_node(changes[1]) if changes[1] != null else null
+	if START_PIN == global.lvl().astroNode: START_PIN = null
 	
 	END_PLUG = lvlNode.find_node(changes[2], true, false)
-	END_PIN = lvlNode.find_node(changes[3], true, false) if changes[3] != null else null
-	if END_PIN == global.lvl().astroNode: 	END_PIN = null
-	childLinkCable = lvlNode.find_node(changes[4], true, false) if changes[4] != null else null
-	parentLinkCable = lvlNode.find_node(changes[5], true, false) if changes[5] != null else null
+	END_PIN = lvlNode.get_node(changes[3]) if changes[3] != null else null
+	if END_PIN == global.lvl().astroNode: END_PIN = null
+	#childLinkCable = lvlNode.get_node(changes[4]) if changes[4] != null else null
+	#parentLinkCable = lvlNode.get_node(changes[5]) if changes[5] != null else null
 	cNodesFlipped = changes[6]
+	if cNodesFlipped: cableNodes.invert()
 	pos = changes[7]
 	posOld = changes[8]
 	for i in cableNodes.size():
@@ -970,7 +987,25 @@ func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
 	END_PLUG.CSWrapApplyChanges(CSWrap.extraCSWrappers[END_PLUG.get_name()])
 	
 	
-
+func CSWrapApplyChangesLinkCables(CSWrap : CharacterSwitchingWrapper, plugName):
+	#needs to happen after cable shit because if not attempt connection
+	#will register the two attempting plugs as part of the same cable
+	var currChar = global.CharacterRes.id
+	var changes = CSWrap.changesToApply[currChar]
+	if changes == null || changes == [] || changes.size() < 6: return
+	
+	var lvlNode = global.lvl()
+	
+	if changes[5] == null:
+		parentLinkCable = null
+	elif START_PLUG.get_name() == plugName:
+		parentLinkCable = lvlNode.get_node(changes[5])
+		
+	if changes[4] == null:
+		childLinkCable = null
+	elif END_PLUG.get_name() == plugName:
+		childLinkCable = lvlNode.get_node(changes[4])
+	
 	
 func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper):
 	return

@@ -72,8 +72,11 @@ var ASTRO_NODE# = get_node(ASTRO_NODE_PATH)
 func _ready():
 	if ASTRO_NODE_PATH != null:
 		ASTRO_NODE = get_node(ASTRO_NODE_PATH)
+	call_deferred("ready_deferred")
 
-
+func ready_deferred():
+	if ASTRO_NODE_PATH != null:
+		ASTRO_NODE = get_node(ASTRO_NODE_PATH)
 
 func timer_reset(text):
 	

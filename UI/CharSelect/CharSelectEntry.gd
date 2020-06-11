@@ -17,7 +17,7 @@ func initialize(character):
 
 
 func _on_Button_button_up():
-	
+	global.changingScene = true
 	saveCurrentLvl()
 	
 	loadNewCharacterLevel()
@@ -47,7 +47,7 @@ func saveCurrentLvl():
 		
 		
 		
-		for CSWrap in global.lvl().charSwitchWrappers:
+		for CSWrap in global.lvl().charSwitchWrappers.values():
 			if CSWrap.staticNode: continue
 			if CSWrap.checkIfInCharLvl(global.CharacterRes.id):
 				global.lvl().get_node(CSWrap.nodePath).CSWrapAddChanges(CSWrap)
@@ -92,22 +92,23 @@ func savedCurrentLvlPackedScene(currLvlPath):
 
 func reorderAndSaveCurrentLvlWrappers(currLvlPath):
 	var currChar = global.CharacterRes.id
-	var dependantOrderedCSWrappers = []
+	var charSwitchWrappersDUP = global.lvl().charSwitchWrappers.duplicate(true)
 	
-	for wrap in global.lvl().charSwitchWrappers:
-		dependantOrderedCSWrappers.append(wrap)
 	
-	for wrap in global.lvl().charSwitchWrappers:
-		
-		for dependantWrap in wrap.dependantCSWrappers[currChar]:
+#	for wrap in global.lvl().charSwitchWrappers.values():
+#		dependantOrderedCSWrappers.append(wrap)
+#
+#	for wrap in global.lvl().charSwitchWrappers.values():
+#
+#		for dependantWrap in wrap.dependantCSWrappers[currChar]:
+#
+#			#for all dependant wrappers, place them after the parent node
+#			dependantOrderedCSWrappers.erase(dependantWrap)
+#			var wrapIndex = dependantOrderedCSWrappers.find(wrap)
+#			if wrapIndex > dependantOrderedCSWrappers.size():
+#				dependantOrderedCSWrappers.resize(dependantOrderedCSWrappers.size()+1)
+#
+#			dependantOrderedCSWrappers.insert(wrapIndex+1, dependantWrap)
 			
-			#for all dependant wrappers, place them after the parent node
-			dependantOrderedCSWrappers.erase(dependantWrap)
-			var wrapIndex = dependantOrderedCSWrappers.find(wrap)
-			if wrapIndex > dependantOrderedCSWrappers.size():
-				dependantOrderedCSWrappers.resize(dependantOrderedCSWrappers.size()+1)
-				
-			dependantOrderedCSWrappers.insert(wrapIndex+1, dependantWrap)
 			
-			
-	global.levelWrapperDict[currLvlPath].lvlNodesCSWrapDict[currChar] = dependantOrderedCSWrappers
+	global.levelWrapperDict[currLvlPath].lvlNodesCSWrapDict[currChar] = charSwitchWrappersDUP

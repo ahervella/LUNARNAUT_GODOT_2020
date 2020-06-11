@@ -12,7 +12,7 @@ func _ready():
 	for charResPath in global.astroCharDict.values():
 		var charRes = load(charResPath)
 		   #ResourceSaver.save
-		charRes.level = "dev_cable_gravity"
+		charRes.level = getLvlSceneName()#"dev_cable_gravity"
 		ResourceSaver.save(charResPath, charRes)
 	
 	._ready()

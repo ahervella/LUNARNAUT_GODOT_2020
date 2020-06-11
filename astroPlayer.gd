@@ -16,13 +16,13 @@ extends KinematicBody2D
 export (Resource) var CHARACTER_RES = null
 #var CHARACTER_RES : Resource = null
 export (NodePath) var CAMERA_NODE_PATH = null
-onready var CAMERA_NODE = get_node(CAMERA_NODE_PATH)
+var CAMERA_NODE
 const CAMERA_OFFSET = 200
 
-onready var TOUCH_CONTROL_NODE = CAMERA_NODE.get_node(CAMERA_NODE.TOUCH_CONTROL_PATH)
+var TOUCH_CONTROL_NODE
 
 export (NodePath) var INTERACT_TEXT_NODE_PATH = null
-onready var INTERACT_TEXT_NODE = get_node(INTERACT_TEXT_NODE_PATH)
+var INTERACT_TEXT_NODE 
 
 
 export (PackedScene) var MENU_SCENE
@@ -108,11 +108,50 @@ const DIRECTION = {
 
 
 func _ready():
+	set_physics_process(false)
+		#need to do this for anything that is doing global.playTest
+	#because children readys happen before parent ready (and lvl node
+	#is always parent and setting playTest variable)
+	call_deferred('readyDeferred')
+	#readyDeferred()
 	
+func readyDeferred():
 	#only execute in game
 	if Engine.editor_hint:
 		return
-		
+	
+	
+	print(get_parent().get_children())
+	
+	var camNodePathString = ""
+	
+	for i in CAMERA_NODE_PATH.get_name_count():
+		if CAMERA_NODE_PATH.get_name(i) == "..": continue
+		if camNodePathString == "":
+			camNodePathString = CAMERA_NODE_PATH.get_name(i)
+		else:
+			camNodePathString = camNodePathString + "/" + CAMERA_NODE_PATH.get_name(i)
+	
+	camNodePathString = "/root/" + global.lvl().get_name() + "/" + camNodePathString
+	
+	CAMERA_NODE = get_node(camNodePathString)
+	TOUCH_CONTROL_NODE = CAMERA_NODE.get_node(CAMERA_NODE.TOUCH_CONTROL_PATH)
+	
+	
+	
+	
+	var interactTextNodePathString = ""
+	
+	for i in INTERACT_TEXT_NODE_PATH.get_name_count():
+		if INTERACT_TEXT_NODE_PATH.get_name(i) == "..": continue
+		if interactTextNodePathString == "":
+			interactTextNodePathString = INTERACT_TEXT_NODE_PATH.get_name(i)
+		else:
+			interactTextNodePathString = interactTextNodePathString + "/" + INTERACT_TEXT_NODE_PATH.get_name(i)
+	interactTextNodePathString = "/root/" + global.lvl().get_name() + "/" + interactTextNodePathString
+	INTERACT_TEXT_NODE = get_node(interactTextNodePathString)
+	
+	
 	#need this so that anywhere an interact references the interactNode,
 	#the location is based off only one place here in the astro node
 	global.interactNode = INTERACT_TEXT_NODE
@@ -140,18 +179,7 @@ func _ready():
 
 	$"ASTRO_ANIM2"._set_playing(true)
 	
-	set_physics_process(false)
-		
 
-	#need to do this for anything that is doing global.playTest
-	#because children readys happen before parent ready (and lvl node
-	#is always parent and setting playTest variable)
-	call_deferred('readyDeferred')
-	#readyDeferred()
-	
-	
-	
-func readyDeferred():
 	
 	#These visible options are soley for the editor to be able to switch
 	#these views on and off to make development easier. The backgrounds
@@ -1071,7 +1099,8 @@ func _on_push_pull_area_body_exited(body):
 		if movableObject == body:
 			movableObject.movingDir = 0
 			
-			processItemExited(movableObject.getSpriteNode())
+			if global.interactNode != null:
+				processItemExited(movableObject.getSpriteNode())
 			
 			movableObject = null
 			
@@ -1162,7 +1191,7 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 		#	CSWrap.changesToApply[otherChar] = CSWrap.changesToApply[currChar].duplicate(true)
 				
 			
-	for csw in lvl.charSwitchWrappers:
+	for csw in lvl.charSwitchWrappers.values():
 		var cswNode = lvl.get_node(csw.nodePath)
 		
 		if objectStandinOn.size() > 0 && cswNode == objectStandinOn[objectStandinOn.size()-1]:

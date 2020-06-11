@@ -57,6 +57,9 @@ var plugSprite = null
 #remapping child takes place in cable script when reversing things
 var childRemovedException = false
 
+var changesApplied = false
+var triedConn = null
+
 func setIsFixedPort(val):
 	if val:
 		fixed = true
@@ -515,7 +518,7 @@ func transmitEntity(entity):
 func CSWrapSaveTimeDiscrepState(CSWrap: CharacterSwitchingWrapper, astroChar, set : bool):
 	if parentCable != null:
 		var lvlNode = global.lvl()
-		for csw in lvlNode.charSwitchWrappers:
+		for csw in lvlNode.charSwitchWrappers.values():
 			var cswNode = lvlNode.get_node(csw.nodePath)
 			if cswNode == parentCable:
 				cswNode.CSWrapSaveTimeDiscrepState(csw, astroChar, set, self.get_name())
@@ -526,6 +529,8 @@ func CSWrapSaveStartState(CSWrap : CharacterSwitchingWrapper):
 	
 	CSWrap.saveStartState[currChar].resize(6)
 	
+	
+	
 	CSWrap.saveStartState[currChar][0] = get_global_position()
 	CSWrap.saveStartState[currChar][1] = get_global_rotation()
 	CSWrap.saveStartState[currChar][2] = connPlug
@@ -533,19 +538,21 @@ func CSWrapSaveStartState(CSWrap : CharacterSwitchingWrapper):
 	CSWrap.saveStartState[currChar][4] = parentCable
 	CSWrap.saveStartState[currChar][5] = get_parent()
 	
-	for otherChar in CSWrap.savedTimeDiscrepencyState.keys():
-		CSWrap.savedTimeDiscrepencyState[otherChar].resize(6)
-		for i in CSWrap.savedTimeDiscrepencyState[otherChar].size():
-			CSWrap.savedTimeDiscrepencyState[otherChar][i] = -1
+#	for otherChar in CSWrap.savedTimeDiscrepencyState.keys():
+#		CSWrap.savedTimeDiscrepencyState[otherChar].resize(6)
+#		for i in CSWrap.savedTimeDiscrepencyState[otherChar].size():
+#			CSWrap.savedTimeDiscrepencyState[otherChar][i] = -1
 	
 func CSWrapDetectChange(CSWrap : CharacterSwitchingWrapper):
 	var currChar = global.CharacterRes.id
-	
-	if (CSWrap.saveStartState[currChar][5].get_global_position() + CSWrap.saveStartState[currChar][0] - get_global_position()).length() > 5:
+		
+		
+	if (CSWrap.saveStartState[currChar][0] - get_global_position()).length() > 5:
 		return true
 			
-	if (CSWrap.saveStartState[currChar][5].get_global_rotation() + CSWrap.saveStartState[currChar][1] - get_global_rotation()) > PI/16:
-		return true
+	#rotation is always freaking out so lets not check this for now
+	#if (CSWrap.saveStartState[currChar][5].get_global_rotation() + CSWrap.saveStartState[currChar][1] - get_global_rotation()) > PI/8:
+	#	return true
 		
 	if (CSWrap.saveStartState[currChar][2] != connPlug):
 		return true
@@ -561,7 +568,7 @@ func CSWrapDetectChange(CSWrap : CharacterSwitchingWrapper):
 		
 	return false
 	
-func CSWrapSavePlugTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, astroChar, set : bool):
+func CSWrapSavePlugTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, astroChar, set : bool, INITChange = false):
 	CSWrap.savedTimeDiscrepencyState[astroChar].resize(6)
 	
 	if !set:
@@ -571,38 +578,52 @@ func CSWrapSavePlugTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, astroCha
 	
 	CSWrap.savedTimeDiscrepencyState[astroChar].resize(6)
 	
-	CSWrap.savedTimeDiscrepencyState[astroChar][0] = get_position()
-	CSWrap.savedTimeDiscrepencyState[astroChar][1] = get_rotation()
-	CSWrap.savedTimeDiscrepencyState[astroChar][2] = connPlug
-	CSWrap.savedTimeDiscrepencyState[astroChar][3] = sourcePlug
-	CSWrap.savedTimeDiscrepencyState[astroChar][4] = parentCable
-	CSWrap.savedTimeDiscrepencyState[astroChar][5] = get_parent()
+	var connPlugName = connPlug.get_name() if connPlug != null else null
+	var sourcePlugName = sourcePlug.get_name() if sourcePlug != null else null
+	var parentCableName = parentCable.get_name() if parentCable != null else null
 	
-func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper, changeDetected = null):
-	if changeDetected == null:
-		changeDetected = CSWrapDetectChange(CSWrap)
+	CSWrap.savedTimeDiscrepencyState[astroChar][0] = get_position() if !INITChange else CSWrap.changesToApply[astroChar][0]
+	CSWrap.savedTimeDiscrepencyState[astroChar][1] = get_rotation() if !INITChange else CSWrap.changesToApply[astroChar][1]
+	CSWrap.savedTimeDiscrepencyState[astroChar][2] = connPlugName if !INITChange else CSWrap.changesToApply[astroChar][2]
+	CSWrap.savedTimeDiscrepencyState[astroChar][3] = sourcePlugName if !INITChange else CSWrap.changesToApply[astroChar][3]
+	CSWrap.savedTimeDiscrepencyState[astroChar][4] = parentCableName if !INITChange else CSWrap.changesToApply[astroChar][4]
+	CSWrap.savedTimeDiscrepencyState[astroChar][5] = get_parent().get_name() if !INITChange else CSWrap.changesToApply[astroChar][5]
+	
+func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper, thisObjChangeDetected = null):
+	if thisObjChangeDetected == null:
+		thisObjChangeDetected = CSWrapDetectChange(CSWrap)
 	
 	var currChar = global.CharacterRes.id
 	var parentNode = get_parent()
 	CSWrap.changesToApply[currChar].resize(6)
 	
-	CSWrap.changesToApply[currChar][0] = get_position()
-	CSWrap.changesToApply[currChar][1] = get_rotation()
+	CSWrap.changesToApply[currChar][0] = get_global_position()
+	CSWrap.changesToApply[currChar][1] = get_global_rotation()
 	CSWrap.changesToApply[currChar][2] = connPlug.get_name() if connPlug != null else null
 	CSWrap.changesToApply[currChar][3] = sourcePlug.get_name() if sourcePlug != null else null
 	CSWrap.changesToApply[currChar][4] = parentCable.get_name() if parentCable != null else null
 	CSWrap.changesToApply[currChar][5] = parentNode.get_name()
 	
-	if !changeDetected: return
+	if !thisObjChangeDetected: return
 	
 	for otherChar in CSWrap.changesToApply.keys():
 		if otherChar == currChar : continue
 		if global.charYearDict[otherChar] > global.charYearDict[currChar]:
 			CSWrap.changesToApply[otherChar].resize(6)
+			
+			if CSWrap.savedTimeDiscrepencyState[otherChar] == null || CSWrap.savedTimeDiscrepencyState[otherChar].size() == 0:
+				CSWrap.savedTimeDiscrepencyState[otherChar].resize(6)
+				for i in CSWrap.savedTimeDiscrepencyState[otherChar].size():
+					CSWrap.savedTimeDiscrepencyState[otherChar][i] = -1
+			
 			for i in CSWrap.changesToApply[otherChar].size():
-				CSWrap.changesToApply[otherChar][i] = CSWrap.changesToApply[currChar][i] if CSWrap.savedTimeDiscrepencyState[currChar][i] is int else CSWrap.savedTimeDiscrepencyState[currChar][i]
+				CSWrap.changesToApply[otherChar][i] = CSWrap.changesToApply[currChar][i] if CSWrap.savedTimeDiscrepencyState[otherChar][i] is int else CSWrap.savedTimeDiscrepencyState[otherChar][i]
+
+	changesApplied = false
+	triedConn = null
 
 func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
+	triedConn = false
 	var currChar = global.CharacterRes.id
 	var currLvl = global.lvl()
 	
@@ -613,38 +634,59 @@ func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
 	var parentNode = currLvl.find_node(changes[5], true, false)
 	
 	var selfNode = self
-	get_parent().remove_child(selfNode)
-	parentNode.add_child(selfNode)
-	set_owner(parentNode)
+
 	
-	
-	set_position(changes[0])
-	set_rotation(changes[1])
-	
-	
-	var newConnPlug = currLvl.find_node(changes[2], true, false) if changes[2] != null else null
-	attemptConnectionSpecificPlug(newConnPlug)
+	#don't need to do this because the plug is always attached to something
+	#set_global_position(changes[0])
+	#set_global_rotation(changes[1])
+	#savedPos = changes[0]
+	#savedRot = changes[1]
 	
 	sourcePlug = currLvl.find_node(changes[3], true, false) if changes[3] != null else null
 	parentCable = currLvl.find_node(changes[4], true, false) if changes[4] != null else null
 	
+	var newConnPlug = currLvl.find_node(changes[2], true, false) if changes[2] != null else null
 	
-#	if !changes[2] is int && connPlug != changes[2]:
-#		attemptConnectionSpecificPlug(changes[2])
-#		if connPlug != changes[2] && wasLastTouchedPlug != null && wasLastTouchedPlug:
-#			#6 index is the direct location
-#			parentCable.attemptMovePlug(changes[6])
-#			attemptConnectionSpecificPlug(changes[2])
-#
-#	#0 is the difference vector (change, not direct position)
-#	elif !changes[0] is int:
-#		if wasLastTouchedPlug != null && wasLastTouchedPlug:
-#			parentCable.attemptMovePlug(changes[0])
+	changesApplied = true
 	
-			
+	#need to add this here because apparently areas do not register their new location until
+	#the next frame, so attempting a connection (via attemptConnection()) with anything near by 
+	# in the attemptConnectionSpecificPlug() will not find any plug overlapping areas
+	yield(get_tree(),"physics_frame")
+	
+	
+	var connectionSuccess = attemptConnectionSpecificPlug(newConnPlug)
+	
+	if parentCable == null || connectionSuccess:
+		get_parent().remove_child(self)
+		parentNode.add_child(self)
+		set_owner(parentNode)
 		
+	
+	elif !connectionSuccess && parentCable != null:
+		get_parent().remove_child(selfNode)
+		
+		if parentCable.START_PLUG == self:
+			parentCable.cableNodes[0].add_child(self)
+			set_owner(parentCable.cableNodes[0])
+			
+		elif parentCable.END_PLUG == self:
+			parentCable.cableNodes[parentCable.cableNodes.size()-1].add_child(self)
+			set_owner(parentCable.cableNodes[parentCable.cableNodes.size()-1])
+			
+	#because we are already yielding one physics frame above to compensate for
+	#that problem, here we have to mark this conn attemmpt as done to
+	#signal the cable node to start trying to detect change finally
+	triedConn = true
+	
+	#here parents have been rearranged so need to make a fresh save start staste
+	#now that the plugs and the cables are donr applying changes
+	parentCable.CSWrapSaveStartState(parentCable.csWrap)
+
 					
 func attemptConnectionSpecificPlug(specPlug):
+	if specPlug == connPlug: return true
+	if specPlug != null && !specPlug.changesApplied: return false
 	var isStartPlug = null
 	if parentCable != null:
 		if parentCable.START_PLUG == self:
