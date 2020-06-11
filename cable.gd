@@ -1,5 +1,8 @@
 tool
 extends Node2D
+
+const DEBUG_COLOR = Color( 0, 0.75, 0, 0.5 )
+
 var readyDone = false
 export (PackedScene) var CABLE_NODE = null#preload("res://cablePoint.tscn")
 export (PackedScene) var CABLE_NODE_SPRITE = null#preload("res://cablePointSprite.tscn")
@@ -845,6 +848,7 @@ func CSWrapSaveTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, astroChar, s
 		
 		var debugTimeDiscrepLine = get_node(get_name() + "_DEBUG_LINE_" + global.astroChar2String(astroChar))
 		if debugTimeDiscrepLine != null:
+			debugTimeDiscrepLine.set_default_color(DEBUG_COLOR)
 			debugTimeDiscrepLine.points = []
 		return
 	
@@ -903,6 +907,7 @@ func CSWrapSaveTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, astroChar, s
 	if debugTimeDiscrepLine == null:
 		debugTimeDiscrepLine = Line2D.new()
 		debugTimeDiscrepLine.set_name(get_name() + "_DEBUG_LINE_" + global.astroChar2String(astroChar))
+		debugTimeDiscrepLine.set_default_color(DEBUG_COLOR)
 		add_child(debugTimeDiscrepLine)
 	debugTimeDiscrepLine.points = CSWrap.savedTimeDiscrepencyState[astroChar][7]
 	
