@@ -31,13 +31,21 @@ var buttonIsShowing = false
 
 var stickDir = Vector2(0, 0)
 
-#var touchState_Stick = TOUCH_STATE.NO_TOUCH
-#var touchState_Jump = TOUCH_STATE.NO_TOUCH
-#var touchState_Interact = TOUCH_STATE.NO_TOUCH
+var interactWidthHeight = 100
+var interactCenter = Vector2(1060, 120)
+var canInteract = false
 
-var touchStateDict = {"stick" : TOUCH_STATE.NO_TOUCH, "jump" : TOUCH_STATE.NO_TOUCH, "interact" : TOUCH_STATE.NO_TOUCH}
+var touchCSHeight = 100
 
-#2 = just pressed, 1 = pressed, 0 = just released, -1 = released
+var csButtonIsShowing = false
+var ongoing_cs_drag = 0
+var currAstroCharSelection = null
+
+
+
+var touchStateDict = {"stick" : TOUCH_STATE.NO_TOUCH, "jump" : TOUCH_STATE.NO_TOUCH, "interact" : TOUCH_STATE.NO_TOUCH, "cs" : TOUCH_STATE.NO_TOUCH}
+
+
 var movingUp = -1
 onready var buttonTween = Tween.new()
 export (NodePath) var touchtouchButton = null
@@ -48,21 +56,76 @@ export (NodePath) var touchStickPath = null
 onready var touchStick = get_node(touchStickPath)
 onready var touchStickInner = touchStick.get_children()[0]
 
+onready var interactTween = Tween.new()
+export (NodePath) var touchInteractPath = null
+onready var touchInteract = get_node(touchInteractPath)
+
+onready var csTween = Tween.new()
+export (NodePath) var touchCSPath = null
+onready var touchCS = get_node(touchCSPath)
+
+export (NodePath) var touchCS1973Path = null
+export (NodePath) var touchCS1984Path = null
+export (NodePath) var touchCS1996Path = null
+export (NodePath) var touchCS2021Path = null
+export (NodePath) var touchCS2073Path = null
+
+onready var cs1973Tween = Tween.new()
+onready var cs1984Tween = Tween.new()
+onready var cs1996Tween = Tween.new()
+onready var cs2021Tween = Tween.new()
+onready var cs2073Tween = Tween.new()
+
+onready var touchCS1973 = get_node(touchCS1973Path)
+onready var touchCS1984 = get_node(touchCS1984Path)
+onready var touchCS1996 = get_node(touchCS1996Path)
+onready var touchCS2021 = get_node(touchCS2021Path)
+onready var touchCS2073 = get_node(touchCS2073Path)
+
+onready var touchCSTweenDict = {global.CHAR.USA : cs1984Tween, 
+	global.CHAR.RUS : cs1973Tween, 
+	global.CHAR.FRA : cs1996Tween, 
+	global.CHAR.CHN : cs2021Tween, 
+	global.CHAR.MAR : cs2073Tween}
+
+
+onready var touchCSDict = {global.CHAR.USA : touchCS1984, 
+	global.CHAR.RUS : touchCS1973, 
+	global.CHAR.FRA : touchCS1996, 
+	global.CHAR.CHN : touchCS2021, 
+	global.CHAR.MAR : touchCS2073}
+	
+onready var touchCSTop = touchCS1973.get_global_position().y - touchCSHeight/2
 
 func _ready():
 	touchButton.set_modulate(Color(1, 1, 1, 0))
 	touchStick.set_modulate(Color(1, 1, 1, 0))
+	touchInteract.set_modulate(Color(1, 1, 1, 0))
+	touchCS.set_modulate(Color(1, 1, 1, 0.25))
+	
+	for value in touchCSDict.values():
+		value.set_modulate(Color(1, 1, 1, 0))
 	#turn on for mobile exports
 	deactivate()
 	
 	
 	#buttonTween = Tween.new()
 	add_child(buttonTween)
-	buttonTween.interpolate_property(touchButton, "modulate", Color(1, 1, 1, 1), Color(1, 1, 1, 0), 1 , 0, Tween.EASE_OUT, 0)
+	#buttonTween.interpolate_property(touchButton, "modulate", Color(1, 1, 1, 1), Color(1, 1, 1, 0), 1 , 0, Tween.EASE_OUT, 0)
 	
 	add_child(stickTween)
-	stickTween.interpolate_property(touchStick, "modulate", Color(1, 1, 1, 1), Color(1, 1, 1, 0), 1 , 0, Tween.EASE_OUT, 0)
+	#stickTween.interpolate_property(touchStick, "modulate", Color(1, 1, 1, 1), Color(1, 1, 1, 0), 1 , 0, Tween.EASE_OUT, 0)
 	
+	add_child(interactTween)
+	#interactTween.interpolate_property(touchInteract, "modulate", Color(1, 1, 1, 1), Color(1, 1, 1, 0), 1 , 0, Tween.EASE_OUT, 0)
+	
+	add_child(csTween)
+	#csTween.interpolate_property(touchCS, "modulate", Color(1, 1, 1, 1), Color(1, 1, 1, 0.5), 1 , 0, Tween.EASE_OUT, 0)
+	
+	for key in touchCSTweenDict.keys():
+		add_child(touchCSTweenDict[key])
+		#touchCSTweenDict[key].interpolate_property(touchCSDict[key], "modulate", Color(1, 1, 1, 0), Color(1, 1, 1, 0), 1 , 0, Tween.EASE_OUT, 0)
+		
 	
 func deactivate():
 	hide()
@@ -84,18 +147,54 @@ func _input(event):
 	#If input is not from mouse or key
 	if (!(event is InputEventKey or event is InputEventMouse)):
 		
-		#if event is touch onto screen and left half of screen, OR   if button is showing AND (drag event or meets condition to reset)
-		if ((event.position.x < 500 and event is InputEventScreenTouch and event.is_pressed()) or (buttonIsShowing and (event is InputEventScreenDrag or (event is InputEventScreenTouch and !event.is_pressed() and ongoing_drag != -1)))):
+		if !(event is InputEventScreenDrag) && !event.is_pressed() && ongoing_cs_drag != -1:
+			print("blah")
+		
+		if ((event.position.x < 150 && event.position.y < 140 && !buttonIsShowing) 
+		|| csButtonIsShowing 
+		&& (event is InputEventScreenDrag 
+			|| (event is InputEventScreenTouch && !event.is_pressed() 
+				&& ongoing_cs_drag != -1)  )):
+			joyCS(event)
+		
+		#if event is touch onto screen and left half of screen, 
+		#OR   if button is showing AND (drag event or meets condition to reset)
+		elif ((event.position.x < 640 
+			and event is InputEventScreenTouch 
+			and event.is_pressed()) 
+		or (buttonIsShowing 
+			and (event is InputEventScreenDrag 
+				or (event is InputEventScreenTouch 
+					and !event.is_pressed() 
+					and ongoing_drag != -1)))):
 			joyStick(event)
 		
+		var pos = event.position
+		
 		#if in the middle, it is an interact signal
-		if (event.position.x >= 500 and event.position.x < 780 and event is InputEventScreenTouch):
+		if (canInteract
+		and event.position.x >= interactCenter.x - interactWidthHeight/2 
+			and event.position.x < interactCenter.x + interactWidthHeight/2
+		and event.position.y >= interactCenter.y - interactWidthHeight/2 
+			and event.position.y < interactCenter.y + interactWidthHeight/2
+		 and event is InputEventScreenTouch):
 			joyInteract(event)
 
 		#if on the right it is a jump signal
-		if (event.position.x >= 780 and event is InputEventScreenTouch):
+		elif (event.position.x >= 640 and event is InputEventScreenTouch):
 			joyJump(event)
 			
+			
+func setInteractAvailable(set: bool):
+	if set == null || !set is bool: return
+	
+	canInteract = set
+	
+	if !set:
+		showInteract(false, false)
+	else:
+		showInteract(true, false)
+		
 
 func get_button_pos():
 	#this assumes the local position origin of the inner circle
@@ -115,20 +214,66 @@ func showStick(visible):
 		stickTween.start()
 		
 		
-func showButton(visible, redColor):
-	if (redColor):
-		touchButton.set_animation("red")
-	else:
-		touchButton.set_animation("blue")
+func showButton(visible):
 	
 	if (visible):
 		touchButton.show()
-		buttonTween.stop_all()
+		#buttonTween.stop_all()
 		touchButton.set_modulate(Color(1, 1, 1, 1))
 	else:
 		buttonTween.interpolate_property(touchButton, "modulate", Color(1, 1, 1, 1), Color(1, 1, 1, 0), 1 , 0, Tween.EASE_OUT, 0)
 		buttonTween.start()
 
+func showInteract(visible, pressed):
+	var currColor = touchInteract.get_modulate()
+	
+	
+	#interactTween.stop_all()
+	if (visible):
+		touchInteract.show()
+		var alpha = 1 if pressed else 0.25
+		interactTween.interpolate_property(touchInteract, "modulate", Color(1, 1, 1, currColor.a), Color(1, 1, 1, alpha), 0.25 , 0, Tween.EASE_OUT, 0)
+		#touchInteract.set_modulate(Color(1, 1, 1, 1))
+	else:
+		interactTween.interpolate_property(touchInteract, "modulate", Color(1, 1, 1, currColor.a), Color(1, 1, 1, 0), 0.5 , 0, Tween.EASE_OUT, 0)
+	
+	interactTween.start()
+		
+func showCS(visible, pressed):
+	csButtonIsShowing = false
+	var currColor = touchCS.get_modulate()
+	
+	
+	#csTween.stop_all()
+	if (visible):
+		print("visible showCS")
+		touchCS.show()
+		csButtonIsShowing = pressed
+		var alpha = 1 if pressed else 0.25
+		csTween.interpolate_property(touchCS, "modulate", Color(1, 1, 1, currColor.a), Color(1, 1, 1, alpha), 0.25 , 0, Tween.EASE_OUT, 0)
+	else:
+		print("NOT visible showCS")
+		csTween.interpolate_property(touchCS, "modulate", Color(1, 1, 1, currColor.a), Color(1, 1, 1, 0), 0.5 , 0, Tween.EASE_OUT, 0)
+	print(currColor.a)
+	csTween.start()
+		
+func showCSChar(astroChar, visible, selected):
+	var tween = touchCSTweenDict[astroChar]
+	var node = touchCSDict[astroChar]
+	
+	var currColor = node.get_modulate()
+	
+	if (visible):
+		node.show()
+		#tween.stop(node, "modulate")
+		var alpha = 1 if selected else 0.25
+		if selected:
+			print("blah")
+		tween.interpolate_property(node, "modulate", Color(1, 1, 1, currColor.a), Color(1, 1, 1, alpha), 0.25 , 0, Tween.EASE_OUT, 0)
+	else:
+		tween.interpolate_property(node, "modulate", Color(1, 1, 1, currColor.a), Color(1, 1, 1, 0), 0.5 , 0, Tween.EASE_OUT, 0)
+	
+	tween.start()
 
 func joyStick(event):
 	#if past deadzone radius (threshold), change direction of stick
@@ -177,6 +322,46 @@ func joyStick(event):
 		setTouchState("stick", TOUCH_STATE.JUST_RELEASED)
 		showStick(false)
 
+
+func joyCS(event):
+	#if screen touched (and event is "pressed")
+	if (event is InputEventScreenTouch and event.is_pressed()):
+		setTouchState("cs", TOUCH_STATE.JUST_TOUCHED)
+		showCS(true, true)
+		for astroChar in global.CHAR.values():
+			showCSChar(astroChar, true, false)
+		
+	#if dragging or pressed
+	if event is InputEventScreenDrag or (event is InputEventScreenTouch and event.is_pressed()):
+		currAstroCharSelection = null
+		for astroChar in global.CHAR.values():
+			var i = global.getAstroCharOrderIndex(astroChar)
+			if (event.position.y > touchCSTop + (i * touchCSHeight) 
+			&&  event.position.y < touchCSTop + ((i+1) * touchCSHeight)):
+				showCSChar(astroChar, true, true)
+				currAstroCharSelection = astroChar
+			else:
+				showCSChar(astroChar, true, false)
+			
+		
+		
+		#set touch index incase this is first loop
+		ongoing_cs_drag = event.get_index()
+		
+		
+	#if no longer touching
+	if event is InputEventScreenTouch and !event.is_pressed() and event.get_index() == ongoing_cs_drag:
+		ongoing_cs_drag = -1
+		setTouchState("cs", TOUCH_STATE.JUST_RELEASED)
+		showCS(true, false)
+		for astroChar in global.CHAR.values():
+			showCSChar(astroChar, false, false)
+		if currAstroCharSelection != null:
+			global.initCharSwitch(currAstroCharSelection)
+
+
+
+
 #set the touch state for the touch input
 func setTouchState(touchStateInput, touchState):
 	
@@ -201,22 +386,23 @@ func joyJump(event):
 		touchButton.global_position = event.position
 		setTouchState("jump", TOUCH_STATE.JUST_TOUCHED)
 		
-		showButton(true, false)
+		showButton(true)
 	else:
 		
 		setTouchState("jump", TOUCH_STATE.JUST_RELEASED)
-		showButton(false, false)
+		showButton(false)
 
 
 
 func joyInteract(event):
+	if !canInteract: return
 	if (event is InputEventScreenTouch and event.is_pressed()):
 		touchButton.global_position = event.position
 		setTouchState("interact", TOUCH_STATE.JUST_TOUCHED)
-		showButton(true, true)
+		showInteract(true, true)
 	else:
 		setTouchState("interact", TOUCH_STATE.JUST_RELEASED)
-		showButton(false, true)
+		showInteract(true, false)
 
 
 

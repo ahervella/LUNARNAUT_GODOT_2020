@@ -1014,6 +1014,8 @@ func processItemEntered(newItem):
 		
 	currItems.append(newItem)
 	
+	if currItems.size() > 0:
+		TOUCH_CONTROL_NODE.setInteractAvailable(true)
 	#need to store global pos for when it leaves astro
 	#in case it is fixed text
 	currItemsGlobalPosDict[newItem] = newItem.get_global_position()
@@ -1059,6 +1061,9 @@ func processItemExited(exitingItem):
 	#global.enableMultiInteractNodes(true), which checks currItems
 	#for any other nodes that have useNextInterNodeIfNeeded set to false
 	currItems.erase(exitingItem)
+	
+	if currItems.size() == 0:
+		TOUCH_CONTROL_NODE.setInteractAvailable(false)
 	
 	exitingItem.AutoCloseInteract()
 	

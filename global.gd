@@ -31,7 +31,7 @@ extends Node
 
 enum CHAR {USA, RUS, FRA, CHN, MAR}
 
-var availableChar = [CHAR.USA, CHAR.RUS, CHAR.FRA]
+var availableChar = [CHAR.RUS, CHAR.USA, CHAR.FRA]
 var astroCharDict = {CHAR.USA : "res://RESOURCES/CHARACTERS/CHAR_USA.tres",
 					CHAR.RUS : "res://RESOURCES/CHARACTERS/CHAR_RUS.tres", 
 					CHAR.FRA : "res://RESOURCES/CHARACTERS/CHAR_FRA.tres"}
@@ -215,6 +215,116 @@ func astroChar2String(astroChar):
 		global.CHAR.MAR:
 			return "MAR"
 	return ""
+
+func getAstroCharOrderIndex(astroChar):
+	var year = charYearDict[astroChar]
+	var order = 0
+	for value in charYearDict.values():
+		if value == year: continue
+		if value < year: order += 1
+		
+	return order
+
+
+
+
+
+func initCharSwitch(astroChar):
+	global.changingScene = true
+	saveCurrentLvl()
+	
+	loadNewCharacterLevel(astroChar)
+
+
+
+func saveCurrentLvl():
+	if global.CharacterRes != null:
+		
+		
+		
+		for CSWrap in global.lvl().charSwitchWrappers.values():
+			if CSWrap.staticNode: continue
+			if CSWrap.checkIfInCharLvl(global.CharacterRes.id):
+				global.lvl().get_node(CSWrap.nodePath).CSWrapAddChanges(CSWrap)
+			
+			
+		
+		
+		var currLvlPath = global.getScenePath(global.CharacterRes.level)
+	
+		savedCurrentLvlPackedScene(currLvlPath)
+		
+		
+		reorderAndSaveCurrentLvlWrappers(currLvlPath)
+			
+		
+
+func savedCurrentLvlPackedScene(currLvlPath):
+	var currChar = global.CharacterRes.id
+	
+	
+	if !global.levelWrapperDict.has(currLvlPath):
+		global.levelWrapperDict[currLvlPath] = LevelWrapper.new()
+			
+	if !global.levelWrapperDict[currLvlPath].charSavedLvlSceneDict.has(currChar):
+		global.levelWrapperDict[currLvlPath].charSavedLvlSceneDict[currChar] = PackedScene.new()
+	global.levelWrapperDict[currLvlPath].charSavedLvlSceneDict[currChar].pack(global.lvl())
+	
+	ResourceSaver.save("res://name.tscn", global.levelWrapperDict[currLvlPath].charSavedLvlSceneDict[currChar])
+#	if !global.levelWrapperDict[currLvlPath].gravity.has(currChar):
+#		global.levelWrapperDict[currLvlPath].gravity[currChar] = []
+#		global.levelWrapperDict[currLvlPath].gravity[currChar].resize(2)
+		
+	global.levelWrapperDict[currLvlPath].gravity[currChar] = [global.gravMag, rad2deg(global.gravRadAngFromNorm)]
+	var timeDiscrepArray = [global.lvl().timeDiscrepCSWCharDict.duplicate(true), 
+		global.lvl().timeDiscrepBodyPresentDict2.duplicate(true), 
+		global.lvl().timeDiscrepManuallyRemovingArea.duplicate(true)]
+	global.levelWrapperDict[currLvlPath].lvlTimeDiscrepAreaDict[currChar] = [timeDiscrepArray, PackedScene.new()]
+	global.levelWrapperDict[currLvlPath].lvlTimeDiscrepAreaDict[currChar][1].pack(global.lvl().timeDiscrepParentNode)
+
+
+
+
+func reorderAndSaveCurrentLvlWrappers(currLvlPath):
+	var currChar = global.CharacterRes.id
+	var charSwitchWrappersDUP = global.lvl().charSwitchWrappers.duplicate(true)
+	
+	
+#	for wrap in global.lvl().charSwitchWrappers.values():
+#		dependantOrderedCSWrappers.append(wrap)
+#
+#	for wrap in global.lvl().charSwitchWrappers.values():
+#
+#		for dependantWrap in wrap.dependantCSWrappers[currChar]:
+#
+#			#for all dependant wrappers, place them after the parent node
+#			dependantOrderedCSWrappers.erase(dependantWrap)
+#			var wrapIndex = dependantOrderedCSWrappers.find(wrap)
+#			if wrapIndex > dependantOrderedCSWrappers.size():
+#				dependantOrderedCSWrappers.resize(dependantOrderedCSWrappers.size()+1)
+#
+#			dependantOrderedCSWrappers.insert(wrapIndex+1, dependantWrap)
+			
+			
+	global.levelWrapperDict[currLvlPath].lvlNodesCSWrapDict[currChar] = charSwitchWrappersDUP
+
+
+
+func loadNewCharacterLevel(astroChar):
+	if !astroCharDict.has(astroChar) : return
+	CharacterRes = load(astroCharDict[astroChar])
+	var newLvlPath = getScenePath(CharacterRes.level)
+	print(newLvlPath)
+	print("print(newLvlPath)")
+	#if global.levelWrapperDict.has(newLvlPath):
+	#	if global.levelWrapperDict[newLvlPath].charSavedLvlSceneDict.has(Character.id):
+	#		global.goto_scene(global.levelWrapperDict[newLvlPath].charSavedLvlSceneDict[Character.id])
+			
+			
+			#return
+	
+	
+	global.goto_scene(newLvlPath)
 
 
 

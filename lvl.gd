@@ -67,6 +67,7 @@ func setAddAstroAndCam(garboVal):
 func setAddAllChildNodes(garboVal):
 	if !Engine.editor_hint:
 		return
+	CSWrapsAddAll1stGenChildNodes = false
 	
 	addAstroAndCamPerChar()
 	
