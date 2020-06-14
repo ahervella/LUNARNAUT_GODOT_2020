@@ -137,6 +137,7 @@ onready var touchCSDict = {global.CHAR.USA : touchCS1984,
 onready var touchCSTop = touchCS1973.get_global_position().y - touchCSHeight/2
 
 func _ready():
+	show()
 	touchButton.set_modulate(Color(1, 1, 1, 0))
 	touchStick.set_modulate(Color(1, 1, 1, 0))
 	touchInteract.set_modulate(Color(1, 1, 1, 0))

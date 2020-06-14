@@ -52,13 +52,7 @@ func _ready():
 	
 	
 	setMenu(mainMenu, mainMenuOPT)
-#	currMenuNode = mainMenu
-#	currMenuOpt = mainMenuOPT
-#	currColCount = currMenuNode.get_columns()
-#	currRowCount = ceil(currMenuNode.get_child_count()/float(currColCount))
-#	currRowHeight = currMenuNode.get_size().y / currRowCount
-#	currColWidth = currMenuNode.get_size().x / currColCount
-#	currSize = currMenuNode.get_size()
+	
 	
 	devLevels.hide()
 	for lvl in levels:
@@ -122,12 +116,9 @@ func _input(event):
 		if !event is InputEventScreenDrag:
 			pressed = event.is_pressed()
 		
-		#if mainMenu.is_visible():
 		HandleMenuOPT(event)
 		
 		HandleReturnToMain(event)
-		#elif devLevels.is_visible():
-		#	HandleDevLevelsOPT(event)
 
 
 func hasPos(obj, point : Vector2):
@@ -213,7 +204,6 @@ func changeOptionColor(optIndex, selected):
 	#for node in currMenuNode.get_children():
 	if selected:
 		currMenuNode.get_child(optIndex).setColor(SELECT_COLOR)
-		#print("selectColor")
 	else:
 		currMenuNode.get_child(optIndex).setColor(NORMAL_COLOR)
 			

@@ -273,7 +273,7 @@ func savedCurrentLvlPackedScene(currLvlPath):
 		global.levelWrapperDict[currLvlPath].charSavedLvlSceneDict[currChar] = PackedScene.new()
 	global.levelWrapperDict[currLvlPath].charSavedLvlSceneDict[currChar].pack(global.lvl())
 	
-	ResourceSaver.save("res://name.tscn", global.levelWrapperDict[currLvlPath].charSavedLvlSceneDict[currChar])
+	#ResourceSaver.save("res://name.tscn", global.levelWrapperDict[currLvlPath].charSavedLvlSceneDict[currChar])
 #	if !global.levelWrapperDict[currLvlPath].gravity.has(currChar):
 #		global.levelWrapperDict[currLvlPath].gravity[currChar] = []
 #		global.levelWrapperDict[currLvlPath].gravity[currChar].resize(2)
@@ -371,9 +371,9 @@ func loadLevel(lvlNum):
 	
 func goto_scene(path):
 	changingScene = true
-	call_deferred("goto_sceneEXT", path)
+	#call_deferred("goto_sceneEXT", path)
 	
-func goto_sceneEXT(path):
+#func goto_sceneEXT(path):
 	for child in lvl().get_children():
 		child.set_physics_process(false)
 		
