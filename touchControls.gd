@@ -192,8 +192,8 @@ func _input(event):
 	#If input is not from mouse or key
 	if (!(event is InputEventKey or event is InputEventMouse)):
 		
-		if !(event is InputEventScreenDrag) && !event.is_pressed() && ongoing_cs_drag != -1:
-			print("blah")
+#		if !(event is InputEventScreenDrag) && !event.is_pressed() && ongoing_cs_drag != -1:
+#			print("blah")
 			
 		
 			

@@ -226,7 +226,10 @@ func getAstroCharOrderIndex(astroChar):
 	return order
 
 
-
+func getSceneName(path):
+	
+	path = path.substr(path.find_last("/")+1)
+	return path.substr(0, path.find_last("."))
 
 
 func initCharSwitch(astroChar):
