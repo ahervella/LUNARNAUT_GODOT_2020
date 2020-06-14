@@ -4,6 +4,7 @@ extends RigidBody2D
 enum OBJECT_WEIGHT{HEAVY, MEDIUM, LIGHT}
 
 const LINEAR_DAMP = 0.01
+const DEFAULT_FRIC = 0.7
 
 export (OBJECT_WEIGHT) var objectWeight = OBJECT_WEIGHT.MEDIUM setget changeWeight
 export (bool) var roll = false
@@ -54,6 +55,9 @@ var transChange = null
 var transJustChanged = false
 var transJustChangedPos = null
 var deactivated = false
+
+var astroTouchBugOn = false
+var astroTouching = false
 
 func getterFunction():
 	pass
@@ -107,7 +111,7 @@ func setVarsToDefault():
 		set_physics_material_override(PhysicsMaterial.new())
 	
 	var physMat = get_physics_material_override()
-	physMat.friction = 0.7
+	physMat.friction = DEFAULT_FRIC
 	physMat.rough = true#false
 	physMat.bounce = 0.1
 	physMat.absorbent = true#false
@@ -141,6 +145,9 @@ func _ready():
 	
 	#set tc in interact node and trigger node in astro scrupt for movabkle onjs
 	
+	connect("body_entered", self, "bodyEntered")
+	connect("body_exited", self, "bodyExited")
+	
 	setVarsToDefault()
 	
 	setCustomSprite()
@@ -158,6 +165,8 @@ func _ready():
 #and I kinda want the rigidbody to be the head node here so it doesn't
 #have to update it's parent position and shit and not get scaled (because 
 #you're not allowed to scale rigidbodies)
+
+
 func setInteractVars():
 	var spriteNode = getSpriteNode()
 	spriteNode.TC_AUTO = TC_AUTO
@@ -199,6 +208,10 @@ func changeWeight(weight):
 	objectWeight = weight
 	setForceVelLim()#_ready()
 
+#used for a small bug where astro gets stuck when rolling ball
+#is making contact with astro
+func enableFric(enabled):
+	get_physics_material_override().friction = DEFAULT_FRIC if enabled else 0
 
 
 func _physics_process(delta):
@@ -303,7 +316,47 @@ func _integrate_forces(state):
 	checkForAndMarkAsChanged()
 	thisObjectCheckChange()
 	
+	if astroTouchBugOn:
+		astroTouchBug(state)
+		astroTouchBugOn = false
 
+
+#vvvvvvvvvvvvvv These methods were needed to compensate the mini bug where
+# astro gets stuck if touching the rotating movable obj. Fixed by just applying
+#a baby impulse to object in opposite directino if when signaled by astro script
+# that it is trying to move
+
+
+func bodyEntered(body):
+	if body == global.lvl().astroNode:
+		astroTouching = true
+func bodyExited(body):
+	if body == global.lvl().astroNode:
+		astroTouching = false
+
+
+
+func astroTouchBug(state):
+	
+	if !astroTouching: return
+	var vect = self.get_global_position() - global.lvl().astroNode.get_global_position()
+	
+	var astro = global.lvl().astroNode
+	var contactPoint = null
+	var counts = state.get_contact_count()
+	for i in state.get_contact_count():
+		if state.get_contact_collider_object(i) == astro:
+			contactPoint = i
+			break
+#
+	if contactPoint == null: return
+	# impulse in oposite direction
+	apply_central_impulse(state.get_contact_local_normal(contactPoint).normalized()* 0.3)
+	
+	#############^^^^^^^^^^^^
+	
+	
+	
 
 func checkForAndMarkAsChanged():
 	if transChange != null && !transJustChanged: return
