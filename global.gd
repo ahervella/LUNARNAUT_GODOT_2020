@@ -371,6 +371,9 @@ func loadLevel(lvlNum):
 	
 func goto_scene(path):
 	changingScene = true
+	call_deferred("goto_sceneEXT", path)
+	
+func goto_sceneEXT(path):
 	for child in lvl().get_children():
 		child.set_physics_process(false)
 		

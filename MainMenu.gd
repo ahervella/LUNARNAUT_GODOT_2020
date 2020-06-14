@@ -12,6 +12,7 @@ export (NodePath) var mainMenuPath
 export (NodePath) var devLevelsPath
 export (Array, PackedScene) var levels
 export (NodePath) var versionPath
+export(NodePath) var returnButtonPath
 export (int) var maxRowsPerCol
 export (PackedScene) var menuOptScene
 
@@ -23,6 +24,7 @@ onready var menuContainer = get_node(menuContainerPath)
 onready var mainMenu = get_node(mainMenuPath)
 onready var devLevels = get_node(devLevelsPath)
 onready var version = get_node(versionPath)
+onready var returnButton = get_node(returnButtonPath)
 
 
 var currMenuNode
@@ -30,6 +32,8 @@ var currMenuOpt
 var currColCount
 var currRowCount
 var currRowHeight
+var currColWidth
+var currSize
 
 var mainMenuOPT = []
 var mainMenuColCount
@@ -39,24 +43,32 @@ var mainMenuRowHeight
 var skipMenu = false
 var pressed = false
 var validPress = false
+var validReturnMainPress = false
 
 func _ready():
 	mainMenuOPT.resize(mainMenu.get_child_count())
-	mainMenuOPT[0] = "customLevel"
+	mainMenuOPT[0] = "setCustomLevelMenu"
 	mainMenuOPT[1] = "demoLevel"
 	
-	currMenuNode = mainMenu
-	currMenuOpt = mainMenuOPT
-	currColCount = currMenuNode.get_columns()
-	currRowCount = round(currMenuNode.get_child_count()/float(currColCount))
-	currRowHeight = currMenuNode.get_size().y / currRowCount
-
+	
+	setMenu(mainMenu, mainMenuOPT)
+#	currMenuNode = mainMenu
+#	currMenuOpt = mainMenuOPT
+#	currColCount = currMenuNode.get_columns()
+#	currRowCount = ceil(currMenuNode.get_child_count()/float(currColCount))
+#	currRowHeight = currMenuNode.get_size().y / currRowCount
+#	currColWidth = currMenuNode.get_size().x / currColCount
+#	currSize = currMenuNode.get_size()
 	
 	devLevels.hide()
 	for lvl in levels:
+		var lvlInst = lvl.instance()
 		var lvlOpt = menuOptScene.instance()
-		lvlOpt.menuOptText = global.getSceneName(lvl.get_name())
+		lvlOpt.menuOptText = global.getSceneName(lvlInst.filename)
+		print(global.getSceneName(lvlInst.filename))
 		devLevels.add_child(lvlOpt)
+	
+	devLevels.set_columns(ceil(levels.size() / float(maxRowsPerCol)))
 	
 	
 	for child in get_children():
@@ -74,6 +86,8 @@ func _on_Intro_finished():
 	intro.stop()
 	menu.show()
 	version.show()
+	returnButton.hide()
+	devLevels.hide()
 	menuContainer.show()
 	currMenuNode.show()
 
@@ -89,7 +103,7 @@ func _input(event):
 	
 	if event is InputEventMouse: return
 	
-	if intro.is_playing():
+	if intro.is_playing() && !menu.is_playing():
 		skipMenu = true
 		_on_Intro_finished()
 		return
@@ -104,8 +118,14 @@ func _input(event):
 	# which is why this logic is a bit fuzy
 		
 	if ( (event is InputEventScreenTouch || event is InputEventScreenDrag)):
+		
+		if !event is InputEventScreenDrag:
+			pressed = event.is_pressed()
+		
 		#if mainMenu.is_visible():
 		HandleMenuOPT(event)
+		
+		HandleReturnToMain(event)
 		#elif devLevels.is_visible():
 		#	HandleDevLevelsOPT(event)
 
@@ -124,10 +144,7 @@ func hasPos(obj, point : Vector2):
 
 	
 func HandleMenuOPT(event):
-	if !event is InputEventScreenDrag:
-		pressed = event.is_pressed()
-	
-	
+
 	#if currently pressed of released touch moves out of area,
 	#make all off and return
 	if !hasPos(currMenuNode, event.position):
@@ -151,7 +168,8 @@ func HandleMenuOPT(event):
 		
 		
 		for i in currMenuNode.get_child_count():
-			if relY > (currRowHeight * i) && relY < currRowHeight * (i+1):
+			if (relX > (currColWidth * (i % currColCount)) && relX < (currColWidth * ((i % currColCount) + 1))
+			&& relY > (currRowHeight * floor(i/float(currColCount))) && relY < currRowHeight * (floor(i/float(currColCount))+1)):
 				selection = i
 				
 				changeOptionColor(i, pressed)
@@ -161,9 +179,36 @@ func HandleMenuOPT(event):
 		if selection == null: return
 	
 		if !event is InputEventScreenDrag && !event.is_pressed():
-			call(currMenuOpt[selection])
+			if currMenuOpt != null:
+				call(currMenuOpt[selection])
+			else:
+				var scene = levels[selection].instance()
+				global.goto_scene(scene.filename)
 	
+func HandleReturnToMain(event):
+	
+	if !hasPos(returnButton, event.position):
+		returnButton.set("custom_colors/font_color", NORMAL_COLOR)
+			
 		
+		if event.is_pressed():
+			validReturnMainPress = false
+		return
+	
+	if !event is InputEventScreenDrag && event.is_pressed():
+		validReturnMainPress = true
+	
+	if validReturnMainPress:
+		if pressed:
+			returnButton.set("custom_colors/font_color", SELECT_COLOR)
+		else:
+			returnButton.set("custom_colors/font_color", NORMAL_COLOR)
+		
+		if !event is InputEventScreenDrag && !event.is_pressed():
+			setMainMenu()
+			
+	
+	
 func changeOptionColor(optIndex, selected):
 	#for node in currMenuNode.get_children():
 	if selected:
@@ -174,10 +219,30 @@ func changeOptionColor(optIndex, selected):
 			
 
 			
-func customLevel():
+func setCustomLevelMenu():
+	version.hide()
+	returnButton.show()
+	mainMenu.hide()
+	devLevels.show()
 	
-	pass#mainMenuOPT.hide()
+	call_deferred("setMenu", devLevels, null)
 	
+func setMainMenu():
+	version.show()
+	returnButton.hide()
+	devLevels.hide()
+	mainMenu.show()
+	
+	call_deferred("setMenu", mainMenu, mainMenuOPT)
+	
+func setMenu(m, mOPT = null):
+	currMenuNode = m
+	currMenuOpt = mOPT
+	currColCount = currMenuNode.get_columns()
+	currRowCount = round(currMenuNode.get_child_count()/float(currColCount))
+	currRowHeight = currMenuNode.get_size().y / currRowCount
+	currColWidth = currMenuNode.get_size().x / currColCount
+	currSize = currMenuNode.get_size()
 	
 	
 func demoLevel():
