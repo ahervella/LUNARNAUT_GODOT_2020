@@ -4,6 +4,7 @@ extends RigidBody2D
 enum OBJECT_WEIGHT{HEAVY, MEDIUM, LIGHT}
 
 const LINEAR_DAMP = 0.01
+const DEFAULT_FRIC = 0.7
 
 export (OBJECT_WEIGHT) var objectWeight = OBJECT_WEIGHT.MEDIUM setget changeWeight
 export (bool) var roll = false
@@ -107,7 +108,7 @@ func setVarsToDefault():
 		set_physics_material_override(PhysicsMaterial.new())
 	
 	var physMat = get_physics_material_override()
-	physMat.friction = 0.7
+	physMat.friction = DEFAULT_FRIC
 	physMat.rough = true#false
 	physMat.bounce = 0.1
 	physMat.absorbent = true#false
@@ -199,6 +200,10 @@ func changeWeight(weight):
 	objectWeight = weight
 	setForceVelLim()#_ready()
 
+#used for a small bug where astro gets stuck when rolling ball
+#is making contact with astro
+func enableFric(enabled):
+	get_physics_material_override().friction = DEFAULT_FRIC if enabled else 0
 
 
 func _physics_process(delta):
@@ -304,6 +309,18 @@ func _integrate_forces(state):
 	thisObjectCheckChange()
 	
 
+func astroTouchBug(state):
+	var astro = global.lvl().astroNode
+	var contactPoint = null
+	for i in state.get_contact_count():
+		if state.get_contact_collider_object(i) == astro:
+			contactPoint = state.get_contact_collider_position(i)
+			break
+	
+	if contactPoint == null: return
+	
+	# impulse in oposite direction
+	
 
 func checkForAndMarkAsChanged():
 	if transChange != null && !transJustChanged: return

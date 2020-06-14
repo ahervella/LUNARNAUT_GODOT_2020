@@ -577,6 +577,7 @@ func RestrictFromRope():
 
 func MoveMovableObjects():
 	if movableObject != null && grabbingMovableObj:
+		
 		movableObject.movingDir = 0
 		if directional_force.x > 0:
 			movableObject.movingDir = 1
@@ -584,6 +585,7 @@ func MoveMovableObjects():
 			movableObject.movingDir = -1
 			
 	if movableObject != null && !grabbingMovableObj:
+		
 		movableObject.movingDir = 0
 		
 		
