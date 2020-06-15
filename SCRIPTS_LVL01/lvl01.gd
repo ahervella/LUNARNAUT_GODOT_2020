@@ -27,9 +27,10 @@ func _ready():
 	
 	._ready()
 	
-	call_deferred("readyExt")
 	
-func readyExt():
+#	call_deferred("readyExt")
+	
+#func readyExt():
 	
 	noraNode = get_node(noraNodePath)
 	
@@ -39,11 +40,15 @@ func readyExt():
 	
 	CAM_GLOBAL_START_POS  = Vector2(214.26, ASTRO_GLOBAL_START_POS.y) 
 	
+	
 	initLevel()
+	
 	
 	#volume set at way top
 	#gradual music fade in
+	audio.sound("music", "lvl01").play(0)
 	global.newTween(audio.sound("music", "lvl01"), "volume_db", -50, -2, 3, 0)
+	
 
 	astroNode.set_health(ASTRO_HEALTH)
 
@@ -56,7 +61,7 @@ func readyExt():
 func initLevel():
 	.initLevel()
 	
-	#call_deferred("initLevelExt")
+#	call_deferred("initLevelExt")
 	
 #func initLevelExt():
 	spawnNora = false
@@ -64,12 +69,12 @@ func initLevel():
 	
 	audio.loadLevelSounds("lvl01")
 	
-	
+	#astroNode.CAMERA_NODE.FadeOutOfBlack()
 	if (global.playTest):
 		spawnNora = false
 		doorOpened = false
 		
-		astroNode.CAMERA_NODE.FadeOutOfBlack()
+		#astroNode.CAMERA_NODE.FadeOutOfBlack()
 	
 
 func loadNextLevel():

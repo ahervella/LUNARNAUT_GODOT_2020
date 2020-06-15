@@ -9,6 +9,7 @@ extends Sprite
 # var a = 2
 # var b = "text"
 func _ready():
+	self.show()
 	call_deferred('readyDeferred')
 # Called when the node enters the scene tree for the first time.
 func readyDeferred():
@@ -18,7 +19,7 @@ func readyDeferred():
 	var cur_r = cur_color.r
 	var cur_b = cur_color.b
 	var cur_a = cur_color.a
-	self.show()
+	
 	
 	#if in playtest mode, do nice tweens, else ignore, just instant alpha
 	if (global.playTest):

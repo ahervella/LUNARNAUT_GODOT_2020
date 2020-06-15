@@ -96,6 +96,8 @@ func _on_MenuLOOP_finished():
 #General input
 func _input(event):
 	
+	if mission.is_playing() || start.is_playing():
+		return
 	
 	if event is InputEventMouse: return
 	
@@ -245,7 +247,7 @@ func demoLevel():
 	menuContainer.hide()
 	version.hide()
 	
-	global.newTimer(31, funcref(self, "missionTween"))
+	global.newTimer(30, funcref(self, "missionTween"))
 
 func missionTween():
 	black.set_modulate(Color(1, 1, 1, 0))
@@ -253,18 +255,22 @@ func missionTween():
 	global.newTween(black, "modulate", 
 		Color(1, 1, 1, 0), 
 		Color(1, 1, 1, 1), 
-		5, 0, funcref(self, "missionStart"))
+		4, 0, funcref(self, "missionStart"))
 
 func missionStart():
+	start.show()
 	for child in get_children():
+		if child == start: continue
 		child.hide()
 	mission.stop()
-	start.show()
-	global.newTimer(1, funcref(self, "missionStartExt"))
+	global.newTimer(2, funcref(self, "missionStartExt"))
 func missionStartExt():
 	start.play()
 
 
 func _on_Start_finished():
+	global.newTimer(1, funcref(self, "startDemo"))
+	
+func startDemo():
 	var demo = demoLevel.instance()
 	global.goto_scene(demo.filename)

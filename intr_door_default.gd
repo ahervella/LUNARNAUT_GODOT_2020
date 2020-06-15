@@ -50,7 +50,8 @@ var doorBottomTween : Tween
 var doorBottomTweenUniqueID : String
 
 var doorBarrierShape : CollisionShape2D
-
+var doorBarrierShapePar
+var doorBarrierShapePos
 
 
 func _ready():
@@ -68,6 +69,9 @@ func _ready():
 	doorTop = get_node("doorTop")
 	doorBottom = get_node("doorBottom")
 	doorBarrierShape = get_node("doorStaticBody/doorShape")
+	
+	doorBarrierShapePar = doorBarrierShape.get_parent()
+	doorBarrierShapePos = doorBarrierShape.get_position()
 	
 	doorShadowTopClosePos = doorShadowTop.get_position()
 	#adding 2 so that shadows move faster and don't bleed infront of door
@@ -102,7 +106,11 @@ func moveDoorPart(doorNode, doorStartPos, doorEndPos, doorTweenNode, doorTweenNo
 	
 	
 func openDoor():
-	doorBarrierShape.set_disabled(true)
+	if doorBarrierShape.get_parent() != null:
+		doorBarrierShape.get_parent().remove_child(doorBarrierShape)
+	#had to do above instead beacuse for some damn reason disabling the shape
+	#wasn't always working :////
+	#doorBarrierShape.set_disabled(true)
 	doorShadowTopTween = moveDoorPart(doorShadowTop, doorShadowTopClosePos, doorShadowTopOpenPos, doorShadowTopTween, doorShadowTopTweenUniqueID)
 	doorShadowTopTweenUniqueID = doorShadowTopTween.to_string()
 	doorShadowBottomTween = moveDoorPart(doorShadowBottom, doorShadowBottomClosePos, doorShadowBottomOpenPos, doorShadowBottomTween, doorShadowBottomTweenUniqueID)
@@ -113,7 +121,10 @@ func openDoor():
 	doorBottomTweenUniqueID = doorBottomTween.to_string()
 	
 func closeDoor():
-	doorBarrierShape.set_disabled(false)
+	if doorBarrierShape.get_parent() == null:
+		doorBarrierShapePar.add_child(doorBarrierShape)
+		doorBarrierShape.set_owner(doorBarrierShapePar)
+	#doorBarrierShape.set_disabled(false)
 	doorShadowTopTween = moveDoorPart(doorShadowTop, doorShadowTopOpenPos, doorShadowTopClosePos, doorShadowTopTween, doorShadowTopTweenUniqueID)
 	doorShadowTopTweenUniqueID = doorShadowTopTween.to_string()
 	doorShadowBottomTween = moveDoorPart(doorShadowBottom, doorShadowBottomOpenPos, doorShadowBottomClosePos, doorShadowBottomTween, doorShadowBottomTweenUniqueID)
@@ -135,12 +146,18 @@ func AutoInteract():
 	#	TextInteract()
 	#can_interact = true
 	
-	
-	
-	.AutoInteract()
-
 	if (DOOR_AUTO_OPEN || !DOOR_LOCKED):
 		openDoor()
+		interactNode = global.getNextInteractNodeIndex()#interactNodeIndex = global.getNextInteractNodeIndex()
+		if interactNode != null:
+			interactNode.parentInteractObject = self
+			
+		interactNode.animateText(TC_UNLOCKED, InteractAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
+		return
+	else:
+		.AutoInteract()
+
+		
 
 
 

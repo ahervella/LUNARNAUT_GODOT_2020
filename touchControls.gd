@@ -75,6 +75,8 @@ var touchPauseHeight = 40
 var touchPauseXBound = []
 var touchPauseYBound = []
 
+var disableCS = false
+
 export (NodePath) var touchPause_scanBGPath = null
 export (NodePath) var touchPause_settingsPath = null
 export (NodePath) var touchPause_mainMenuPath = null
@@ -187,6 +189,13 @@ func activate():
 	set_process_unhandled_input(true)
 	set_process_input(true)
 
+func deactivateCS():
+	disableCS = true
+	touchCS.hide()
+	
+func activateCS():
+	disableCS = false
+	touchCS.show()
 
 #General input
 func _input(event): 
@@ -209,7 +218,7 @@ func _input(event):
 		
 		elif !pauseToggle:
 			#TODO: fix dragging over from jump button or anywhere else
-			if ((event.position.x < 150 && event.position.y < 140 && !buttonIsShowing) #&& ongoing_cs_drag != event.get_index()) 
+			if (!disableCS && (event.position.x < 150 && event.position.y < 140 && !buttonIsShowing) #&& ongoing_cs_drag != event.get_index()) 
 			|| csButtonIsShowing 
 			&& (event is InputEventScreenDrag 
 				|| (event is InputEventScreenTouch && !event.is_pressed() 
@@ -304,6 +313,7 @@ func showInteract(visible, pressed):
 	interactTween.start()
 		
 func showCS(visible, pressed):
+	if disableCS: return
 	csButtonIsShowing = false
 	var currColor = touchCS.get_modulate()
 	
@@ -474,9 +484,11 @@ func joyPauseOptions(event):
 			
 			match(selectedOpt):
 				2:
+					audio.unloadLevelSounds()
 					global.goto_scene(global.lvl().filename)
 					continue
 				3:
+					audio.unloadLevelSounds()
 					global.replay()
 					continue
 	

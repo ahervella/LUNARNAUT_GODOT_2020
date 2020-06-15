@@ -7,30 +7,42 @@ onready var TOUCH_CONTROL_NODE = get_node(TOUCH_CONTROL_PATH)
 onready var TIMELINE_LABEL_NODE = get_node(TIMELINE_LABEL_PATH)
 export (bool) var touchControlsOn = false
 export (bool) var timelineLabelOn = false
+export (bool) var disableCSTouchButton = false
 
 const RED_FLASH_TIME = 1
 const BLACK_FADE_TIME = 3
-onready var blackOverlayNode = get_node("blackOverlay")
-onready var hurtTintNode = get_node("hurtTint")
+onready var blackOverlayNode = get_node("CanvasLayer/blackOverlay")
+onready var hurtTintNode = get_node("CanvasLayer/hurtTint")
 onready var gameOverTextNode = get_node("CanvasLayer/gameOverText")
 
 func _ready():
-	var cur_color = blackOverlayNode.get_modulate()
-	var g = cur_color.g
-	var r = cur_color.r
-	var b = cur_color.b
-	var a = cur_color.a
-	blackOverlayNode.set_modulate( Color(r, g, b, 0))
+
+	blackOverlayNode.set_modulate( Color(0, 0, 0, 1))
 
 	if touchControlsOn:
 		TOUCH_CONTROL_NODE.activate()
 	else:
 		TOUCH_CONTROL_NODE.deactivate()
 		
+	if disableCSTouchButton:
+		TOUCH_CONTROL_NODE.deactivateCS()
+	else:
+		TOUCH_CONTROL_NODE.activateCS()
+		
 	if timelineLabelOn:
 		TIMELINE_LABEL_NODE.show()
 	else:
 		TIMELINE_LABEL_NODE.hide()
+		
+	call_deferred("readyExt")
+	
+func readyExt():
+	if global.playTest:
+		FadeOutOfBlack()
+		#blackOverlayNode.set_modulate( Color(0, 0, 0, 0))
+	else:
+		
+		blackOverlayNode.set_modulate( Color(0, 0, 0, 0))
 
 func deathRedness():
 	var cur_color = hurtTintNode.get_modulate()#$"/root/Control/Cam2D/hurtTint".get_modulate()

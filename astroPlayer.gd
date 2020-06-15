@@ -118,7 +118,7 @@ func _ready():
 	call_deferred('readyDeferred')
 	#readyDeferred()
 	
-func readyDeferred():
+
 	#only execute in game
 	if Engine.editor_hint:
 		return
@@ -178,11 +178,12 @@ func readyDeferred():
 	
 
 	#suit sound:
-	audio.sound("suitBeep").play()
+	#audio.sound("suitBeep").play()
 
 	$"ASTRO_ANIM2"._set_playing(true)
 	
-
+	
+func readyDeferred():
 	
 	#These visible options are soley for the editor to be able to switch
 	#these views on and off to make development easier. The backgrounds
@@ -255,8 +256,8 @@ func _physics_process(delta):
 	if (groundedBubble):
 		jumping = false
 		holdDownCanJump = true
-		if(get_anim()=="FALL" || get_anim()=="JUMP"):
-			set_anim("LAND")
+#		if(get_anim()=="FALL" || get_anim()=="JUMP2"):
+#			set_anim("LAND")
 		airTime = 0
 		jumpForce = CHARACTER_RES.baseJump
 		currMaxAirTime = DEFAULT_MAX_AIR_TIME
@@ -265,11 +266,12 @@ func _physics_process(delta):
 	ApplyMovement(delta)
 	
 	#temporary fix for anim bug
-	if (groundedBubble && (get_anim()=="FALL" || get_anim()=="JUMP")):
+	if (groundedBubble && (get_anim()=="FALL" || get_anim()=="JUMP2") && vel.y >= 0):
 			set_anim("LAND")
 			
-	if !groundedBubble && get_anim()!="FALL" && get_anim()!="JUMP":
-		set_anim("JUMP")
+	if !groundedBubble && get_anim()!="FALL" && get_anim()!="JUMP2" && vel.y < 0:
+		set_anim("JUMP2")
+		$"ASTRO_ANIM2".set_frame(14)
 			
 	
 	#if !groundedBubble:
@@ -457,7 +459,7 @@ func Move():
 	get_node("Light2D").set_position(Vector2(dirMulti * light2DPosition.x, light2DPosition.y))
 		
 	#animation:
-	if (groundedBubble && get_anim() != "RUN2"):
+	if (groundedBubble && get_anim() != "RUN2" && vel.y >= 0):
 		set_anim("START2")
 
 #flip movableObject bubble
@@ -961,7 +963,7 @@ func ImmuneToFalse():
 		TakeDamage()
 
 func TakeDamageImpactLaunch(direction):
-	vel = Vector2(500 * direction, -500)
+	vel = Vector2(100 * direction, -100)
 
 
 
