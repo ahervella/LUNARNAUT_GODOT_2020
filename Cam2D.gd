@@ -2,8 +2,11 @@ extends Camera2D
 
 #used so astro can grab this
 export (NodePath) var TOUCH_CONTROL_PATH = "CanvasLayer/touchControls"
+export (NodePath) var TIMELINE_LABEL_PATH = "CanvasLayer/timelineLabel"
 onready var TOUCH_CONTROL_NODE = get_node(TOUCH_CONTROL_PATH)
+onready var TIMELINE_LABEL_NODE = get_node(TIMELINE_LABEL_PATH)
 export (bool) var touchControlsOn = false
+export (bool) var timelineLabelOn = false
 
 const RED_FLASH_TIME = 1
 const BLACK_FADE_TIME = 3
@@ -23,6 +26,11 @@ func _ready():
 		TOUCH_CONTROL_NODE.activate()
 	else:
 		TOUCH_CONTROL_NODE.deactivate()
+		
+	if timelineLabelOn:
+		TIMELINE_LABEL_NODE.show()
+	else:
+		TIMELINE_LABEL_NODE.hide()
 
 func deathRedness():
 	var cur_color = hurtTintNode.get_modulate()#$"/root/Control/Cam2D/hurtTint".get_modulate()

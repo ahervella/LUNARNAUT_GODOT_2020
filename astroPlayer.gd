@@ -41,7 +41,8 @@ var max_move_speed = 200
 var directional_force = Vector2()
 #const GRAVITY = 3
 var gravity = 0
-var groundedBubble = true
+var groundedBubble = false
+var ceilingBubble = false
 
 #used for keeping track of what astro is standing on top of during
 #character switching
@@ -85,6 +86,8 @@ var currItemsGlobalPosDict = {}
 
 var movableObject = null
 var grabbingMovableObj = false
+
+var beepToggle
 
 #touch controls
 var vJoy = -5 # -5 has no specific functionality, but can't be null or shit breaks
@@ -269,6 +272,7 @@ func _physics_process(delta):
 		set_anim("JUMP")
 			
 	
+	#if !groundedBubble:
 	vel.y += delta * gravity# * 60 * gravity
 
 	#this method allows for proper physics feel when launched in air
@@ -327,6 +331,8 @@ func _physics_process(delta):
 		
 		
 		vel = move_and_slide(velFinal, global.gravVect() * -1, true, 4, deg2rad(30), false)#(vel, Vector2(0, 1), Vector2.UP, false, 4, deg2rad(120), false)
+		
+
 		#vel = move_and_slide(vel, Vector2.UP, 5, 4, deg2rad(30))#(vel, Vector2(0, 1), Vector2.UP, false, 4, deg2rad(120), false)
 		
 		velFinal = velFinal.rotated((global.gravRadAng - deg2rad(90))* -1)
@@ -335,8 +341,14 @@ func _physics_process(delta):
 		
 	#so that restrictAndMove2Point does not get transformed by change in gravity
 	else:
-		vel = move_and_slide(velFinal, global.gravVect() * -1, 5, 4, deg2rad(30), false)
-		
+		vel = move_and_slide(velFinal, global.gravVect() * -1, true, 4, deg2rad(30), false)
+	
+	if get_slide_count() > 0:
+		if groundedBubble:
+			if vel.y > 0: vel.y = 0
+			
+		if ceilingBubble:
+			if vel.y < 0: vel.y = 0
 		
 		
 	preventMovingObjPushBack(velFinal)
@@ -547,8 +559,10 @@ func MoveCameraAndInteracText():
 	for interNode in global.interactNodes:
 		if interNode == null || !is_instance_valid(interNode): continue #|| !is_instance_valid(interNode)
 		
-		if (interNode.fixedOffset):
-			interNode.set_global_position(currItemsGlobalPosDict[interNode] + interNode.totalOffset)
+		var itemNode = interNode.parentInteractObject
+		
+		if (interNode.fixedOffset && itemNode != null && currItemsGlobalPosDict.has(itemNode)):
+			interNode.set_global_position(currItemsGlobalPosDict[itemNode] + interNode.totalOffset)
 			continue
 			
 		interNode.set_position(astroPos + interNode.totalOffset)
@@ -796,7 +810,11 @@ func on_timeout_complete():
 	
 	if (timer_seq):
 		astro_o2_change(anim_code1)
-		audio.sound("suitBeep").play()
+		
+		beepToggle = !beepToggle
+		if beepToggle|| health_code < 4:
+			audio.sound("suitBeep").play()
+			
 
 	else:
 		astro_o2_change(anim_code2)
@@ -955,10 +973,13 @@ func _on_groundBubble_body_entered(body):
 			firstSolidBodyNode = body
 		
 		if body.is_in_group("object"):
+			#setRayCollObjs(false)
 			for objs in objectStandinOn:
 				objs.astroIsOnTop = false
 			body.astroIsOnTop = true
 			objectStandinOn.append(body)
+		#else:
+		#	setRayCollObjs(true)
 		#save object standing on and relative position to object
 		#if object in other character does not exist, just get astro global position
 		
@@ -968,6 +989,11 @@ func _on_groundBubble_body_entered(body):
 		
 		if (preDeath):
 			InitDeath()
+
+func setRayCollObjs(enable):
+	$"StayingGrounded".set_disabled(!enable)
+	$"StayingGrounded2".set_disabled(!enable)
+	$"StayingGrounded3".set_disabled(!enable)
 
 func _on_groundBubble_body_exited(body):
 	if (body.get_groups().has("solid")):
@@ -983,6 +1009,9 @@ func _on_groundBubble_body_exited(body):
 					objectStandinOn[i].astroIsOnTop = true
 					break
 				objectStandinOn[i].astroIsOnTop = false
+				
+			#if objectStandinOn.size() == 0:
+			#	setRayCollObjs(true)
 
 			#if there are still other solid shapes, that astro is touching,
 			#set the next one
@@ -997,6 +1026,13 @@ func _on_groundBubble_body_exited(body):
 		groundedBubble = false
 		
 	
+func _on_ceilingBubble_body_entered(body):
+	if body.is_in_group("solid"):
+		ceilingBubble = true
+		
+func _on_ceilingBubble_body_exited(body):
+	if body.is_in_group("solid"):
+		ceilingBubble = false
 
 func _on_Item_check_area_entered(area):
 	print("astoooo: shit entered")
@@ -1261,3 +1297,10 @@ func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper):
 #				for dependantCSWrap in CSWrap.dependantCSWrappers[global.CharacterRes.id]:
 #
 #					global.lvl().get_node(dependantCSWrap.nodePath).CSWrapRecieveTransformChanges(dependantCSWrap, global.CharacterRes.id, posChange, rotChange)
+
+
+
+
+
+
+

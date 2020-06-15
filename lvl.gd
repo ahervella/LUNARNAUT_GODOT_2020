@@ -53,8 +53,10 @@ var timeDiscrepRemovingArea
 func getLvlSceneName():
 	var path = get_tree().get_edited_scene_root().filename if Engine.editor_hint else global.lvl().filename
 	
-	return global.getSceneName(path)
-
+	#return global.getSceneName(path)
+	#have to just copy directly because auto loaded singletons don't run in tool mode :/
+	path = path.substr(path.find_last("/")+1)
+	return path.substr(0, path.find_last("."))
 #//////////// START OF TOOL AND SETGET CODE ////////////////
 
 func setAddAstroAndCam(garboVal):

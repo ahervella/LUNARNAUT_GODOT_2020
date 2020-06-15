@@ -6,11 +6,13 @@ const NORMAL_COLOR = Color(1, 1, 1, 1)
 export (NodePath) var introPath
 export (NodePath) var menuPath
 export (NodePath) var missionPath
+export (NodePath) var startPath
 export (NodePath) var blackPath
 export (NodePath) var menuContainerPath
 export (NodePath) var mainMenuPath
 export (NodePath) var devLevelsPath
 export (Array, PackedScene) var levels
+export (PackedScene) var demoLevel
 export (NodePath) var versionPath
 export(NodePath) var returnButtonPath
 export (int) var maxRowsPerCol
@@ -19,6 +21,7 @@ export (PackedScene) var menuOptScene
 onready var intro = get_node(introPath)
 onready var menu = get_node(menuPath)
 onready var mission = get_node(missionPath)
+onready var start = get_node(startPath)
 onready var black = get_node(blackPath)
 onready var menuContainer = get_node(menuContainerPath)
 onready var mainMenu = get_node(mainMenuPath)
@@ -66,7 +69,6 @@ func _ready():
 	
 	
 	for child in get_children():
-		if child == black: continue
 		child.hide()
 		
 	intro.show()
@@ -242,6 +244,27 @@ func demoLevel():
 	menu.hide()
 	menuContainer.hide()
 	version.hide()
+	
+	global.newTimer(31, funcref(self, "missionTween"))
+
+func missionTween():
+	black.set_modulate(Color(1, 1, 1, 0))
+	black.show()
+	global.newTween(black, "modulate", 
+		Color(1, 1, 1, 0), 
+		Color(1, 1, 1, 1), 
+		5, 0, funcref(self, "missionStart"))
+
+func missionStart():
+	for child in get_children():
+		child.hide()
+	mission.stop()
+	start.show()
+	global.newTimer(1, funcref(self, "missionStartExt"))
+func missionStartExt():
+	start.play()
 
 
-
+func _on_Start_finished():
+	var demo = demoLevel.instance()
+	global.goto_scene(demo.filename)

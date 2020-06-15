@@ -32,7 +32,7 @@ var buttonIsShowing = false
 var stickDir = Vector2(0, 0)
 
 var interactWidthHeight = 100
-var interactCenter = Vector2(1060, 120)
+var interactCenter = Vector2(1060, 160)
 var canInteract = false
 
 var touchCSHeight = 100

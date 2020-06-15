@@ -58,9 +58,10 @@ func Interact():
 		return
 
 	# Check to make sure we have all the items we need, otherwise bail
-	if (itemsRequired != null && itemsRequired.size() > 0):
-		if (!get_tree().get_current_scene().CheckHasInventoryItems(itemsRequired, false)):
-			return
+	if !hasRequiredItems(): return
+#	if (itemsRequired != null && itemsRequired.size() > 0):
+#		if (!get_tree().get_current_scene().CheckHasInventoryItems(itemsRequired, false)):
+#			return
 
 	# Do some timer stuff
 	if (T_I_DISPLAY_TIME != 0):		
@@ -90,6 +91,11 @@ func Interact():
 
 var addedItemsToAuto = false;
 
+func hasRequiredItems():
+	if (itemsRequired != null && itemsRequired.size() > 0):
+		return get_tree().get_current_scene().CheckHasInventoryItems(itemsRequired, false)
+	return true
+
 func AutoInteract():
 	#print("interactNodeIndex")
 	
@@ -106,7 +112,8 @@ func AutoInteract():
 		#interactNode = global.getNextInteractNodeIndex()
 		
 	interactNode = global.getNextInteractNodeIndex()#interactNodeIndex = global.getNextInteractNodeIndex()
-	
+	if interactNode != null:
+		interactNode.parentInteractObject = self
 	
 	if (!oneshot):
 		can_interact = true
@@ -132,7 +139,7 @@ func AutoInteract():
 	
 				
 	if (interactNode != null && is_instance_valid(interactNode)):
-		interactNode.animateText(TC_AUTO, InteractAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
+		interactNode.animateText(TC_AUTO, ShowAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
 
 #I think you can call AutoInteract again with out hick ups,
 #but I guess helpful if you had changed AutoInteract shit in an extended script

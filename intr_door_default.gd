@@ -19,9 +19,9 @@ export (float) var DOOR_OPEN_RANGE = 19
 export (bool) var DOOR_AUTO_OPEN = true
 export (bool) var DOOR_LOCKED = false
 
-export (int) var DEPENDANT_LVL = null
-export (String) var DEPENDANT_LVL_BOOL = null
-export (bool) var OPPOSITE_IS_TRUE = false
+#export (int) var DEPENDANT_LVL = null
+#export (String) var DEPENDANT_LVL_BOOL = null
+#export (bool) var OPPOSITE_IS_TRUE = false
 
 var doorShadowNode
 
@@ -129,48 +129,58 @@ func closeDoor():
 func AutoInteract():
 #	print("working autodoor?")
 ##	print("door auto interact")
-	if (DOOR_LOCKED):
-		TextInteract()
-	can_interact = true
-	#.AutoInteract()
+
+
+	#if (DOOR_LOCKED):
+	#	TextInteract()
+	#can_interact = true
+	
+	
+	
+	.AutoInteract()
 
 	if (DOOR_AUTO_OPEN || !DOOR_LOCKED):
 		openDoor()
-#
+
+
+
 func Interact():
 	#if door is unlocked, then can't interact with door anymore
 	if (!DOOR_LOCKED):
 		return
-	
+
 	#if still locked and interact timer is up, can then interact
 	if (!can_interact):
 		return
-		
-	var dependantBool = global.lvl(DEPENDANT_LVL).get(DEPENDANT_LVL_BOOL)
-	
-	if (OPPOSITE_IS_TRUE):
-		dependantBool = !dependantBool
-	
+
+	#var dependantBool = global.lvl(DEPENDANT_LVL).get(DEPENDANT_LVL_BOOL)
+
+#	if (OPPOSITE_IS_TRUE):
+#		dependantBool = !dependantBool
+
 	can_interact = false
-	
+
 	#unlock case
-	if (dependantBool):
+	if (hasRequiredItems()):
 		DOOR_LOCKED = false
 		openDoor()
-		global.interactNode.animateText(TC_UNLOCKED, InteractAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
+		#global.interactNode.animateText(TC_UNLOCKED, InteractAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
+		interactNode.animateText(TC_UNLOCKED, InteractAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
 		return
-		
-		
+
+
 	#still locked
 	#if theres a message display time, then prompt the user to try again after delay
 	#(or if no delay time, user needs to walk away, then come back to initiate AutoInteract)
 	if (T_I_DISPLAY_TIME != 0):
-		
+
 		timer = global.newTimer(T_I_DISPLAY_TIME, funcref(self, 'AutoInteract'))	
-	
-	global.interactNode.animateText(TC_LOCKED, ShowAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
-	
-	
+
+	#global.interactNode.animateText(TC_LOCKED, ShowAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
+	interactNode.animateText(TC_LOCKED, ShowAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
+
+
+
 func AutoCloseInteract():
 	.AutoCloseInteract()
 	

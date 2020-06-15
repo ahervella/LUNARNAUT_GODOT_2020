@@ -5,7 +5,8 @@ extends AnimatedSprite
 # as of this date). Takes care of all interactions and actions
 # having to do with the canister
 
-var canUseO2 : bool = true;
+var canUseO2 : bool = true
+var processed = false
 export (Resource) var TEXT_INTERACT
 
 func _ready():

@@ -27,7 +27,9 @@ func _ready():
 	
 	._ready()
 	
-
+	call_deferred("readyExt")
+	
+func readyExt():
 	
 	noraNode = get_node(noraNodePath)
 	
@@ -54,7 +56,9 @@ func _ready():
 func initLevel():
 	.initLevel()
 	
+	#call_deferred("initLevelExt")
 	
+#func initLevelExt():
 	spawnNora = false
 	doorOpened = false
 	

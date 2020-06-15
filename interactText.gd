@@ -67,6 +67,8 @@ var breakTimerLoop = false
 var ASTRO_NODE_PATH = null
 var ASTRO_NODE# = get_node(ASTRO_NODE_PATH)
 
+var parentInteractObject = null
+
 # vvvvvvvvvvvvv ALL FOR ANIMATING PROPER TEXT vvvvvvvvvvvvv
 
 func _ready():
