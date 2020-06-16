@@ -57,6 +57,25 @@ func getLvlSceneName():
 	#have to just copy directly because auto loaded singletons don't run in tool mode :/
 	path = path.substr(path.find_last("/")+1)
 	return path.substr(0, path.find_last("."))
+	
+	
+func consistentCharSet():
+	for astroChar in global.astroCharDict.keys():
+		var filePath = global.CHAR_SAVE_DIR + "/%s.tres" % [global.astroChar2String(astroChar)]
+		var file = File.new()
+		var charRes
+		if file.file_exists(filePath):
+			charRes = load(filePath)
+		else:
+			charRes = load(global.astroCharDict[astroChar])
+		
+		charRes.level = getLvlSceneName()#"dev_movable_obj"
+		var dir = Directory.new()
+		if !dir.dir_exists(global.CHAR_SAVE_DIR):
+			dir.make_dir_recursive(global.CHAR_SAVE_DIR)
+		
+		global.astroCharUserDict[astroChar] = filePath
+		ResourceSaver.save(filePath, charRes)
 #//////////// START OF TOOL AND SETGET CODE ////////////////
 
 func setAddAstroAndCam(garboVal):
@@ -251,6 +270,7 @@ func _physics_process(delta):
 		return
 
 	if readyDone && !processDone && oneShotFrameWait:
+	
 		loadCSWrappersFromGlobal()
 		addCSWrapperTimeDiscrepencyAreas()
 

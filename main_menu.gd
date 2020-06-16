@@ -3,6 +3,11 @@ extends Node
 const SELECT_COLOR = Color(0, 0, 0, 1)#Color(0, 180, 255, 255)
 const NORMAL_COLOR = Color(1, 1, 1, 1)
 
+var introVid = preload("res://VIDEOS/Astro_Menu_Art_Update_intro.ogv")
+var menuVid = preload("res://VIDEOS/Astro_Menu_Art_Update_menu_loop.ogv")
+var missionVid = preload("res://VIDEOS/Astro_Menu_Art_Update_menu_mission.ogv")
+var startVid = preload("res://VIDEOS/Astro_Menu_Art_START.ogv")
+
 export (NodePath) var introPath
 export (NodePath) var menuPath
 export (NodePath) var missionPath
@@ -49,6 +54,13 @@ var validPress = false
 var validReturnMainPress = false
 
 func _ready():
+	intro.set_stream(introVid)
+	menu.set_stream(menuVid)
+	start.set_stream(startVid)
+	mission.set_stream(missionVid)
+	
+	
+	
 	mainMenuOPT.resize(mainMenu.get_child_count())
 	mainMenuOPT[0] = "setCustomLevelMenu"
 	mainMenuOPT[1] = "demoLevel"

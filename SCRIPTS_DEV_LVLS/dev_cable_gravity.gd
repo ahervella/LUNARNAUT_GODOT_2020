@@ -9,14 +9,4 @@ func _ready():
 	if Engine.editor_hint:
 		return
 	
-	for charResPath in global.astroCharDict.values():
-		var charRes = load(charResPath)
-		   #ResourceSaver.save
-		charRes.level = getLvlSceneName()#"dev_cable_gravity"
-		ResourceSaver.save(charResPath, charRes)
-	
-	._ready()
-	global.playTest = false
-	#global.changeGrav(2, 45)
-
-
+	consistentCharSet()

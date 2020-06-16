@@ -35,7 +35,11 @@ var availableChar = [CHAR.RUS, CHAR.USA, CHAR.FRA]
 var astroCharDict = {CHAR.USA : "res://RESOURCES/CHARACTERS/CHAR_USA.tres",
 					CHAR.RUS : "res://RESOURCES/CHARACTERS/CHAR_RUS.tres", 
 					CHAR.FRA : "res://RESOURCES/CHARACTERS/CHAR_FRA.tres"}
+					
+var astroCharUserDict = {}
 var charYearDict = {CHAR.USA : 1984, CHAR.RUS : 1973, CHAR.FRA : 1996, CHAR.CHN : 2021, CHAR.MAR : 2073}
+
+const CHAR_SAVE_DIR = "user://RESOURCES/CHARACTERS"
 
 var tempCharSwitchWrapperList = null
 
@@ -315,8 +319,10 @@ func reorderAndSaveCurrentLvlWrappers(currLvlPath):
 
 func loadNewCharacterLevel(astroChar):
 	if !astroCharDict.has(astroChar) : return
-	CharacterRes = load(astroCharDict[astroChar])
-	var newLvlPath = getScenePath(CharacterRes.level)
+	
+	var lvl = load(astroCharUserDict[astroChar]) if astroCharUserDict.has(astroChar) else load(astroCharDict[astroChar])
+	CharacterRes = lvl
+	var newLvlPath = getScenePath(lvl.level)
 	print(newLvlPath)
 	print("print(newLvlPath)")
 	#if global.levelWrapperDict.has(newLvlPath):
@@ -363,7 +369,7 @@ func init():
 
 func replay():
 	init()
-	goto_scene("res://SCENES/MainMenu.tscn")
+	goto_scene("res://SCENES/main_menu.tscn")
 
 func loadLevel(lvlNum):
 	goto_scene(str("res://SCENES/lvl", "%0*d" % [2, lvlNum], ".tscn"))
