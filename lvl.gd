@@ -5,6 +5,7 @@ extends Node
 #This is the node from which to extend level nodes, which basically makes sure each level has the basic
 #requirments needed to start the level properly. 
 export (bool) var playTest = false
+export (bool) var allCharToThisScene = true
 export (NodePath) var astroNodePath = null
 export (Array, Resource) var startingInventory
 var astroNode
@@ -60,22 +61,24 @@ func getLvlSceneName():
 	
 	
 func consistentCharSet():
-	for astroChar in global.astroCharDict.keys():
-		var filePath = global.CHAR_SAVE_DIR + "/%s.tres" % [global.astroChar2String(astroChar)]
-		var file = File.new()
-		var charRes
-		if file.file_exists(filePath):
-			charRes = load(filePath)
-		else:
-			charRes = load(global.astroCharDict[astroChar])
+	for astroChar in global.astroCharUserDict.keys():
+		var filePath = global.astroCharUserDict[astroChar]#global.CHAR_SAVE_DIR + "/%s.tres" % [global.astroChar2String(astroChar)]
+		#var file = File.new()
+		var charRes = load (filePath)
+#		if file.file_exists(filePath):
+#			charRes = load(filePath)
+#		else:
+#			charRes = load(global.astroCharDict[astroChar])
 		
 		charRes.level = getLvlSceneName()#"dev_movable_obj"
-		var dir = Directory.new()
-		if !dir.dir_exists(global.CHAR_SAVE_DIR):
-			dir.make_dir_recursive(global.CHAR_SAVE_DIR)
+#		var dir = Directory.new()
+#		if !dir.dir_exists(global.CHAR_SAVE_DIR):
+#			dir.make_dir_recursive(global.CHAR_SAVE_DIR)
 		
-		global.astroCharUserDict[astroChar] = filePath
+		#global.astroCharUserDict[astroChar] = filePath
 		ResourceSaver.save(filePath, charRes)
+		
+		
 #//////////// START OF TOOL AND SETGET CODE ////////////////
 
 func setAddAstroAndCam(garboVal):
@@ -304,6 +307,10 @@ func _ready():
 	if (trigChunkNodePath != null):
 		trigChunkNode = get_node(trigChunkNodePath)
 	global.interactNode = astroNode.INTERACT_TEXT_NODE
+	
+	
+	if allCharToThisScene: consistentCharSet()
+	
 	
 	readyDone = true
 
@@ -827,7 +834,8 @@ func loadNextLevel():
 func reloadLevelLastSave():
 	#TODO: place astro at save point spawn point
 	#initAstro(customSpawnPoint)....
-	_ready()
+	#_ready()
+	global.goto_scene(global.getScenePath(getLvlSceneName()))
 
 
 

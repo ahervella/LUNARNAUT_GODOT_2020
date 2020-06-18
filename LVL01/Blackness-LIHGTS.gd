@@ -10,7 +10,8 @@ extends Sprite
 # var b = "text"
 func _ready():
 	self.show()
-	call_deferred('readyDeferred')
+	
+	call_deferred("readyDeferred")
 # Called when the node enters the scene tree for the first time.
 func readyDeferred():
 	
@@ -23,7 +24,7 @@ func readyDeferred():
 	
 	#if in playtest mode, do nice tweens, else ignore, just instant alpha
 	if (global.playTest):
-	
+		global.set("controls_enabled", false)
 		var tweeny = Tween.new()
 		add_child(tweeny)
 		
@@ -41,8 +42,8 @@ func readyDeferred():
 	
 	
 func on_tween_fin(object, key):
-	if (global.set("playtest", true)):
-		global.set("controls_enabled", true)
+	#if (global.set("playtest", true)):
+	global.set("controls_enabled", true)
 
 	
 	#find way to delete tween node after tween fin?

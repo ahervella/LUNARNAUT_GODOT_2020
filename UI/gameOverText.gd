@@ -57,11 +57,13 @@ func animateText(wonBool):
 	gameWon = wonBool
 	currText = gameLostText
 	set_position(gameLostPos)
+	global.lvl().astroNode.CAMERA_NODE.TOUCH_CONTROL_NODE.deactivate()
 	
 	if (wonBool):
 		currText = gameWonText
 		set_text(gameWonText)
 		set_position(gameWonPos)
+		
 		
 	set_percent_visible(0)
 	set_text(currText)

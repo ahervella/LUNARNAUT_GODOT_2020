@@ -15,7 +15,6 @@ var doorOpened
 
 export (NodePath) var noraNodePath = null
 var noraNode = null
-var doorShadowTscn= preload("res://SCENES/doorShadow.tscn")
 
 export (bool) var demoVersionOfLevel1 = false
 
@@ -74,7 +73,7 @@ func initLevel():
 		spawnNora = false
 		doorOpened = false
 		
-		#astroNode.CAMERA_NODE.FadeOutOfBlack()
+		#rastroNode.CAMERA_NODE.FadeOutOfBlack()
 	
 
 func loadNextLevel():
@@ -83,13 +82,35 @@ func loadNextLevel():
 	if (demoVersionOfLevel1):
 		var demoVidNode = get_node("DemoOutro")
 		demoVidNode.show()
+		astroNode.CAMERA_NODE.hide()
+		astroNode.CAMERA_NODE.blackOverlayNode.hide()
+		
 		#demoVidNode.set_global_position(Vector2(0, 0))
 		demoVidNode.get_node("DemoOutroCam").make_current()
 		demoVidNode.play()
+		
+
+		fadeOutAllLevelSounds()
+		
 		return
 	
 	.loadNextLevel()
 
+func reloadLevelLastSave():
+	audio.unloadLevelSounds()
+	.reloadLevelLastSave()
+
+func fadeOutAllLevelSounds():
+		astroNode.fadeOutSound()
+		
+		var soundsToFade = []
+		soundsToFade.append(audio.sound("music", "lvl01"))
+		soundsToFade.append(audio.sound("cinematicBoom", "lvl01"))
+		soundsToFade.append(audio.sound("lowPulse", "lvl01"))
+		
+		for sound in soundsToFade:
+			global.newTween(sound, "volume_db", sound.get_volume_db(), -30, 6, 4)
 
 func _on_DemoOutro_finished():
+	audio.unloadLevelSounds()
 	global.replay()

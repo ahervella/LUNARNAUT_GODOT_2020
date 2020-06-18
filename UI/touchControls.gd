@@ -31,7 +31,7 @@ var buttonIsShowing = false
 
 var stickDir = Vector2(0, 0)
 
-var interactWidthHeight = 100
+var interactWidthHeight = 250
 var interactCenter = Vector2(1060, 160)
 var canInteract = false
 
@@ -428,13 +428,13 @@ func joyCS(event):
 	if (event is InputEventScreenTouch and event.is_pressed()):
 		setTouchState("cs", TOUCH_STATE.JUST_TOUCHED)
 		showCS(true, true)
-		for astroChar in global.CHAR.values():
+		for astroChar in global.availableChar:
 			showCSChar(astroChar, true, false)
 		
 	#if dragging or pressed
 	if event is InputEventScreenDrag or (event is InputEventScreenTouch and event.is_pressed()):
 		currAstroCharSelection = null
-		for astroChar in global.CHAR.values():
+		for astroChar in global.availableChar:
 			var i = global.getAstroCharOrderIndex(astroChar)
 			if (event.position.y > touchCSTop + (i * touchCSHeight) 
 			&&  event.position.y < touchCSTop + ((i+1) * touchCSHeight)):
@@ -454,7 +454,7 @@ func joyCS(event):
 		ongoing_cs_drag = -1
 		setTouchState("cs", TOUCH_STATE.JUST_RELEASED)
 		showCS(true, false)
-		for astroChar in global.CHAR.values():
+		for astroChar in global.availableChar:
 			showCSChar(astroChar, false, false)
 		if currAstroCharSelection != null:
 			global.initCharSwitch(currAstroCharSelection)

@@ -102,6 +102,9 @@ func moveRight():
 	#if anim_key==1:
 	noraAnim("run")
 
+func deactivate():
+	global.lvl(01).noraNode.set_collision_layer_bit( 0, false )
+	set_physics_process(false)
 
 func _physics_process(delta):
 	

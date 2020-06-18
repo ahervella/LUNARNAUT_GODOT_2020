@@ -31,10 +31,12 @@ extends Node
 
 enum CHAR {USA, RUS, FRA, CHN, MAR}
 
-var availableChar = [CHAR.RUS, CHAR.USA, CHAR.FRA]
+var availableChar = [CHAR.RUS, CHAR.USA, CHAR.FRA, CHAR.CHN, CHAR.MAR]
 var astroCharDict = {CHAR.USA : "res://RESOURCES/CHARACTERS/CHAR_USA.tres",
 					CHAR.RUS : "res://RESOURCES/CHARACTERS/CHAR_RUS.tres", 
-					CHAR.FRA : "res://RESOURCES/CHARACTERS/CHAR_FRA.tres"}
+					CHAR.FRA : "res://RESOURCES/CHARACTERS/CHAR_FRA.tres",
+					CHAR.CHN : "res://RESOURCES/CHARACTERS/CHAR_CHN.tres",
+					CHAR.MAR : "res://RESOURCES/CHARACTERS/CHAR_MAR.tres"}
 					
 var astroCharUserDict = {}
 var charYearDict = {CHAR.USA : 1984, CHAR.RUS : 1973, CHAR.FRA : 1996, CHAR.CHN : 2021, CHAR.MAR : 2073}
@@ -318,9 +320,9 @@ func reorderAndSaveCurrentLvlWrappers(currLvlPath):
 
 
 func loadNewCharacterLevel(astroChar):
-	if !astroCharDict.has(astroChar) : return
+	if !astroCharUserDict.has(astroChar) : return
 	
-	var lvl = load(astroCharUserDict[astroChar]) if astroCharUserDict.has(astroChar) else load(astroCharDict[astroChar])
+	var lvl = load(astroCharUserDict[astroChar])# if astroCharUserDict.has(astroChar) else load(astroCharDict[astroChar])
 	CharacterRes = lvl
 	var newLvlPath = getScenePath(lvl.level)
 	print(newLvlPath)
@@ -345,6 +347,7 @@ func getScriptPath(scriptFileName) -> String:
 #
 func _ready():
 	init()
+	assignUserCharacterRes()
 	
 func init():
 	current_interact = null
@@ -365,8 +368,22 @@ func init():
 	#+ 1 for result / report node
 	interactNodes.resize(maxInteractNodes + 1)
 	
+func assignUserCharacterRes():
+	for astroChar in astroCharDict.keys():
+			var filePath = CHAR_SAVE_DIR + "/%s.tres" % [astroChar2String(astroChar)]
+			var charRes = load(astroCharDict[astroChar])
+			
+			var dir = Directory.new()
+			if !dir.dir_exists(CHAR_SAVE_DIR):
+				dir.make_dir_recursive(CHAR_SAVE_DIR)
+			
+			astroCharUserDict[astroChar] = filePath
+			ResourceSaver.save(filePath, charRes)
 
-
+			#will be set in astro script or manually
+		
+		
+		
 func replay():
 	init()
 	goto_scene("res://SCENES/main_menu.tscn")

@@ -1,4 +1,4 @@
-extends "res://SCRIPTS/intr_default.gd"
+extends "res://SCRIPTS/INTERACT/intr_default.gd"
 #extends Sprite
 #
 ##ALEJANDRO (Feb-14-2020)
@@ -56,13 +56,13 @@ var doorBarrierShapePos
 
 func _ready():
 	#add the shadow to the door
-	doorShadowNode = get_tree().get_current_scene().doorShadowTscn.instance()
-	add_child(doorShadowNode)
+	doorShadowNode = get_node("doorShadow")#get_tree().get_current_scene().doorShadowTscn.instance()
+	#add_child(doorShadowNode)
 #	print(get_index())
 #	print("doorindex")
-	move_child(doorShadowNode, get_index()+1)
+	#move_child(doorShadowNode, get_index()+1)
 	
-	doorShadowNode.set_global_position(get_global_position())
+	#doorShadowNode.set_global_position(get_global_position())
 	
 	doorShadowTop = doorShadowNode.get_node("doorShadowTop")
 	doorShadowBottom = doorShadowNode.get_node("doorShadowBottom")

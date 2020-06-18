@@ -1,5 +1,5 @@
 tool
-extends "res://SCRIPTS/intr_default.gd"
+extends "res://SCRIPTS/INTERACT/intr_default.gd"
 
 enum PLUG_TYPE {
 	AUX,

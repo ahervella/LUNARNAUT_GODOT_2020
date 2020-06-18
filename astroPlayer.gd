@@ -13,7 +13,8 @@ extends KinematicBody2D
 #renamed from astrooo to astroPlayer.gd!
 
 #used for testing
-export (Resource) var CHARACTER_RES = null
+var CHARACTER_RES = null
+export (global.CHAR) var startingChar = global.CHAR.USA
 #var CHARACTER_RES : Resource = null
 export (NodePath) var CAMERA_NODE_PATH = null
 var CAMERA_NODE
@@ -161,10 +162,16 @@ func _ready():
 	#global.interactNodes.clear()
 	#global.interactNodes.append(INTERACT_TEXT_NODE)
 	
-	if (CHARACTER_RES == null && global.CharacterRes != null):
-		CHARACTER_RES = global.CharacterRes
-	elif (global.CharacterRes == null):
-		global.CharacterRes = CHARACTER_RES
+	
+	
+	if (global.CharacterRes == null):
+			if global.availableChar.has(startingChar):
+				global.CharacterRes = load(global.astroCharUserDict[startingChar])
+			else:
+				global.CharacterRes = load(global.astroCharUserDict[global.CHAR.USA])
+	CHARACTER_RES = global.CharacterRes
+		
+	
 		
 #	if (global.CharacterRes != null || is_instance_valid(global.CharacterRes)):
 		#CHARACTER_RES = global.CharacterRes
@@ -963,7 +970,7 @@ func ImmuneToFalse():
 		TakeDamage()
 
 func TakeDamageImpactLaunch(direction):
-	vel = Vector2(100 * direction, -100)
+	vel = Vector2(200 * direction, -200)
 
 
 
@@ -1037,8 +1044,7 @@ func _on_ceilingBubble_body_exited(body):
 		ceilingBubble = false
 
 func _on_Item_check_area_entered(area):
-	print("astoooo: shit entered")
-	#print(area.get_groups())
+	if dead || preDeath: return
 	if (area.get_groups().has("interact")):
 		var newItem = area.get_parent()
 		

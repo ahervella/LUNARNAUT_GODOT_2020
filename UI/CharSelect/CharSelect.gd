@@ -8,15 +8,19 @@ var path = "res://RESOURCES/CHARACTERS"
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	var files = []
-	var dir = Directory.new()
-	dir.open(path)
-	dir.list_dir_begin(true, true)
-	var file_name = dir.get_next()
-	while file_name != "":
-		var assetPath = "%s/%s" % [path,file_name]
-		var asset = load(assetPath)
-		files.append(asset)
-		file_name = dir.get_next()
+	
+	for astroChar in global.availableChar:
+		files.append(load(global.astroCharUserDict[astroChar]))
+#
+#	var dir = Directory.new()
+#	dir.open(path)
+#	dir.list_dir_begin(true, true)
+#	var file_name = dir.get_next()
+#	while file_name != "":
+#		var assetPath = "%s/%s" % [path,file_name]
+#		var asset = load(assetPath)
+#		files.append(asset)
+#		file_name = dir.get_next()
 	
 	for file in files:
 		var entry = child.instance()
