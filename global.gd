@@ -356,7 +356,7 @@ func getScriptPath(scriptFileName) -> String:
 #
 func _ready():
 	init()
-	assignUsercurrCharRes()
+	loadCharRes()
 	
 func init():
 	current_interact = null
@@ -377,7 +377,7 @@ func init():
 	#+ 1 for result / report node
 	interactNodes.resize(maxInteractNodes + 1)
 	
-func assignUsercurrCharRes():
+func loadCharRes():
 	#TODO: for builds that need to save after closing app
 	#gonna need to check for files in CHAR_USER_SAVE_DIR_PATH
 	#before checkin the res path at CHAR_SAVE_DIR_PATH
