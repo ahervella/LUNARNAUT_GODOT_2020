@@ -123,7 +123,7 @@ func CSWrapSaveStartState(CSWrap):
 	
 	
 func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
-	var currChar = global.CharacterRes.id
+	var currChar = global.currCharRes.id
 	
 	CSWrap.changesToApply[currChar] = get_global_position()
 	#CSWrap.changesToApply[currChar][1] = 0
@@ -131,7 +131,7 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 
 	
 func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
-	var currChar = global.CharacterRes.id
+	var currChar = global.currCharRes.id
 	
 	#to change the camera position immediately on frame one
 	print(get_global_position())

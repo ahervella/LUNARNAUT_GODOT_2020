@@ -339,7 +339,7 @@ func thisObjectCheckChange():
 	
 	if thisObjChangeDetected: return
 	if !global.lvl().processDone: return
-	var currChar = global.CharacterRes.id
+	var currChar = global.currCharRes.id
 	
 	if !checkIfPlugsCompletedApplyingChanges(): return
 	
@@ -757,7 +757,7 @@ func removeChildCable():
 
 #keeeeep
 func CSWrapSaveStartState(CSWrap : CharacterSwitchingWrapper):
-	var currChar = global.CharacterRes.id
+	var currChar = global.currCharRes.id
 	
 	CSWrap.saveStartState[currChar].resize(7)
 	
@@ -795,7 +795,7 @@ func CSWrapSaveStartState(CSWrap : CharacterSwitchingWrapper):
 	
 	
 func CSWrapDetectChange(CSWrap : CharacterSwitchingWrapper):
-	var currChar = global.CharacterRes.id
+	var currChar = global.currCharRes.id
 	
 	if CSWrap.saveStartState[currChar][0] != START_PLUG : return true
 	if CSWrap.saveStartState[currChar][1] != START_PIN : return true
@@ -913,7 +913,7 @@ func CSWrapSaveTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, astroChar, s
 	
 #keeeeep
 func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
-	var currChar = global.CharacterRes.id
+	var currChar = global.currCharRes.id
 	CSWrap.changesToApply[currChar].resize(11)
 	
 	
@@ -966,7 +966,7 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 	
 	
 func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
-	var currChar = global.CharacterRes.id
+	var currChar = global.currCharRes.id
 	var changes = CSWrap.changesToApply[currChar]
 	var lvlNode = global.lvl()
 	
@@ -995,7 +995,7 @@ func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
 func CSWrapApplyChangesLinkCables(CSWrap : CharacterSwitchingWrapper, plugName):
 	#needs to happen after cable shit because if not attempt connection
 	#will register the two attempting plugs as part of the same cable
-	var currChar = global.CharacterRes.id
+	var currChar = global.currCharRes.id
 	var changes = CSWrap.changesToApply[currChar]
 	if changes == null || changes == [] || changes.size() < 6: return
 	

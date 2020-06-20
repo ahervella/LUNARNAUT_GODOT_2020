@@ -10,7 +10,7 @@ func _ready():
 	var files = []
 	
 	for astroChar in global.availableChar:
-		files.append(load(global.astroCharUserDict[astroChar]))
+		files.append(global.astroCharDict[astroChar])#load(global.astroCharUserDict[astroChar]))
 #
 #	var dir = Directory.new()
 #	dir.open(path)

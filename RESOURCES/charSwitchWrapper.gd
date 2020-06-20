@@ -8,11 +8,31 @@ var dontSave = true
 var dontInit 
 
 
-var dependantCSWrappers = {global.CHAR.USA : [], global.CHAR.RUS : [], global.CHAR.FRA : [], global.CHAR.CHN : [], global.CHAR.MAR : []}
+var dependantCSWrappers = {CharacterRes.CHAR.USA : [],
+							 CharacterRes.CHAR.RUS : [],
+							 CharacterRes.CHAR.FRA : [],
+							 CharacterRes.CHAR.CHN : [],
+							 CharacterRes.CHAR.MAR : []}
+
 var extraCSWrappers = []
-var saveStartState = {global.CHAR.USA : [], global.CHAR.RUS : [], global.CHAR.FRA : [], global.CHAR.CHN : [], global.CHAR.MAR : []}
-var changesToApply = {global.CHAR.USA : [], global.CHAR.RUS : [], global.CHAR.FRA : [], global.CHAR.CHN : [], global.CHAR.MAR : []}
-var savedTimeDiscrepencyState = {global.CHAR.USA : [], global.CHAR.RUS : [], global.CHAR.FRA : [], global.CHAR.CHN : [], global.CHAR.MAR : []}
+
+var saveStartState = {CharacterRes.CHAR.USA : [],
+						 CharacterRes.CHAR.RUS : [],
+						 CharacterRes.CHAR.FRA : [],
+						 CharacterRes.CHAR.CHN : [],
+						 CharacterRes.CHAR.MAR : []}
+						
+var changesToApply = {CharacterRes.CHAR.USA : [],
+						CharacterRes.CHAR.RUS : [],
+						CharacterRes.CHAR.FRA : [],
+						CharacterRes.CHAR.CHN : [], 
+						CharacterRes.CHAR.MAR : []}
+						
+var savedTimeDiscrepencyState = {CharacterRes.CHAR.USA : [], 
+								CharacterRes.CHAR.RUS : [], 
+								CharacterRes.CHAR.FRA : [], 
+								CharacterRes.CHAR.CHN : [], 
+								CharacterRes.CHAR.MAR : []}
 
 #hack for getting the lvl node (which assigned in lvl.gd whenever a new node is added)
 var currLvlNode
@@ -421,7 +441,7 @@ func getActualNodePath(path = null, lvlNode = null):
 func getDependantGroup():
 	var groupArray = [self]
 	
-	for dependant in dependantCSWrappers[global.CharacterRes.id]:
+	for dependant in dependantCSWrappers[global.currCharRes.id]:
 		var dependantArray = dependant.getDependantGroup()
 		for val in dependantArray:
 			groupArray.append(val)
@@ -442,15 +462,15 @@ func findNodeAbove(dependantGroupNodes, ogNodeAbove, node):
 	
 func checkIfInCharLvl(currChar):
 	match currChar:
-		global.CHAR.USA:
+		CharacterRes.CHAR.USA:
 			return USA
-		global.CHAR.RUS:
+		CharacterRes.CHAR.RUS:
 			return RUS
-		global.CHAR.FRA:
+		CharacterRes.CHAR.FRA:
 			return FRA
-		global.CHAR.CHN:
+		CharacterRes.CHAR.CHN:
 			return CHN
-		global.CHAR.MAR:
+		CharacterRes.CHAR.MAR:
 			return MAR
 	
 #//////////////////////  END OF WRAPPER HELPER METHODS  #//////////////////////

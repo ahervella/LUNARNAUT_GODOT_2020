@@ -525,7 +525,7 @@ func CSWrapSaveTimeDiscrepState(CSWrap: CharacterSwitchingWrapper, astroChar, se
 				return
 	
 func CSWrapSaveStartState(CSWrap : CharacterSwitchingWrapper):
-	var currChar = global.CharacterRes.id
+	var currChar = global.currCharRes.id
 	
 	CSWrap.saveStartState[currChar].resize(6)
 	
@@ -544,7 +544,7 @@ func CSWrapSaveStartState(CSWrap : CharacterSwitchingWrapper):
 #			CSWrap.savedTimeDiscrepencyState[otherChar][i] = -1
 	
 func CSWrapDetectChange(CSWrap : CharacterSwitchingWrapper):
-	var currChar = global.CharacterRes.id
+	var currChar = global.currCharRes.id
 		
 		
 	if (CSWrap.saveStartState[currChar][0] - get_global_position()).length() > 5:
@@ -593,7 +593,7 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper, thisObjChangeDetected 
 	if thisObjChangeDetected == null:
 		thisObjChangeDetected = CSWrapDetectChange(CSWrap)
 	
-	var currChar = global.CharacterRes.id
+	var currChar = global.currCharRes.id
 	var parentNode = get_parent()
 	CSWrap.changesToApply[currChar].resize(6)
 	
@@ -624,7 +624,7 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper, thisObjChangeDetected 
 
 func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
 	triedConn = false
-	var currChar = global.CharacterRes.id
+	var currChar = global.currCharRes.id
 	var currLvl = global.lvl()
 	
 	var changes = CSWrap.changesToApply[currChar]

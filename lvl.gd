@@ -61,10 +61,10 @@ func getLvlSceneName():
 	
 	
 func consistentCharSet():
-	for astroChar in global.astroCharUserDict.keys():
-		var filePath = global.astroCharUserDict[astroChar]#global.CHAR_SAVE_DIR + "/%s.tres" % [global.astroChar2String(astroChar)]
+	for astroChar in global.astroCharDict.keys():
+		var charRes = global.astroCharDict[astroChar]#global.CHAR_SAVE_DIR + "/%s.tres" % [global.astroChar2String(astroChar)]
 		#var file = File.new()
-		var charRes = load (filePath)
+		#var charRes = #load (filePath)
 #		if file.file_exists(filePath):
 #			charRes = load(filePath)
 #		else:
@@ -76,7 +76,7 @@ func consistentCharSet():
 #			dir.make_dir_recursive(global.CHAR_SAVE_DIR)
 		
 		#global.astroCharUserDict[astroChar] = filePath
-		ResourceSaver.save(filePath, charRes)
+		#ResourceSaver.save(filePath, charRes)
 		
 		
 #//////////// START OF TOOL AND SETGET CODE ////////////////
@@ -315,9 +315,9 @@ func _ready():
 	readyDone = true
 
 func loadCSWrappersFromGlobal():
-	if global.CharacterRes == null: return
-	var currLvlPath = global.getScenePath(global.CharacterRes.level)
-	var currChar = global.CharacterRes.id
+	if global.currCharRes == null: return
+	var currLvlPath = global.getScenePath(global.currCharRes.level)
+	var currChar = global.currCharRes.id
 	
 	if global.levelWrapperDict.has(currLvlPath):
 		if global.levelWrapperDict[currLvlPath].gravity.has(currChar):
@@ -332,10 +332,10 @@ func loadCSWrappersFromGlobal():
 
 
 func addCSWrapperTimeDiscrepencyAreas():
-	if global.CharacterRes == null: return
+	if global.currCharRes == null: return
 	
-	var currChar = global.CharacterRes.id
-	var currLvlPath = global.getScenePath(global.CharacterRes.level)
+	var currChar = global.currCharRes.id
+	var currLvlPath = global.getScenePath(global.currCharRes.level)
 	
 			
 	timeDiscrepParentNode = Node.new()
@@ -388,8 +388,8 @@ func correctNodePath(np : NodePath):
 	
 	
 func applyCSWrapperChanges():
-	if global.CharacterRes == null: return
-	var currChar = global.CharacterRes.id
+	if global.currCharRes == null: return
+	var currChar = global.currCharRes.id
 
 	
 	for csWrap in charSwitchWrappers.values():
@@ -408,7 +408,7 @@ func saveCSWrapperStartStates():
 	#need to add to both registered and charSwitchWrappers
 	for csWrap in charSwitchWrappers.values():
 		if csWrap.staticNode: continue
-		if csWrap.checkIfInCharLvl(global.CharacterRes.id):
+		if csWrap.checkIfInCharLvl(global.currCharRes.id):
 			get_node(csWrap.nodePath).CSWrapSaveStartState(csWrap)
 
 
@@ -416,7 +416,7 @@ func saveCSWrapperStartStates():
 
 func removeDisabledCSWrapperNodes():
 	for csWrap in charSwitchWrappers.values():
-		if !csWrap.checkIfInCharLvl(global.CharacterRes.id):
+		if !csWrap.checkIfInCharLvl(global.currCharRes.id):
 			var nodeObj = get_node(csWrap.nodePath)
 			remove_child(nodeObj)
 		
@@ -464,7 +464,7 @@ func initAstro(customSpawnPoint = null):
 	
 
 func addCSWrapCollShape2DiscrepArea(csWrap, astroChar, areaCSW, interactWithOthers : bool = true):
-	var currChar = global.CharacterRes.id
+	var currChar = global.currCharRes.id
 	var cswNode = get_node(csWrap.nodePath)#find_node(csWrap.nodePath, true, false)
 	
 	
@@ -582,7 +582,7 @@ func addCSWrapCollShape2DiscrepArea(csWrap, astroChar, areaCSW, interactWithOthe
 
 func removeCSWrapTimeDiscepArea2D(csWrap, astroChar, areaCSW, interactWithOthers : bool = true):
 	
-	var currChar = global.CharacterRes.id
+	var currChar = global.currCharRes.id
 	var cswNode = get_node(csWrap.nodePath)
 	
 	if global.charYearDict[astroChar] <= global.charYearDict[currChar]: return false
@@ -697,7 +697,7 @@ func areaEnteredTimeDiscrepArea(area, areaNode, astroChar, areaCSW):
 	
 	
 func cswEnteredTimeDiscrepArea(cswrap, body, areaNode, astroChar, areaCSW, interactWithOthers = true):
-	var currChar = global.CharacterRes.id
+	var currChar = global.currCharRes.id
 	
 	if cswrap == null: return
 	if areaCSW != null:
@@ -777,7 +777,7 @@ func areaExitedTimeDiscrepArea(area, areaNode, astroChar, areaCSW):
 
 
 func cswExitedTimeDiscrepArea(cswrap, body, areaNode, astroChar, areaCSW, interactWithOthers = true):
-	var currChar = global.CharacterRes.id
+	var currChar = global.currCharRes.id
 	
 	if cswrap == null: return
 	

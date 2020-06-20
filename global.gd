@@ -29,27 +29,36 @@ extends Node
 	#Default Linear Damp = 0
 	#Default Angular Damp = 1
 
-enum CHAR {USA, RUS, FRA, CHN, MAR}
 
-var availableChar = [CHAR.RUS, CHAR.USA, CHAR.FRA, CHAR.CHN, CHAR.MAR]
-var astroCharDict = {CHAR.USA : "res://RESOURCES/CHARACTERS/CHAR_USA.tres",
-					CHAR.RUS : "res://RESOURCES/CHARACTERS/CHAR_RUS.tres", 
-					CHAR.FRA : "res://RESOURCES/CHARACTERS/CHAR_FRA.tres",
-					CHAR.CHN : "res://RESOURCES/CHARACTERS/CHAR_CHN.tres",
-					CHAR.MAR : "res://RESOURCES/CHARACTERS/CHAR_MAR.tres"}
+
+var availableChar = [CharacterRes.CHAR.RUS,
+					 CharacterRes.CHAR.USA,
+					 CharacterRes.CHAR.FRA,
+					 CharacterRes.CHAR.CHN,
+					 CharacterRes.CHAR.MAR]
+var astroCharDict = {}# = {CHAR.USA : "res://RESOURCES/CHARACTERS/CHAR_USA.tres",
+#					CHAR.RUS : "res://RESOURCES/CHARACTERS/CHAR_RUS.tres", 
+#					CHAR.FRA : "res://RESOURCES/CHARACTERS/CHAR_FRA.tres",
+#					CHAR.CHN : "res://RESOURCES/CHARACTERS/CHAR_CHN.tres",
+#					CHAR.MAR : "res://RESOURCES/CHARACTERS/CHAR_MAR.tres"}
 					
-var astroCharUserDict = {}
-var charYearDict = {CHAR.USA : 1984, CHAR.RUS : 1973, CHAR.FRA : 1996, CHAR.CHN : 2021, CHAR.MAR : 2073}
+#var astroCharUserDict = {}
+var charYearDict = {CharacterRes.CHAR.USA : 1984,
+					 CharacterRes.CHAR.RUS : 1973,
+					 CharacterRes.CHAR.FRA : 1996,
+					 CharacterRes.CHAR.CHN : 2021,
+					 CharacterRes.CHAR.MAR : 2073}
 
-const CHAR_SAVE_DIR = "user://RESOURCES/CHARACTERS"
+const CHAR_SAVE_DIR_PATH = "res://RESOURCES/CHARACTERS/"
+const CHAR_USER_SAVE_DIR_PATH = "user://RESOURCES/CHARACTERS/"
 
-var tempCharSwitchWrapperList = null
+#var tempCharSwitchWrapperList = null
 
 var levelWrapperDict = {}
 
 var changingScene = false
 
-#var currChar = astroCharDict[CHAR.USA]
+#var currChar = astroCharDict[CharacterRes.CHAR.USA]
 var interactNode #$"/root/Control/astro/InteractFont"
 var interactNodes = []
 const DEF_MAX_INTERACT = 2
@@ -57,7 +66,7 @@ var maxInteractNodes = DEF_MAX_INTERACT
 #var infoInteractNodeIndex = 0
 var infoInteractNode 
 
-export (Resource) var CharacterRes = null
+export (Resource) var currCharRes = null
 
 var current_interact
 var controls_enabled
@@ -72,7 +81,7 @@ var gravRadAngFromNorm
 var gravMaxDegAngAllowedMove
 
 func getNextInteractNodeIndex():
-	print("global.getNextInteractNodeIndex")
+	print("getNextInteractNodeIndex")
 	var currIndex = 0
 	var overrideFlip = null
 	
@@ -188,7 +197,7 @@ func enableMultiInteractNodes(enable):
 
 func destroyInteractNode(interNode):
 	
-	print("global.destroyInteractNode")
+	print("destroyInteractNode")
 #	if !is_instance_valid(interNode):
 #		return
 	
@@ -210,15 +219,15 @@ func destroyInteractNode(interNode):
 
 func astroChar2String(astroChar):
 	match astroChar:
-		global.CHAR.USA:
+		CharacterRes.CHAR.USA:
 			return "USA"
-		global.CHAR.RUS:
+		CharacterRes.CHAR.RUS:
 			return "RUS"
-		global.CHAR.FRA:
+		CharacterRes.CHAR.FRA:
 			return "FRA"
-		global.CHAR.CHN:
+		CharacterRes.CHAR.CHN:
 			return "CHN"
-		global.CHAR.MAR:
+		CharacterRes.CHAR.MAR:
 			return "MAR"
 	return ""
 
@@ -239,7 +248,7 @@ func getSceneName(path):
 
 
 func initCharSwitch(astroChar):
-	global.changingScene = true
+	changingScene = true
 	saveCurrentLvl()
 	
 	loadNewCharacterLevel(astroChar)
@@ -247,19 +256,19 @@ func initCharSwitch(astroChar):
 
 
 func saveCurrentLvl():
-	if global.CharacterRes != null:
+	if currCharRes != null:
 		
 		
 		
-		for CSWrap in global.lvl().charSwitchWrappers.values():
+		for CSWrap in lvl().charSwitchWrappers.values():
 			if CSWrap.staticNode: continue
-			if CSWrap.checkIfInCharLvl(global.CharacterRes.id):
-				global.lvl().get_node(CSWrap.nodePath).CSWrapAddChanges(CSWrap)
+			if CSWrap.checkIfInCharLvl(currCharRes.id):
+				lvl().get_node(CSWrap.nodePath).CSWrapAddChanges(CSWrap)
 			
 			
 		
 		
-		var currLvlPath = global.getScenePath(global.CharacterRes.level)
+		var currLvlPath = getScenePath(currCharRes.level)
 	
 		savedCurrentLvlPackedScene(currLvlPath)
 		
@@ -269,40 +278,40 @@ func saveCurrentLvl():
 		
 
 func savedCurrentLvlPackedScene(currLvlPath):
-	var currChar = global.CharacterRes.id
+	var currChar = currCharRes.id
 	
 	
-	if !global.levelWrapperDict.has(currLvlPath):
-		global.levelWrapperDict[currLvlPath] = LevelWrapper.new()
+	if !levelWrapperDict.has(currLvlPath):
+		levelWrapperDict[currLvlPath] = LevelWrapper.new()
 			
-	if !global.levelWrapperDict[currLvlPath].charSavedLvlSceneDict.has(currChar):
-		global.levelWrapperDict[currLvlPath].charSavedLvlSceneDict[currChar] = PackedScene.new()
-	global.levelWrapperDict[currLvlPath].charSavedLvlSceneDict[currChar].pack(global.lvl())
+	if !levelWrapperDict[currLvlPath].charSavedLvlSceneDict.has(currChar):
+		levelWrapperDict[currLvlPath].charSavedLvlSceneDict[currChar] = PackedScene.new()
+	levelWrapperDict[currLvlPath].charSavedLvlSceneDict[currChar].pack(lvl())
 	
-	#ResourceSaver.save("res://name.tscn", global.levelWrapperDict[currLvlPath].charSavedLvlSceneDict[currChar])
-#	if !global.levelWrapperDict[currLvlPath].gravity.has(currChar):
-#		global.levelWrapperDict[currLvlPath].gravity[currChar] = []
-#		global.levelWrapperDict[currLvlPath].gravity[currChar].resize(2)
+	#ResourceSaver.save("res://name.tscn", levelWrapperDict[currLvlPath].charSavedLvlSceneDict[currChar])
+#	if !levelWrapperDict[currLvlPath].gravity.has(currChar):
+#		levelWrapperDict[currLvlPath].gravity[currChar] = []
+#		levelWrapperDict[currLvlPath].gravity[currChar].resize(2)
 		
-	global.levelWrapperDict[currLvlPath].gravity[currChar] = [global.gravMag, rad2deg(global.gravRadAngFromNorm)]
-	var timeDiscrepArray = [global.lvl().timeDiscrepCSWCharDict.duplicate(true), 
-		global.lvl().timeDiscrepBodyPresentDict2.duplicate(true), 
-		global.lvl().timeDiscrepManuallyRemovingArea.duplicate(true)]
-	global.levelWrapperDict[currLvlPath].lvlTimeDiscrepAreaDict[currChar] = [timeDiscrepArray, PackedScene.new()]
-	global.levelWrapperDict[currLvlPath].lvlTimeDiscrepAreaDict[currChar][1].pack(global.lvl().timeDiscrepParentNode)
+	levelWrapperDict[currLvlPath].gravity[currChar] = [gravMag, rad2deg(gravRadAngFromNorm)]
+	var timeDiscrepArray = [lvl().timeDiscrepCSWCharDict.duplicate(true), 
+		lvl().timeDiscrepBodyPresentDict2.duplicate(true), 
+		lvl().timeDiscrepManuallyRemovingArea.duplicate(true)]
+	levelWrapperDict[currLvlPath].lvlTimeDiscrepAreaDict[currChar] = [timeDiscrepArray, PackedScene.new()]
+	levelWrapperDict[currLvlPath].lvlTimeDiscrepAreaDict[currChar][1].pack(lvl().timeDiscrepParentNode)
 
 
 
 
 func reorderAndSaveCurrentLvlWrappers(currLvlPath):
-	var currChar = global.CharacterRes.id
-	var charSwitchWrappersDUP = global.lvl().charSwitchWrappers.duplicate(true)
+	var currChar = currCharRes.id
+	var charSwitchWrappersDUP = lvl().charSwitchWrappers.duplicate(true)
 	
 	
-#	for wrap in global.lvl().charSwitchWrappers.values():
+#	for wrap in lvl().charSwitchWrappers.values():
 #		dependantOrderedCSWrappers.append(wrap)
 #
-#	for wrap in global.lvl().charSwitchWrappers.values():
+#	for wrap in lvl().charSwitchWrappers.values():
 #
 #		for dependantWrap in wrap.dependantCSWrappers[currChar]:
 #
@@ -315,27 +324,27 @@ func reorderAndSaveCurrentLvlWrappers(currLvlPath):
 #			dependantOrderedCSWrappers.insert(wrapIndex+1, dependantWrap)
 			
 			
-	global.levelWrapperDict[currLvlPath].lvlNodesCSWrapDict[currChar] = charSwitchWrappersDUP
+	levelWrapperDict[currLvlPath].lvlNodesCSWrapDict[currChar] = charSwitchWrappersDUP
 
 
 
 func loadNewCharacterLevel(astroChar):
-	if !astroCharUserDict.has(astroChar) : return
+	if !astroCharDict.has(astroChar) : return#if !astroCharUserDict.has(astroChar) : return
 	
-	var lvl = load(astroCharUserDict[astroChar])# if astroCharUserDict.has(astroChar) else load(astroCharDict[astroChar])
-	CharacterRes = lvl
+	var lvl = astroCharDict[astroChar]#load(astroCharUserDict[astroChar])# if astroCharUserDict.has(astroChar) else load(astroCharDict[astroChar])
+	currCharRes = lvl
 	var newLvlPath = getScenePath(lvl.level)
 	print(newLvlPath)
 	print("print(newLvlPath)")
-	#if global.levelWrapperDict.has(newLvlPath):
-	#	if global.levelWrapperDict[newLvlPath].charSavedLvlSceneDict.has(Character.id):
-	#		global.goto_scene(global.levelWrapperDict[newLvlPath].charSavedLvlSceneDict[Character.id])
+	#if levelWrapperDict.has(newLvlPath):
+	#	if levelWrapperDict[newLvlPath].charSavedLvlSceneDict.has(Character.id):
+	#		goto_scene(levelWrapperDict[newLvlPath].charSavedLvlSceneDict[Character.id])
 			
 			
 			#return
 	
 	
-	global.goto_scene(newLvlPath)
+	goto_scene(newLvlPath)
 
 
 
@@ -347,7 +356,7 @@ func getScriptPath(scriptFileName) -> String:
 #
 func _ready():
 	init()
-	assignUserCharacterRes()
+	assignUsercurrCharRes()
 	
 func init():
 	current_interact = null
@@ -368,17 +377,43 @@ func init():
 	#+ 1 for result / report node
 	interactNodes.resize(maxInteractNodes + 1)
 	
-func assignUserCharacterRes():
-	for astroChar in astroCharDict.keys():
-			var filePath = CHAR_SAVE_DIR + "/%s.tres" % [astroChar2String(astroChar)]
-			var charRes = load(astroCharDict[astroChar])
-			
-			var dir = Directory.new()
-			if !dir.dir_exists(CHAR_SAVE_DIR):
-				dir.make_dir_recursive(CHAR_SAVE_DIR)
-			
-			astroCharUserDict[astroChar] = filePath
-			ResourceSaver.save(filePath, charRes)
+func assignUsercurrCharRes():
+	#TODO: for builds that need to save after closing app
+	#gonna need to check for files in CHAR_USER_SAVE_DIR_PATH
+	#before checkin the res path at CHAR_SAVE_DIR_PATH
+
+
+	var dir = Directory.new()
+	if dir.open(CHAR_SAVE_DIR_PATH) == OK:
+		dir.list_dir_begin()
+		var file_name = dir.get_next()
+		while file_name != "":
+			if dir.current_is_dir(): 
+				file_name = dir.get_next()
+				continue
+				#print("Found directory: " + file_name)
+			var filPath = CHAR_SAVE_DIR_PATH + file_name
+			var file = load(filPath)
+			if file is CharacterRes:
+				astroCharDict[file.id] = file
+			#else:
+			#	print("Found file: " + file_name)
+			file_name = dir.get_next()
+	else:
+		print("An error occurred when trying to access the path.")
+
+	
+	
+#	for astroChar in astroCharDict.keys():
+#			var filePath = CHAR_SAVE_DIR + "/%s.tres" % [astroChar2String(astroChar)]
+#			var charRes = load(astroCharDict[astroChar])
+#
+#			var dir = Directory.new()
+#			if !dir.dir_exists(CHAR_SAVE_DIR):
+#				dir.make_dir_recursive(CHAR_SAVE_DIR)
+#
+#			astroCharUserDict[astroChar] = filePath
+#			ResourceSaver.save(filePath, charRes)
 
 			#will be set in astro script or manually
 		

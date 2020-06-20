@@ -123,18 +123,18 @@ onready var touchCS1996 = get_node(touchCS1996Path)
 onready var touchCS2021 = get_node(touchCS2021Path)
 onready var touchCS2073 = get_node(touchCS2073Path)
 
-onready var touchCSTweenDict = {global.CHAR.USA : cs1984Tween, 
-	global.CHAR.RUS : cs1973Tween, 
-	global.CHAR.FRA : cs1996Tween, 
-	global.CHAR.CHN : cs2021Tween, 
-	global.CHAR.MAR : cs2073Tween}
+onready var touchCSTweenDict = {CharacterRes.CHAR.USA : cs1984Tween, 
+	CharacterRes.CHAR.RUS : cs1973Tween, 
+	CharacterRes.CHAR.FRA : cs1996Tween, 
+	CharacterRes.CHAR.CHN : cs2021Tween, 
+	CharacterRes.CHAR.MAR : cs2073Tween}
 
 
-onready var touchCSDict = {global.CHAR.USA : touchCS1984, 
-	global.CHAR.RUS : touchCS1973, 
-	global.CHAR.FRA : touchCS1996, 
-	global.CHAR.CHN : touchCS2021, 
-	global.CHAR.MAR : touchCS2073}
+onready var touchCSDict = {CharacterRes.CHAR.USA : touchCS1984, 
+	CharacterRes.CHAR.RUS : touchCS1973, 
+	CharacterRes.CHAR.FRA : touchCS1996, 
+	CharacterRes.CHAR.CHN : touchCS2021, 
+	CharacterRes.CHAR.MAR : touchCS2073}
 	
 onready var touchCSTop = touchCS1973.get_global_position().y - touchCSHeight/2
 

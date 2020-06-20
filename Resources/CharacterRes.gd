@@ -2,7 +2,9 @@ extends Resource
 
 class_name CharacterRes
 
-export (global.CHAR) var id
+enum CHAR {USA, RUS, FRA, CHN, MAR}
+
+export (CHAR) var id
 export (String) var name
 export (String) var nationality
 export (String) var description

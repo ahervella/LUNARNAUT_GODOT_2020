@@ -14,7 +14,7 @@ extends KinematicBody2D
 
 #used for testing
 var CHARACTER_RES = null
-export (global.CHAR) var startingChar = global.CHAR.USA
+export (CharacterRes.CHAR) var startingChar = CharacterRes.CHAR.USA
 #var CHARACTER_RES : Resource = null
 export (NodePath) var CAMERA_NODE_PATH = null
 var CAMERA_NODE
@@ -64,7 +64,7 @@ var currMaxAirTime = 0
 const DEFAULT_MAX_AIR_TIME = 0.1
 const MAX_AIR_TIME = 0.6
 const DEFAULT_JUMP_FORCE = -150
-# var jumpForce = CharacterRes.baseJump
+# var jumpForce = currCharRes.baseJump
 var jumpForce = 0
 
 #used to restrict astro horizontal movement from cables
@@ -164,19 +164,19 @@ func _ready():
 	
 	
 	
-	if (global.CharacterRes == null):
+	if (global.currCharRes == null):
 			if global.availableChar.has(startingChar):
-				global.CharacterRes = load(global.astroCharUserDict[startingChar])
+				global.currCharRes = global.astroCharDict[startingChar]#load(global.astroCharUserDict[startingChar])
 			else:
-				global.CharacterRes = load(global.astroCharUserDict[global.CHAR.USA])
-	CHARACTER_RES = global.CharacterRes
+				global.currCharRes = global.astroCharDict[global.CHAR.USA]#load(global.astroCharUserDict[global.CHAR.USA])
+	CHARACTER_RES = global.currCharRes
 		
 	
 		
-#	if (global.CharacterRes != null || is_instance_valid(global.CharacterRes)):
-		#CHARACTER_RES = global.CharacterRes
+#	if (global.currCharRes != null || is_instance_valid(global.currCharRes)):
+		#CHARACTER_RES = global.currCharRes
 #	else:
-		#global.CharacterRes = CHARACTER_RES
+		#global.currCharRes = CHARACTER_RES
 	
 	#need to do this as well here because the interact text node needs
 	#an astro node reference. Because asto is always below text in scene tree,
@@ -1182,7 +1182,7 @@ func getHeight():
 	
 	
 func CSWrapSaveStartState(CSWrap : CharacterSwitchingWrapper):
-	var currChar = global.CharacterRes.id
+	var currChar = global.currCharRes.id
 	
 	if CSWrap.saveStartState[currChar] == null:
 			CSWrap.saveStartState[currChar] = []
@@ -1201,7 +1201,7 @@ func CSWrapSaveStartState(CSWrap : CharacterSwitchingWrapper):
 	
 	
 func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
-	var currChar = global.CharacterRes.id
+	var currChar = global.currCharRes.id
 	var lvl = global.lvl()
 	
 	CSWrap.changesToApply[currChar].resize(4)
@@ -1255,7 +1255,7 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 		
 	
 func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
-	var currChar = global.CharacterRes.id
+	var currChar = global.currCharRes.id
 	
 	if CSWrap.changesToApply[currChar] == []: return
 	
@@ -1295,16 +1295,16 @@ func CSWrapSaveTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, astroChar, s
 
 func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper):
 	pass
-#	var currChar = global.CharacterRes.id
+#	var currChar = global.currCharRes.id
 #
 #	var posChange = CSWrap.changesToApply[currChar][0]
 #	var rotChange = CSWrap.changesToApply[currChar][1]
 	
 #
-#	if CSWrap.dependantCSWrappers[global.CharacterRes.id] != null && CSWrap.dependantCSWrappers[global.CharacterRes.id].size() > 0:
-#				for dependantCSWrap in CSWrap.dependantCSWrappers[global.CharacterRes.id]:
+#	if CSWrap.dependantCSWrappers[global.currCharRes.id] != null && CSWrap.dependantCSWrappers[global.currCharRes.id].size() > 0:
+#				for dependantCSWrap in CSWrap.dependantCSWrappers[global.currCharRes.id]:
 #
-#					global.lvl().get_node(dependantCSWrap.nodePath).CSWrapRecieveTransformChanges(dependantCSWrap, global.CharacterRes.id, posChange, rotChange)
+#					global.lvl().get_node(dependantCSWrap.nodePath).CSWrapRecieveTransformChanges(dependantCSWrap, global.currCharRes.id, posChange, rotChange)
 
 
 
