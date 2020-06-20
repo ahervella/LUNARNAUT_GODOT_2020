@@ -44,8 +44,8 @@ var charYearDict = {CharacterRes.CHAR.USA : 1984,
 					 CharacterRes.CHAR.CHN : 2021,
 					 CharacterRes.CHAR.MAR : 2073}
 
-const CHAR_SAVE_DIR_PATH = "res://RESOURCES/CHARACTERS/"
-const CHAR_USER_SAVE_DIR_PATH = "user://RESOURCES/CHARACTERS/"
+const CHAR_RES_DIR_PATH = "res://RESOURCES/CHARACTERS/"
+const CHAR_RES_SAVE_DIR_PATH = "user://RESOURCES/CHARACTERS/"
 
 var levelWrapperDict = {}
 
@@ -374,7 +374,7 @@ func loadCharRes():
 
 
 	var dir = Directory.new()
-	if dir.open(CHAR_SAVE_DIR_PATH) == OK:
+	if dir.open(CHAR_RES_DIR_PATH) == OK:
 		dir.list_dir_begin()
 		var file_name = dir.get_next()
 		while file_name != "":
@@ -382,7 +382,7 @@ func loadCharRes():
 				file_name = dir.get_next()
 				continue
 				#print("Found directory: " + file_name)
-			var filPath = CHAR_SAVE_DIR_PATH + file_name
+			var filPath = CHAR_RES_DIR_PATH + file_name
 			var file = load(filPath)
 			if file is CharacterRes:
 				charResDict[file.id] = file
