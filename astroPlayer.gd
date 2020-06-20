@@ -166,9 +166,9 @@ func _ready():
 	
 	if (global.currCharRes == null):
 			if global.availableChar.has(startingChar):
-				global.currCharRes = global.astroCharDict[startingChar]#load(global.astroCharUserDict[startingChar])
+				global.currCharRes = global.charResDict[startingChar]
 			else:
-				global.currCharRes = global.astroCharDict[global.CHAR.USA]#load(global.astroCharUserDict[global.CHAR.USA])
+				global.currCharRes = global.charResDict[global.CHAR.USA]
 	CHARACTER_RES = global.currCharRes
 		
 	

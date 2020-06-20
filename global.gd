@@ -36,13 +36,8 @@ var availableChar = [CharacterRes.CHAR.RUS,
 					 CharacterRes.CHAR.FRA,
 					 CharacterRes.CHAR.CHN,
 					 CharacterRes.CHAR.MAR]
-var astroCharDict = {}# = {CHAR.USA : "res://RESOURCES/CHARACTERS/CHAR_USA.tres",
-#					CHAR.RUS : "res://RESOURCES/CHARACTERS/CHAR_RUS.tres", 
-#					CHAR.FRA : "res://RESOURCES/CHARACTERS/CHAR_FRA.tres",
-#					CHAR.CHN : "res://RESOURCES/CHARACTERS/CHAR_CHN.tres",
-#					CHAR.MAR : "res://RESOURCES/CHARACTERS/CHAR_MAR.tres"}
+var charResDict = {}
 					
-#var astroCharUserDict = {}
 var charYearDict = {CharacterRes.CHAR.USA : 1984,
 					 CharacterRes.CHAR.RUS : 1973,
 					 CharacterRes.CHAR.FRA : 1996,
@@ -52,18 +47,15 @@ var charYearDict = {CharacterRes.CHAR.USA : 1984,
 const CHAR_SAVE_DIR_PATH = "res://RESOURCES/CHARACTERS/"
 const CHAR_USER_SAVE_DIR_PATH = "user://RESOURCES/CHARACTERS/"
 
-#var tempCharSwitchWrapperList = null
-
 var levelWrapperDict = {}
 
 var changingScene = false
 
-#var currChar = astroCharDict[CharacterRes.CHAR.USA]
-var interactNode #$"/root/Control/astro/InteractFont"
+var interactNode 
 var interactNodes = []
 const DEF_MAX_INTERACT = 2
 var maxInteractNodes = DEF_MAX_INTERACT
-#var infoInteractNodeIndex = 0
+
 var infoInteractNode 
 
 export (Resource) var currCharRes = null
@@ -102,14 +94,13 @@ func getNextInteractNodeIndex():
 		
 	
 	var newInteractNode = addNewInteractNode(currIndex, overrideFlip)
-	#print("infoInteractNodeIndex")
-	#print(infoInteractNodeIndex)
+
 	infoInteractNode = addNewInteractNode(infoInteractNodeIndex, overrideFlip)
 	
 	return newInteractNode
 	
 func addNewInteractNode(index, overrideFlip):
-	#if interactNodes.size() < index+1: interactNodes.resize(index+1)
+
 	if interactNodes.size() > index && interactNodes[index] == null:
 		var newInteractNode = interactNode.duplicate(DUPLICATE_USE_INSTANCING)
 		newInteractNode.overrideFlip = overrideFlip
@@ -128,8 +119,7 @@ func setInterNodeVerticalOffset(interNodeIndex):
 	if interNodeIndex > 0:
 			if interactNodes[interNodeIndex-1] != null:
 				var prevInterNode = interactNodes[interNodeIndex-1] 
-				#print("interNodeIndex")
-				#print(interNodeIndex)
+
 				
 				if prevInterNode.text != null && prevInterNode.text != "":
 					var actualPrevTextVect = (getRealTextVector2(prevInterNode.text, prevInterNode.get_size().x, prevInterNode.get("custom_fonts/normal_font")))
@@ -329,9 +319,9 @@ func reorderAndSaveCurrentLvlWrappers(currLvlPath):
 
 
 func loadNewCharacterLevel(astroChar):
-	if !astroCharDict.has(astroChar) : return#if !astroCharUserDict.has(astroChar) : return
+	if !charResDict.has(astroChar) : return#if !astroCharUserDict.has(astroChar) : return
 	
-	var lvl = astroCharDict[astroChar]#load(astroCharUserDict[astroChar])# if astroCharUserDict.has(astroChar) else load(astroCharDict[astroChar])
+	var lvl = charResDict[astroChar]#load(astroCharUserDict[astroChar])# if astroCharUserDict.has(astroChar) else load(charResDict[astroChar])
 	currCharRes = lvl
 	var newLvlPath = getScenePath(lvl.level)
 	print(newLvlPath)
@@ -395,27 +385,13 @@ func loadCharRes():
 			var filPath = CHAR_SAVE_DIR_PATH + file_name
 			var file = load(filPath)
 			if file is CharacterRes:
-				astroCharDict[file.id] = file
+				charResDict[file.id] = file
 			#else:
 			#	print("Found file: " + file_name)
 			file_name = dir.get_next()
 	else:
-		print("An error occurred when trying to access the path.")
+		print("An error occurred when trying to access the character resource path.")
 
-	
-	
-#	for astroChar in astroCharDict.keys():
-#			var filePath = CHAR_SAVE_DIR + "/%s.tres" % [astroChar2String(astroChar)]
-#			var charRes = load(astroCharDict[astroChar])
-#
-#			var dir = Directory.new()
-#			if !dir.dir_exists(CHAR_SAVE_DIR):
-#				dir.make_dir_recursive(CHAR_SAVE_DIR)
-#
-#			astroCharUserDict[astroChar] = filePath
-#			ResourceSaver.save(filePath, charRes)
-
-			#will be set in astro script or manually
 		
 		
 		

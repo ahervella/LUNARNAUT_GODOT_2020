@@ -61,22 +61,10 @@ func getLvlSceneName():
 	
 	
 func consistentCharSet():
-	for astroChar in global.astroCharDict.keys():
-		var charRes = global.astroCharDict[astroChar]#global.CHAR_SAVE_DIR + "/%s.tres" % [global.astroChar2String(astroChar)]
-		#var file = File.new()
-		#var charRes = #load (filePath)
-#		if file.file_exists(filePath):
-#			charRes = load(filePath)
-#		else:
-#			charRes = load(global.astroCharDict[astroChar])
+	for astroChar in global.charResDict.keys():
+		var charRes = global.charResDict[astroChar]
 		
-		charRes.level = getLvlSceneName()#"dev_movable_obj"
-#		var dir = Directory.new()
-#		if !dir.dir_exists(global.CHAR_SAVE_DIR):
-#			dir.make_dir_recursive(global.CHAR_SAVE_DIR)
-		
-		#global.astroCharUserDict[astroChar] = filePath
-		#ResourceSaver.save(filePath, charRes)
+		charRes.level = getLvlSceneName()
 		
 		
 #//////////// START OF TOOL AND SETGET CODE ////////////////
