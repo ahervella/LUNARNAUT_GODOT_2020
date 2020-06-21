@@ -502,7 +502,7 @@ func MoveJump(delta):
 	if (jumpJustPressed && (groundedBubble) && holdDownCanJump):# and anim_jump
 		set_anim("JUMP2")
 		jumping = true
-		groundedBubble = false;
+		#groundedBubble = false;
 		
 		
 	if (!jumping):
