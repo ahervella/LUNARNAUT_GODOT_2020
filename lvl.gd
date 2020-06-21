@@ -13,10 +13,12 @@ export (NodePath) var trigChunkNodePath = null
 export (bool) var CSWrapsAddAstroAndCam = false setget setAddAstroAndCam
 export (bool) var CSWrapsAddAll1stGenChildNodes = false setget setAddAllChildNodes
 export (bool) var CSWrapsAddNewWrapper = false setget setAddNewWrapper
-export (bool) var CSWrapsClearCSWsAndStates = false setget setClearAllNodes
+export (bool) var CSWrapsClearCSWs = false setget setClearAllNodes
 export (Dictionary) var charSwitchWrappers
+export (bool) var CSWrapConfirmSave = false
 export (bool) var CSWrapsSaveStates = false setget setSaveCSWStates
-#export (bool) var CSWrapLoadSavedStates = false setget setLoadCSWStates
+export (bool) var CSWrapConfirmLoad = false
+export (bool) var CSWrapLoadSavedStates = false setget setLoadCSWStates
 #export (bool) var CSWrapClearSavedStates = false setget setClearCSWStates
 
 
@@ -74,6 +76,7 @@ func setAddAstroAndCam(garboVal):
 		return
 	if !readyDone: return
 	addAstroAndCamPerChar()
+	property_list_changed_notify()
 	
 func setAddAllChildNodes(garboVal):
 	if !Engine.editor_hint:
@@ -105,7 +108,7 @@ func setAddAllChildNodes(garboVal):
 			charSwitchWrappers[childRes.getCSWName(self)] = childRes
 			
 	print("^^Ignore 'Node not found' errors (because the path only exists at runtime)^^")
-
+	property_list_changed_notify()
 
 func sendLvlNode2CSW(csw):
 	csw.currLvlNode = self#emit_signal("sendLvlNode", self)
@@ -177,10 +180,12 @@ func setAddNewWrapper(garboVal):
 	
 	charSwitchWrappers[newName] = CharacterSwitchingWrapper.new()
 	charSwitchWrappers[newName].connect("requestLvlNodeSig", self, "sendLvlNode2CSW")
+	property_list_changed_notify()
 	#connect("sendLvlNode", charSwitchWrappers[newName], "getLvlNode")
 	
 func setClearAllNodes(garboVal):
-	CSWrapsClearCSWsAndStates = false
+	if !garboVal: return
+	CSWrapsClearCSWs = false
 	if !Engine.editor_hint: return
 	for node in charSwitchWrappers.values():
 		if node == null:
@@ -188,48 +193,47 @@ func setClearAllNodes(garboVal):
 		
 		node.nodeCollShapePaths.resize(0)
 	charSwitchWrappers.clear()
-	
-	setClearCSWStates(null)
+	property_list_changed_notify()
+	#setClearCSWStates(null)
 
 func setSaveCSWStates(garboVal):
-	#CSWrapsSaveStates = false
+	if !CSWrapConfirmSave: return
+	
+	#in case it reloads the scene, don't automatically save everything
+	if !garboVal: return
+	
+	#only for editor use
 	if !Engine.editor_hint: return
 	
-	for csw in charSwitchWrappers.values():
+	for cswKey in charSwitchWrappers.keys():
+		var csw = charSwitchWrappers[cswKey]
 		if csw is CharacterSwitchingWrapper:
-			csw.saveAllVariables()
+			csw.saveThisResource(getLvlSceneName(), cswKey)#saveAllVariables()
+
+	CSWrapConfirmSave = false
+	property_list_changed_notify()
 
 func setLoadCSWStates(garboVal):
-	#CSWrapLoadSavedStates = false
+	if !CSWrapConfirmLoad: return
+
+	#in case it reloads the scene, don't automatically save everything
+	if !garboVal: return
+	
+		#only for editor use
 	if !Engine.editor_hint: return
 	
+	var file = File.new()
 	
-	var file2Check = File.new()
-	var file = {}
-	var filePath = CharacterSwitchingWrapper.getCSWSaveFilePath(self)
-	
-	if file2Check.file_exists(filePath):
-		file2Check.open(filePath, File.READ)
-		file = parse_json(file2Check.get_line())
-		file2Check.close()
+	for cswKey in charSwitchWrappers.keys():
+		var filePath = CharacterSwitchingWrapper.getSaveFilePath(getLvlSceneName(), cswKey)
+		if filePath != null && file.file_exists(filePath):
+			charSwitchWrappers[cswKey] = load(filePath).duplicate(true)
+		elif filePath != null:
+			print("file path " + filePath + " could not be found.")
 		
-	var totalCSWs = file.values().size()
-	for cswKey in file.keys():
-		var newCSW = CharacterSwitchingWrapper.new()
-		newCSW.connect("requestLvlNodeSig", self, "sendLvlNode2CSW")
-		newCSW.loadAllVariables(cswKey, file)
-		
-			
-func setClearCSWStates(garboVal):
-	
-	if !Engine.editor_hint: return
-	
-	if charSwitchWrappers.size() <= 0:
-		var blah = Directory.new()
-		if blah.file_exists(CharacterSwitchingWrapper.getCSWSaveFilePath(self)):
-			blah.remove(CharacterSwitchingWrapper.getCSWSaveFilePath(self))
-
-
+	CSWrapConfirmLoad = false
+	property_list_changed_notify()
+	print("CSWrappers loading finished.")
 
 func changeCSWKey(csw, newName):
 	if !Engine.editor_hint:

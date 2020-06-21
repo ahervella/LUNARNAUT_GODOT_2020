@@ -4,8 +4,7 @@ extends Resource
 class_name CharacterSwitchingWrapper
 
 const cswSavesFolder = "res://RESOURCES/CSW_SAVES/"
-var dontSave = true
-var dontInit 
+
 
 
 var dependantCSWrappers = {CharacterRes.CHAR.USA : [],
@@ -38,7 +37,7 @@ var savedTimeDiscrepencyState = {CharacterRes.CHAR.USA : [],
 var currLvlNode
 signal requestLvlNodeSig
 
-export (NodePath) var nodePath #= null setget setNodePath
+export (NodePath) var nodePath
 export (bool) var setFullNodePath = false setget setFullNP
 export (bool) var setKeyName = false setget setKey
 export (String) var customNodePath
@@ -51,7 +50,7 @@ export (bool) var addObjectConfig = false setget setObjectConfigurtion
 export (Array) var groups #setget saveGroups
 export (bool) var addNodeGroups = false setget setNodeGroups
 	
-export (Array, NodePath) var nodeCollShapePaths #setget saveNCSP
+export (Array, NodePath) var nodeCollShapePaths
 
 	
 export (String) var customNCSPath
@@ -59,11 +58,11 @@ export (bool) var addCustomNCSPath = false setget setCustomNCSPath
 # setting this default to [] was causeing weird ass shit where it was saving its state
 #across every new(). Should report to godot community
 export (bool) var staticNode = false
-export (bool) var USA = true setget saveUSA
-export (bool) var RUS = true setget saveRUS
-export (bool) var FRA = true setget saveFRA
-export (bool) var CHN = true setget saveCHN
-export (bool) var MAR = true setget saveMAR
+export (bool) var USA = true
+export (bool) var RUS = true
+export (bool) var FRA = true
+export (bool) var CHN = true
+export (bool) var MAR = true
 
 
 
@@ -72,39 +71,42 @@ export (bool) var MAR = true setget saveMAR
 func setNodePath(val):
 	if !Engine.editor_hint:
 		print("wttf")
-		
+
 	else:
 		requestLvlNode()
 		if currLvlNode == null: return
-		
+
 	nodePath = getActualNodePath(val) if Engine.editor_hint else val
 
-	saveToFile("nodePath")
-		
 	if !Engine.editor_hint : return
 
 	if currLvlNode!= null:
-	
+
 		if currLvlNode.get_node(val) != null:
 			addNCSPsToCSW(currLvlNode.get_node(val))
 			addGroupsToCSW(currLvlNode.get_node(val))
-
+#
 
 
 func setFullNP(garboVal):
+	if !garboVal: return
+	if !Engine.editor_hint: return
 	setFullNodePath = false
 	nodePath = getActualNodePath(nodePath)
+	property_list_changed_notify()
 
 func setKey(garboVal):
+	if !garboVal: return
 	if !Engine.editor_hint: return
 
 	requestLvlNode()
 	if currLvlNode != null:
 		var newName = getCSWName(currLvlNode)
 		if newName != null && newName != "":
-			print("neew name:")
+			print("new name:")
 			print(newName)
 			currLvlNode.changeCSWKey(self, newName)
+	property_list_changed_notify()
 
 func setNodeGroups(garboVal):
 	addNodeGroups = false
@@ -113,6 +115,8 @@ func setNodeGroups(garboVal):
 	if path != null && currLvlNode != null && currLvlNode.get_node(path) != null:
 
 		addNCSPsToCSW(currLvlNode.get_node(path))
+		
+	property_list_changed_notify()
 
 func setPlugConfiguration(val):
 	if !Engine.editor_hint : return
@@ -120,6 +124,8 @@ func setPlugConfiguration(val):
 	setConfig("/plugArea/plugAreaShape")
 	if !groups.has("plug"):
 		groups.append("plug")
+		
+	property_list_changed_notify()
 	
 func setBlockConfiguration(val):
 	if !Engine.editor_hint : return
@@ -129,18 +135,23 @@ func setBlockConfiguration(val):
 		groups.append("block")
 	if !groups.has("solid"):
 		groups.append("solid")
+		
+	property_list_changed_notify()
 
 func setObjectConfigurtion(val):
-	if !Engine.editor_hint : return
+	if !val: return
+	if !Engine.editor_hint: return
 	addObjectConfig = false
 	setConfig("/OBJ_SHAPE")
 	if !groups.has("object"):
 		groups.append("object")
 	if !groups.has("solid"):
 		groups.append("solid")
+		
+	property_list_changed_notify()
 	
 func setConfig(shapeStringPath: String):
-	if !Engine.editor_hint : return
+	if !Engine.editor_hint: return
 	if nodePath == null: return
 	var stringPath = ""
 	for i in nodePath.get_name_count():
@@ -153,21 +164,26 @@ func setConfig(shapeStringPath: String):
 		nodeCollShapePaths[size] = (NodePath(plugCollShapePath))
 
 func setCustomNodePath(val):
-	if !Engine.editor_hint : return
+	if !val: return
+	if !Engine.editor_hint: return
 	assignCustomNodePath = false
 	assigningCustomPath = true
 	if customNodePath != null && customNodePath != "":
 		nodePath = NodePath(customNodePath)
 	customNodePath = ""
 	assigningCustomPath = false
+	property_list_changed_notify()
 
 func setCustomNCSPath(val):
-	if !Engine.editor_hint : return
+	if !val: return
+	if !Engine.editor_hint: return
 	addCustomNCSPath = false
 	if customNCSPath != null && customNCSPath != "" && !nodeCollShapePaths.has(NodePath(customNCSPath)):
 		nodeCollShapePaths.append(NodePath(customNCSPath))
 	customNCSPath = ""
 	saveNCSP(nodeCollShapePaths)
+	
+	property_list_changed_notify()
 
 
 
@@ -176,8 +192,6 @@ func setCustomNCSPath(val):
 func saveGroups(val):
 	groups = val
 	
-	saveToFile("groups")
-
 
 func saveNCSP(val):
 	nodeCollShapePaths = val
@@ -185,49 +199,9 @@ func saveNCSP(val):
 	for ndpath in nodeCollShapePaths:
 		ndpath = val
 		
-	saveToFile("nodeCollShapePaths")
 
-
-func saveUSA(val):
-	USA = val
-	saveToFile("USA")
-func saveRUS(val):
-	RUS = val
-	saveToFile("RUS")
-func saveFRA(val):
-	FRA = val
-	saveToFile("FRA")
-func saveCHN(val):
-	CHN = val
-	saveToFile("CHN")
-func saveMAR(val):
-	MAR = val
-	saveToFile("MAR")
 	
 	
-
-func saveToFile(propertyString):
-	if !Engine.editor_hint : return
-	if dontSave: return
-	var file2Check = File.new()
-	var file = {}
-	
-	var filePath = "res://RESOURCES/CSW_SAVES/dev_cable_gravity.json"#getCSWSaveFilePath(currLvlNode)
-	
-	if file2Check.file_exists(filePath):
-		file2Check.open(filePath, File.READ)
-		file = parse_json(file2Check.get_line()).duplicate(true)
-		file2Check.close()
-		
-	if !file.has(to_string()):
-		file[to_string()] = {}
-		
-	file[to_string()][propertyString] = get(propertyString)
-	file2Check.open(filePath, File.WRITE)
-	
-	file2Check.store_line(to_json(file))
-	
-	file2Check.close()
 
 
 
@@ -237,61 +211,20 @@ func saveToFile(propertyString):
 #//////////////////////  START OF PREVENTING VARIABLE RESET METHODS  #//////////////////////
 #.........(this is all so that when ever I edit code in this file, the current 
 #.........data in the wrappers is not reset after saving)
-static func getCSWSaveFilePath(lvlNode):
-	return cswSavesFolder + lvlNode.getLvlSceneName() + ".json"
+static func getSaveFilePath(sceneName, name):
+	if sceneName == null || name == null: return null
+	return cswSavesFolder + sceneName + "/" + name + ".tres"
 
 
-func _init():
-	if !Engine.editor_hint : return
-	call_deferred("init_deferred")
-
-func init_deferred():
-	dontSave = true
-	if dontInit != null && dontInit: return
-	
-	var file2Check = File.new()
-	var file = {}
-	
-	var filePath = "res://RESOURCES/CSW_SAVES/dev_cable_gravity.json"#getCSWSaveFilePath(currLvlNode)
-	
-	if file2Check.file_exists(filePath):
-		file2Check.open(filePath, File.READ)
-		file = parse_json(file2Check.get_line())
-		file2Check.close()
+func saveThisResource(sceneName, name):
+	if sceneName == null || name == null: return
+	var dirPath = cswSavesFolder + sceneName + "/"
+	var dir = Directory.new()
+	if !dir.dir_exists(dirPath):
+		dir.make_dir(dirPath)
 		
-	if file.has(to_string()):
-		loadAllVariables(to_string(), file)
-			
-	dontSave = false
-	dontInit = true
-	
-	saveAllVariables()
+	ResourceSaver.save(dirPath + name + ".tres", self)
 
-func loadAllVariables(fileKey, file):
-
-	for key in file[fileKey].keys():
-		if key == "nodePath":
-			set(key, NodePath(file[fileKey][key]))
-			
-		elif key == "nodeCollShapePaths":
-			var ncspArray = []
-			for ncsp in file[fileKey][key]:
-				ncspArray.append(NodePath(ncsp))
-				
-			set(key, ncspArray)
-		else:
-			set(key, file[fileKey][key])
-
-func saveAllVariables():
-
-	saveToFile("nodePath")
-	saveToFile("nodeCollShapePaths")
-	saveToFile("groups")
-	saveToFile("USA")
-	saveToFile("RUS")
-	saveToFile("FRA")
-	saveToFile("CHN")
-	saveToFile("MAR")
 	
 
 func requestLvlNode():
