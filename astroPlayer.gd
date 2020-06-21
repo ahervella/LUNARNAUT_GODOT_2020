@@ -201,6 +201,7 @@ func readyDeferred():
 		enableShadowsSetter(true)
 		showBlackBGSetter(true)
 		
+		
 	else:
 		#set to what ever inspector bools are
 		showMoonBGSetter(showMoonBG)
@@ -227,12 +228,13 @@ func showMoonBGSetter(val):
 	var bg_nodes = (get_tree().get_nodes_in_group("bg"))
 	for i in bg_nodes:
 		i.set_visible(showMoonBG) 
-
+	property_list_changed_notify()
 
 
 func showBlackBGSetter(val):
 	showBlackBG = val
 	get_node("para/para-stars/black").set_visible(val)
+	property_list_changed_notify()
 	
 	
 func enableShadowsSetter(val):
@@ -240,6 +242,7 @@ func enableShadowsSetter(val):
 	enableShadows = val
 	get_node("Light2D").set_enabled(val)
 	get_node("Light2D/LightDarker").set_enabled(val)
+	property_list_changed_notify()
 
 
 
@@ -502,7 +505,6 @@ func MoveJump(delta):
 	if (jumpJustPressed && (groundedBubble) && holdDownCanJump):# and anim_jump
 		set_anim("JUMP2")
 		jumping = true
-		#groundedBubble = false;
 		
 		
 	if (!jumping):
