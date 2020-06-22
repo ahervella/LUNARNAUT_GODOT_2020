@@ -105,8 +105,10 @@ func setKey(garboVal):
 		if newName != null && newName != "":
 			print("new name:")
 			print(newName)
+			newName = newName.replace("/", ">>>")
 			currLvlNode.changeCSWKey(self, newName)
 	property_list_changed_notify()
+	currLvlNode.property_list_changed_notify()
 
 func setNodeGroups(garboVal):
 	addNodeGroups = false
@@ -115,6 +117,7 @@ func setNodeGroups(garboVal):
 	if path != null && currLvlNode != null && currLvlNode.get_node(path) != null:
 
 		addNCSPsToCSW(currLvlNode.get_node(path))
+		addGroupsToCSW(currLvlNode.get_node(path))
 		
 	property_list_changed_notify()
 
@@ -215,6 +218,9 @@ static func getSaveFilePath(sceneName, name):
 	if sceneName == null || name == null: return null
 	return cswSavesFolder + sceneName + "/" + name + ".tres"
 
+static func getSaveFileDirPath(sceneName):
+	if sceneName == null: return null
+	return cswSavesFolder + sceneName + "/"
 
 func saveThisResource(sceneName, name):
 	if sceneName == null || name == null: return

@@ -494,7 +494,7 @@ func _on_STACK_AREA_body_exited(body):
 			
 			
 	
-func CSWrapSaveStartState(CSWrap : CharacterSwitchingWrapper):
+func CSWrapSaveStartState(CSWrap):
 	var currChar = global.currCharRes.id
 	
 	
@@ -505,7 +505,7 @@ func CSWrapSaveStartState(CSWrap : CharacterSwitchingWrapper):
 	CSWrap.saveStartState[currChar][1] = get_global_rotation()
 	
 	
-func CSWrapSaveTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, astroChar, set : bool):
+func CSWrapSaveTimeDiscrepState(CSWrap, astroChar, set : bool):
 	CSWrap.savedTimeDiscrepencyState[astroChar] = []
 	CSWrap.savedTimeDiscrepencyState[astroChar].resize(3)
 	
@@ -513,7 +513,7 @@ func CSWrapSaveTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, astroChar, s
 	CSWrap.savedTimeDiscrepencyState[astroChar][1] = get_global_rotation() if set else null
 	CSWrap.savedTimeDiscrepencyState[astroChar][2] = get_transform() if set else null	
 	
-func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
+func CSWrapAddChanges(CSWrap):
 	var currChar = global.currCharRes.id
 	var lvl = global.lvl()
 	
@@ -552,7 +552,7 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 				
 	
 	
-func CSWrapDetectChange(CSWrap : CharacterSwitchingWrapper):
+func CSWrapDetectChange(CSWrap ):
 	var currChar = global.currCharRes.id
 	if CSWrap.saveStartState[currChar] == null || CSWrap.saveStartState[currChar] == []: return false
 	var posDiff = get_global_position() - CSWrap.saveStartState[currChar][0]
@@ -563,7 +563,7 @@ func CSWrapDetectChange(CSWrap : CharacterSwitchingWrapper):
 	
 	return false
 	
-func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
+func CSWrapApplyChanges(CSWrap):
 	var currChar = global.currCharRes.id
 	
 	
@@ -581,7 +581,7 @@ func delayedFricReset(savedFric):
 	var physMat = get_physics_material_override()
 	physMat.friction = savedFric
 	
-func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper):
+func CSWrapApplyDependantChanges(CSWrap):
 	CSWrap.dependantCSWrappers[global.currCharRes.id] = []
 	
 	

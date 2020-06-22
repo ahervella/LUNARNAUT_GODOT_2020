@@ -32,12 +32,12 @@ enum CONN_RESULT {
 
 const DIST_BETWEEN_PLUGS = 12
 
-export (bool) var male = false
+export (bool) var male = false setget setPlugSex
 #fixed port implies whether the plug can be grabbed and whether it has a parentCable
 export (bool) var isFixedPort = false setget setIsFixedPort
 export (bool) var fixed = false
-export (PLUG_REGION) var plugRegion = PLUG_TYPE.AUX
-export (PLUG_TYPE) var plugType = PLUG_REGION.USA
+export (PLUG_REGION) var plugRegion = PLUG_TYPE.AUX setget setPlugRegion
+export (PLUG_TYPE) var plugType = PLUG_REGION.USA setget setPlugType
 #connPlug is set by cable when its cable end collision area runs into another
 #cable or port collision area
 var connPlug = null setget setConnection
@@ -94,22 +94,48 @@ func setConnection(plugNode):
 	
 	
 func _ready():
+	#only proccess at run time
+	if Engine.editor_hint: return
+	
 	for node in get_children():
 		if node is Area2D:
 			connArea = node
 		if node is Sprite:
 			plugSprite = node
+			
+	setPlugTcAuto()
+	useNextInterNodeIfNeeded = true
+	
+	
+	
+func setPlugSex(val):
+	male = val
+	setPlugTcAuto()
+	
+func setPlugRegion(val):
+	plugRegion = val
+	setPlugTcAuto()
+	
+func setPlugType(val):
+	plugType = val
+	setPlugTcAuto()
+	
+func setPlugTcAuto():
+	
+	#don't do on runtime
+	if !Engine.editor_hint: return
 	
 	if TC_AUTO == null:
 		TC_AUTO = TextConfig.new()
 		TC_AUTO.ColorType = TC_AUTO.colorType.info
 	
-	if (TC_AUTO.text == null || TC_AUTO.text == ""):
-		TC_AUTO.ColorType = TC_AUTO.colorType.info
-		var plugSexString = "MALE" if male else "FEMALE"
-		TC_AUTO.text = "//" + PLUG_REGION.keys()[plugRegion] + " _" + PLUG_TYPE.keys()[plugType] + " _" + plugSexString
+	#if (TC_AUTO.text == null || TC_AUTO.text == ""):
+	TC_AUTO.ColorType = TC_AUTO.colorType.info
+	var plugSexString = "MALE" if male else "FEMALE"
+	TC_AUTO.text = "//" + PLUG_REGION.keys()[plugRegion] + " _" + PLUG_TYPE.keys()[plugType] + " _" + plugSexString
 	
-	useNextInterNodeIfNeeded = true
+	TC_AUTO.property_list_changed_notify()
+	property_list_changed_notify()
 	
 
 

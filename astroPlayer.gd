@@ -1183,7 +1183,7 @@ func getHeight():
 	return null
 	
 	
-func CSWrapSaveStartState(CSWrap : CharacterSwitchingWrapper):
+func CSWrapSaveStartState(CSWrap):
 	var currChar = global.currCharRes.id
 	
 	if CSWrap.saveStartState[currChar] == null:
@@ -1202,7 +1202,7 @@ func CSWrapSaveStartState(CSWrap : CharacterSwitchingWrapper):
 	
 	
 	
-func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
+func CSWrapAddChanges(CSWrap):
 	var currChar = global.currCharRes.id
 	var lvl = global.lvl()
 	
@@ -1256,7 +1256,7 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 				CSWrap.dependantCSWrappers[currChar].append(csw)
 		
 	
-func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
+func CSWrapApplyChanges(CSWrap):
 	var currChar = global.currCharRes.id
 	
 	if CSWrap.changesToApply[currChar] == []: return
@@ -1282,7 +1282,7 @@ func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
 	set_global_rotation(astroRotChange)
 		
 	
-func CSWrapSaveTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, astroChar, set : bool):
+func CSWrapSaveTimeDiscrepState(CSWrap, astroChar, set : bool):
 	if !set:
 		CSWrap.savedTimeDiscrepencyState[astroChar] = null
 		return
@@ -1295,7 +1295,7 @@ func CSWrapSaveTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, astroChar, s
 	CSWrap.savedTimeDiscrepencyState[astroChar][2] = $"ASTRO_ANIM2".is_flipped_h()
 	CSWrap.savedTimeDiscrepencyState[astroChar][3] = objectStandinOn.size() > 0
 
-func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper):
+func CSWrapApplyDependantChanges(CSWrap):
 	pass
 #	var currChar = global.currCharRes.id
 #

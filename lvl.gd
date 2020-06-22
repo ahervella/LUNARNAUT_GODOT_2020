@@ -13,6 +13,7 @@ export (NodePath) var trigChunkNodePath = null
 export (bool) var CSWrapsAddAstroAndCam = false setget setAddAstroAndCam
 export (bool) var CSWrapsAddAll1stGenChildNodes = false setget setAddAllChildNodes
 export (bool) var CSWrapsAddNewWrapper = false setget setAddNewWrapper
+export (bool) var CSWrapConfirmClear = false
 export (bool) var CSWrapsClearCSWs = false setget setClearAllNodes
 export (Dictionary) var charSwitchWrappers
 export (bool) var CSWrapConfirmSave = false
@@ -184,8 +185,9 @@ func setAddNewWrapper(garboVal):
 	#connect("sendLvlNode", charSwitchWrappers[newName], "getLvlNode")
 	
 func setClearAllNodes(garboVal):
+	if !CSWrapConfirmClear: return
 	if !garboVal: return
-	CSWrapsClearCSWs = false
+	#CSWrapsClearCSWs = false
 	if !Engine.editor_hint: return
 	for node in charSwitchWrappers.values():
 		if node == null:
@@ -193,6 +195,7 @@ func setClearAllNodes(garboVal):
 		
 		node.nodeCollShapePaths.resize(0)
 	charSwitchWrappers.clear()
+	CSWrapConfirmClear = false
 	property_list_changed_notify()
 	#setClearCSWStates(null)
 
@@ -224,12 +227,30 @@ func setLoadCSWStates(garboVal):
 	
 	var file = File.new()
 	
-	for cswKey in charSwitchWrappers.keys():
-		var filePath = CharacterSwitchingWrapper.getSaveFilePath(getLvlSceneName(), cswKey)
-		if filePath != null && file.file_exists(filePath):
-			charSwitchWrappers[cswKey] = load(filePath).duplicate(true)
-		elif filePath != null:
-			print("file path " + filePath + " could not be found.")
+	var dir = Directory.new()
+	var dirPath = CharacterSwitchingWrapper.getSaveFileDirPath(getLvlSceneName())
+	if dir.dir_exists(dirPath):
+		if dir.open(dirPath) == OK:
+			dir.list_dir_begin()
+			var file_name = dir.get_next()
+			while file_name != "":
+				if dir.current_is_dir(): 
+					file_name = dir.get_next()
+					continue
+					#print("Found directory: " + file_name)
+				var filePath = dirPath + file_name
+				var cswKey = file_name.substr(0, file_name.find_last("."))
+				charSwitchWrappers[cswKey] = load(filePath).duplicate(true)
+				file_name = dir.get_next()
+		else:
+			print("An error occurred when trying to access the character resource path.")
+	
+#	for cswKey in charSwitchWrappers.keys():
+#		var filePath = CharacterSwitchingWrapper.getSaveFilePath(getLvlSceneName(), cswKey)
+#		if filePath != null && file.file_exists(filePath):
+#			charSwitchWrappers[cswKey] = load(filePath).duplicate(true)
+#		elif filePath != null:
+#			print("file path " + filePath + " could not be found.")
 		
 	CSWrapConfirmLoad = false
 	property_list_changed_notify()
@@ -360,7 +381,7 @@ func addCSWrapperTimeDiscrepencyAreas():
 				addCSWrapCollShape2DiscrepArea(csw, astroChar, null)
 	
 
-func checkNodePathsAreCorrect(csw : CharacterSwitchingWrapper):
+func checkNodePathsAreCorrect(csw):# : CharacterSwitchingWrapper):
 	if csw.nodePath.get_name(0) != "root":
 		csw.nodePath = correctNodePath(csw.nodePath)
 		
@@ -653,7 +674,9 @@ func bodyEnteredTimeDiscrepArea(body, areaNode, astroChar, areaCSW):
 		
 		interactWithOthers = false
 		
+		
 		var cableCSW = body.get_parent().csWrap
+		if cableCSW == null: return
 		var extraWraps = cableCSW.extraCSWrappers
 		cswrap = extraWraps[body.get_name()]
 		
@@ -737,6 +760,7 @@ func bodyExitedTimeDiscrepArea(body, areaNode, astroChar, areaCSW):
 		if areaCSW.groups.has("object"): return
 			
 		interactWithOthers = false
+		if body.get_parent().csWrap == null: return
 		cswrap = body.get_parent().csWrap.extraCSWrappers[body.get_name()]
 	else:
 		for csw in charSwitchWrappers.values():

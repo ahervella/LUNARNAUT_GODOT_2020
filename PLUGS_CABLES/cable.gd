@@ -119,6 +119,8 @@ func readyDeferred():
 		return
 		
 	
+	lookForNodeExceptions(global.lvl())
+	
 	removeAllChildren()
 	
 	if (START_PIN_PATH != null):
@@ -138,13 +140,26 @@ func readyDeferred():
 	
 	initShapes()
 	
+	
 	readyDone = true
 	
+	
+func lookForNodeExceptions(node):
+	
+	if node.is_in_group("object") || node.is_in_group("astro") || node.is_in_group("cable"):
+		if !PHYS_EXCEP.has(node.get_path()):
+			PHYS_EXCEP.append(node.get_path())
+		
+	if node.get_child_count() > 0:
+		for child in node.get_children():
+			lookForNodeExceptions(child)
+		
+		
 func initShapes():
 	for n in range(NODE_COUNT):
 		var newCN = CABLE_NODE.instance()
 		cableNodes.append(newCN)
-		if (!CABLE_NODE_SPRITE):
+		if (CABLE_NODE_SPRITE != null):
 			newCN.setCableNodeSprite(CABLE_NODE_SPRITE)
 		#need to add child to make active
 		add_child(newCN)
@@ -756,7 +771,7 @@ func removeChildCable():
 
 
 #keeeeep
-func CSWrapSaveStartState(CSWrap : CharacterSwitchingWrapper):
+func CSWrapSaveStartState(CSWrap):
 	var currChar = global.currCharRes.id
 	
 	CSWrap.saveStartState[currChar].resize(7)
@@ -794,7 +809,7 @@ func CSWrapSaveStartState(CSWrap : CharacterSwitchingWrapper):
 	
 	
 	
-func CSWrapDetectChange(CSWrap : CharacterSwitchingWrapper):
+func CSWrapDetectChange(CSWrap):
 	var currChar = global.currCharRes.id
 	
 	if CSWrap.saveStartState[currChar][0] != START_PLUG : return true
@@ -816,10 +831,10 @@ func CSWrapDetectChange(CSWrap : CharacterSwitchingWrapper):
 	
 	
 	return false
-func CSWrapINITSaveTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, astroChar, set : bool, comeFromExtraCSWNodeName = null):
+func CSWrapINITSaveTimeDiscrepState(CSWrap, astroChar, set : bool, comeFromExtraCSWNodeName = null):
 	pass
 	
-func CSWrapSaveTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, astroChar, set : bool, comeFromExtraCSWNodeName = null, INITChanges = null):
+func CSWrapSaveTimeDiscrepState(CSWrap, astroChar, set : bool, comeFromExtraCSWNodeName = null, INITChanges = null):
 	
 	if (!changeDetected.has(astroChar) || !changeDetected[astroChar]) && INITChanges == null: return
 	
@@ -912,7 +927,7 @@ func CSWrapSaveTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, astroChar, s
 	debugTimeDiscrepLine.points = CSWrap.savedTimeDiscrepencyState[astroChar][7]
 	
 #keeeeep
-func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
+func CSWrapAddChanges(CSWrap):
 	var currChar = global.currCharRes.id
 	CSWrap.changesToApply[currChar].resize(11)
 	
@@ -965,7 +980,7 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 	
 	
 	
-func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
+func CSWrapApplyChanges(CSWrap):
 	var currChar = global.currCharRes.id
 	var changes = CSWrap.changesToApply[currChar]
 	var lvlNode = global.lvl()
@@ -992,7 +1007,7 @@ func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
 	END_PLUG.CSWrapApplyChanges(CSWrap.extraCSWrappers[END_PLUG.get_name()])
 	
 	
-func CSWrapApplyChangesLinkCables(CSWrap : CharacterSwitchingWrapper, plugName):
+func CSWrapApplyChangesLinkCables(CSWrap, plugName):
 	#needs to happen after cable shit because if not attempt connection
 	#will register the two attempting plugs as part of the same cable
 	var currChar = global.currCharRes.id
@@ -1012,5 +1027,5 @@ func CSWrapApplyChangesLinkCables(CSWrap : CharacterSwitchingWrapper, plugName):
 		childLinkCable = lvlNode.get_node(changes[4])
 	
 	
-func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper):
+func CSWrapApplyDependantChanges(CSWrap):
 	return
