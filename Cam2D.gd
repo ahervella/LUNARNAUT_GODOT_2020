@@ -122,7 +122,7 @@ func CSWrapSaveStartState(CSWrap):
 	
 	
 	
-func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
+func CSWrapAddChanges(CSWrap):
 	var currChar = global.currCharRes.id
 	
 	CSWrap.changesToApply[currChar] = get_global_position()
@@ -130,7 +130,7 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper):
 	
 
 	
-func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
+func CSWrapApplyChanges(CSWrap):
 	var currChar = global.currCharRes.id
 	
 	#to change the camera position immediately on frame one
@@ -145,6 +145,6 @@ func secondDefferedCamPos(inhh = 0):
 	call_deferred("set_enable_follow_smoothing", true)
 	
 
-func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper):
+func CSWrapApplyDependantChanges(CSWrap):
 	pass
 

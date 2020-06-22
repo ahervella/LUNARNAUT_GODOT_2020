@@ -12,7 +12,7 @@ func setCableNodeSprite(CABLE_SPRITE_PK_SCENE):
 #func getCollidingBodies():
 #	return collidingBodies
 
-func CSWrapSaveTimeDiscrepState(CSWrap: CharacterSwitchingWrapper, astroChar, set : bool):
+func CSWrapSaveTimeDiscrepState(CSWrap, astroChar, set : bool):
 	var parent = get_parent()
 	if parent != null:
 		var csw = parent.csWrap

@@ -35,10 +35,9 @@ var gravity = 0
 export (float, 0.6, 1.0, 0.01) var FRICTON = 0.95
 export (float) var ROT_DIST_THRESHOLD = 28
 
-export (bool) var reloadEditorCable = false setget reload
-export (bool) var activeInEditor = false setget activateEditor
-
-export(PackedScene) var test
+#export (bool) var reloadEditorCable = false setget reload
+#export (bool) var activeInEditor = false setget activateEditor
+var activeInEditor = false
 
 var parentLinkCable = null
 var childLinkCable = null
@@ -102,10 +101,12 @@ func activateEditor(val):
 	
 func removeAllChildren():
 	CABLE_LINE2D = get_node(CABLE_LINE2D_PATH)
+	START_PIN = get_node(START_PIN_PATH)
+	END_PIN = get_node(END_PIN_PATH)
 	
 	if (self.get_children().size() > 0):
 		for n in self.get_children():
-			if n != CABLE_LINE2D:
+			if n != CABLE_LINE2D && n != START_PIN && n!= END_PIN:
 				self.remove_child(n)
 				
 
@@ -613,7 +614,7 @@ func attemptCableConnection(startPlug):
 	var result = plug.attemptConnection()
 	#print(result)
 	if result == plug.CONN_RESULT.SUCCESS:
-		if plug.fixed:
+		if plug.tempFixed:
 			#set cable node to child plug node position properly
 				#so shit doesnt continuously correct itself and fly
 			var newVect = plug.get_global_position()

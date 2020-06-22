@@ -152,7 +152,8 @@ func AutoInteract():
 		if interactNode != null:
 			interactNode.parentInteractObject = self
 			
-		interactNode.animateText(TC_UNLOCKED, InteractAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
+			if TC_UNLOCKED != null:
+				interactNode.animateText(TC_UNLOCKED, InteractAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
 		return
 	else:
 		.AutoInteract()
@@ -182,7 +183,8 @@ func Interact():
 		DOOR_LOCKED = false
 		openDoor()
 		#global.interactNode.animateText(TC_UNLOCKED, InteractAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
-		interactNode.animateText(TC_UNLOCKED, InteractAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
+		if TC_UNLOCKED != null:
+			interactNode.animateText(TC_UNLOCKED, InteractAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
 		return
 
 
@@ -194,7 +196,8 @@ func Interact():
 		timer = global.newTimer(T_I_DISPLAY_TIME, funcref(self, 'AutoInteract'))	
 
 	#global.interactNode.animateText(TC_LOCKED, ShowAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
-	interactNode.animateText(TC_LOCKED, ShowAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
+	if TC_LOCKED != null:
+		interactNode.animateText(TC_LOCKED, ShowAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
 
 
 

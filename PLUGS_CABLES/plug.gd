@@ -35,7 +35,8 @@ const DIST_BETWEEN_PLUGS = 12
 export (bool) var male = false setget setPlugSex
 #fixed port implies whether the plug can be grabbed and whether it has a parentCable
 export (bool) var isFixedPort = false setget setIsFixedPort
-export (bool) var fixed = false
+#for identifying if a plug is temporarily fixed due to its connection
+export (bool) var tempFixed = false
 export (PLUG_REGION) var plugRegion = PLUG_TYPE.AUX setget setPlugRegion
 export (PLUG_TYPE) var plugType = PLUG_REGION.USA setget setPlugType
 #connPlug is set by cable when its cable end collision area runs into another
@@ -62,7 +63,7 @@ var triedConn = null
 
 func setIsFixedPort(val):
 	if val:
-		fixed = true
+		tempFixed = true
 	isFixedPort = val
 	
 func setParentCable(parentCableNode):
@@ -82,7 +83,7 @@ func setConnection(plugNode):
 		return
 	
 	#if is not of type plug && its not a port && this is male, return && not null && not astro
-	if (plugNode.has_method("recievedEntity")):
+	if (plugNode.has_method("receivedEntity")):
 		if (plugNode.male != male
 		&& (plugNode.plugRegion == plugRegion || plugNode.plugRegion == PLUG_REGION.UNI)
 		&& (plugNode.plugType == plugType)):
@@ -370,9 +371,9 @@ func attemptConnection(hypothetical = false):
 					return CONN_RESULT.SUCCESS
 					
 			#connection worked, so allign plugs properly
-			if (connPlug.fixed || connPlug.isFixedPort):
+			if (connPlug.tempFixed || connPlug.isFixedPort):
 				
-				self.fixed = true
+				self.tempFixed = true
 				var connPlugRot = connPlug.get_global_rotation()
 				self.set_global_position(connPlug.get_global_position() + Vector2(cos(connPlugRot) , sin(connPlugRot)) * DIST_BETWEEN_PLUGS)
 				
@@ -427,7 +428,7 @@ func astroIsHoldingPlug():
 func dropPlug(isStartPlug = null):
 	
 	if connPlug != null:
-		if !connPlug.isFixedPort && !connPlug.fixed:
+		if !connPlug.isFixedPort && !connPlug.tempFixed:
 			if parentCable.START_PLUG == self:
 				parentCable.START_PIN = self
 			else:
@@ -450,7 +451,7 @@ func dropPlug(isStartPlug = null):
 		parentCable.END_PIN = null
 	
 	if connPlug != null:
-		if connPlug.isFixedPort || connPlug.fixed:
+		if connPlug.isFixedPort || connPlug.tempFixed:
 			if isStartPlug:
 				parentCable.START_PIN = self
 			else:
@@ -517,7 +518,7 @@ func disconnectPlug():
 					connPlug.parentCable.removeChildCable()
 		
 	connPlug.connPlug = null
-	fixed = false
+	tempFixed = false
 	if (connPlug.parentCable != null):
 		connPlug.set_rotation(deg2rad(180))
 		if connPlug.parentCable.START_PLUG == self:
@@ -530,18 +531,18 @@ func disconnectPlug():
 	connPlug = null
 	
 
-func recievedEntity(entity):
+func receivedEntity(entity):
 	return sourcePlug.transmitEntity(entity)
 
 func transmitEntity(entity):
-	return connPlug.recievedEntity(entity)
+	return connPlug.receivedEntity(entity)
 	
 	
 	
 	
 	
 	
-func CSWrapSaveTimeDiscrepState(CSWrap: CharacterSwitchingWrapper, astroChar, set : bool):
+func CSWrapSaveTimeDiscrepState(CSWrap, astroChar, set : bool):
 	if parentCable != null:
 		var lvlNode = global.lvl()
 		for csw in lvlNode.charSwitchWrappers.values():
@@ -550,7 +551,7 @@ func CSWrapSaveTimeDiscrepState(CSWrap: CharacterSwitchingWrapper, astroChar, se
 				cswNode.CSWrapSaveTimeDiscrepState(csw, astroChar, set, self.get_name())
 				return
 	
-func CSWrapSaveStartState(CSWrap : CharacterSwitchingWrapper):
+func CSWrapSaveStartState(CSWrap ):
 	var currChar = global.currCharRes.id
 	
 	CSWrap.saveStartState[currChar].resize(6)
@@ -569,7 +570,7 @@ func CSWrapSaveStartState(CSWrap : CharacterSwitchingWrapper):
 #		for i in CSWrap.savedTimeDiscrepencyState[otherChar].size():
 #			CSWrap.savedTimeDiscrepencyState[otherChar][i] = -1
 	
-func CSWrapDetectChange(CSWrap : CharacterSwitchingWrapper):
+func CSWrapDetectChange(CSWrap ):
 	var currChar = global.currCharRes.id
 		
 		
@@ -594,7 +595,7 @@ func CSWrapDetectChange(CSWrap : CharacterSwitchingWrapper):
 		
 	return false
 	
-func CSWrapSavePlugTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, astroChar, set : bool, INITChange = false):
+func CSWrapSavePlugTimeDiscrepState(CSWrap , astroChar, set : bool, INITChange = false):
 	CSWrap.savedTimeDiscrepencyState[astroChar].resize(6)
 	
 	if !set:
@@ -615,7 +616,7 @@ func CSWrapSavePlugTimeDiscrepState(CSWrap : CharacterSwitchingWrapper, astroCha
 	CSWrap.savedTimeDiscrepencyState[astroChar][4] = parentCableName if !INITChange else CSWrap.changesToApply[astroChar][4]
 	CSWrap.savedTimeDiscrepencyState[astroChar][5] = get_parent().get_name() if !INITChange else CSWrap.changesToApply[astroChar][5]
 	
-func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper, thisObjChangeDetected = null):
+func CSWrapAddChanges(CSWrap , thisObjChangeDetected = null):
 	if thisObjChangeDetected == null:
 		thisObjChangeDetected = CSWrapDetectChange(CSWrap)
 	
@@ -648,7 +649,7 @@ func CSWrapAddChanges(CSWrap : CharacterSwitchingWrapper, thisObjChangeDetected 
 	changesApplied = false
 	triedConn = null
 
-func CSWrapApplyChanges(CSWrap : CharacterSwitchingWrapper):
+func CSWrapApplyChanges(CSWrap):
 	triedConn = false
 	var currChar = global.currCharRes.id
 	var currLvl = global.lvl()
@@ -753,7 +754,7 @@ func attemptConnectionSpecificPlug(specPlug):
 	
 	
 	
-func CSWrapApplyDependantChanges(CSWrap : CharacterSwitchingWrapper):
+func CSWrapApplyDependantChanges(CSWrap):
 	pass
 	
 	

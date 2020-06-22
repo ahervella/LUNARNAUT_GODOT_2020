@@ -161,10 +161,9 @@ func AutoCloseInteract():
 	if !useNextInterNodeIfNeeded:
 		global.enableMultiInteractNodes(true)
 		
-	print("got here")
 	if (interactNode != null && is_instance_valid(interactNode)):
-		print("got here2")
-		interactNode.closeText(HideAudioNode())
+		if interactNode.currentText != null && interactNode.currentText != "":
+			interactNode.closeText(HideAudioNode())
 		
 	
 

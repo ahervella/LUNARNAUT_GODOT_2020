@@ -1,3 +1,4 @@
+tool
 extends "res://SCRIPTS/lvl.gd"
 
 #ALEJANDRO (Feb-14-2020)
@@ -17,12 +18,32 @@ export (NodePath) var noraNodePath = null
 var noraNode = null
 
 export (bool) var demoVersionOfLevel1 = false
+export (bool) var hasKey = false setget setHasKey
+
+func setHasKey(val):
+	hasKey = val
+	if val:
+		var iq = ItemQuantity.new()
+		startingInventory.append(iq)
+		iq.quantity = 1
+		iq.item = load("res://RESOURCES/lvl01_lab_key.tres")
+		
+	else:
+		var iqToRemove = null
+		for iq in startingInventory:
+			if iq.item.Name == "lvl01_lab_key":
+				iqToRemove = iq
+				break
+		if iqToRemove!= null:
+			startingInventory.erase(iqToRemove)
+			
+	property_list_changed_notify()
+		
 
 func _ready():
 	
 	#prevent from running in editor
-	if Engine.editor_hint:
-		return
+	if Engine.editor_hint: return
 	
 	._ready()
 	
@@ -58,6 +79,9 @@ func _ready():
 
 	
 func initLevel():
+	#prevent from running in editor
+	if Engine.editor_hint: return
+	
 	.initLevel()
 	
 #	call_deferred("initLevelExt")
@@ -77,6 +101,9 @@ func initLevel():
 	
 
 func loadNextLevel():
+	#prevent from running in editor
+	if Engine.editor_hint: return
+	
 	#all level scenes need to be named via format lvl##
 	#this assumes all levels are consecutive
 	if (demoVersionOfLevel1):
@@ -97,20 +124,29 @@ func loadNextLevel():
 	.loadNextLevel()
 
 func reloadLevelLastSave():
+	#prevent from running in editor
+	if Engine.editor_hint: return
+	
 	audio.unloadLevelSounds()
 	.reloadLevelLastSave()
 
 func fadeOutAllLevelSounds():
-		astroNode.fadeOutSound()
-		
-		var soundsToFade = []
-		soundsToFade.append(audio.sound("music", "lvl01"))
-		soundsToFade.append(audio.sound("cinematicBoom", "lvl01"))
-		soundsToFade.append(audio.sound("lowPulse", "lvl01"))
-		
-		for sound in soundsToFade:
-			global.newTween(sound, "volume_db", sound.get_volume_db(), -30, 6, 4)
+	#prevent from running in editor
+	if Engine.editor_hint: return
+	
+	astroNode.fadeOutSound()
+	
+	var soundsToFade = []
+	soundsToFade.append(audio.sound("music", "lvl01"))
+	soundsToFade.append(audio.sound("cinematicBoom", "lvl01"))
+	soundsToFade.append(audio.sound("lowPulse", "lvl01"))
+	
+	for sound in soundsToFade:
+		global.newTween(sound, "volume_db", sound.get_volume_db(), -30, 6, 4)
 
 func _on_DemoOutro_finished():
+	#prevent from running in editor
+	if Engine.editor_hint: return
+	
 	audio.unloadLevelSounds()
 	global.replay()
