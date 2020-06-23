@@ -1,5 +1,7 @@
 extends Camera2D
 
+
+
 #used so astro can grab this
 export (NodePath) var TOUCH_CONTROL_PATH = "CanvasLayer/touchControls"
 export (NodePath) var TIMELINE_LABEL_PATH = "CanvasLayer/timelineLabel"
@@ -8,6 +10,8 @@ onready var TIMELINE_LABEL_NODE = get_node(TIMELINE_LABEL_PATH)
 export (bool) var touchControlsOn = false
 export (bool) var timelineLabelOn = false
 export (bool) var disableCSTouchButton = false
+
+var zoomDict = {global.ZOOM.NORM: 0.7, global.ZOOM.CLOSE : 0.4, global.ZOOM.FAR : 1.4, global.ZOOM.MEGA_FAR : 2}
 
 const RED_FLASH_TIME = 1
 const BLACK_FADE_TIME = 3
@@ -43,6 +47,11 @@ func readyExt():
 	else:
 		
 		blackOverlayNode.set_modulate( Color(0, 0, 0, 0))
+
+func setZoom(zm, zmTime = 2, customZm = null):
+	
+	var zoomVect = Vector2(zoomDict[zm], zoomDict[zm]) if customZm == null else Vector2(customZm, customZm)
+	global.newTween(self, "zoom", get_zoom(), zoomVect, zmTime, 0, null, Tween.TRANS_CUBIC)
 
 func deathRedness():
 	var cur_color = hurtTintNode.get_modulate()#$"/root/Control/Cam2D/hurtTint".get_modulate()

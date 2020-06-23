@@ -30,6 +30,7 @@ extends Node
 	#Default Angular Damp = 1
 
 
+enum ZOOM {NORM, CLOSE, FAR, MEGA_FAR}
 
 var availableChar = [CharacterRes.CHAR.RUS,
 					 CharacterRes.CHAR.USA,
@@ -440,7 +441,7 @@ func lvl(lvlNum : int = -1):
 	
 #VVVVVVV - TWEEN AND TIMER FUNCS - VVVVVVVVVVV#
 	
-func newTween(object, tweeningMethod, startVars, endVars, time, delay, func_ref = null, transType = Tween.TRANS_LINEAR, tweenType = Tween.EASE_OUT):
+func newTween(object, tweeningMethod, startVars, endVars, time, delay, func_ref = null, transType = Tween.TRANS_LINEAR, tweenType = Tween.EASE_IN_OUT):
 	
 	var tween = Tween.new()
 	#always need to add child to something for it to work

@@ -1032,9 +1032,9 @@ func _on_groundBubble_body_exited(body):
 					if bod.is_in_group("solid"):
 						firstSolidBodyNode = bod
 	
-	if (solidBodyCount == 0):
-		
-		groundedBubble = false
+		if (solidBodyCount == 0):
+			
+			groundedBubble = false
 		
 	
 func _on_ceilingBubble_body_entered(body):
