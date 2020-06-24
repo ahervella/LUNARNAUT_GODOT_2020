@@ -445,6 +445,8 @@ func handleplatformDropDownCounter(downPressed, delta):
 		
 	var body = getRelativeNodeBelow()
 	if body == null:
+		if !groundedBubble:
+			platformDropDownCounter += PLATFORM_DROP_TIME
 		return
 		
 	if body != null && !body.is_in_group("platform"): 
@@ -455,6 +457,7 @@ func handleplatformDropDownCounter(downPressed, delta):
 	if downPressed:
 		platformDropDownCounter += delta
 		
+
 		
 	if platformDropDownCounter > PLATFORM_DROP_TIME:
 		fallThroughPlatform()
@@ -527,7 +530,8 @@ func Move():
 		
 	#animation:
 	if (groundedBubble && get_anim() != "RUN2" && vel.y >= 0):
-		set_anim("START2")
+		if !inPlatform:
+			set_anim("START2")
 
 #flip movableObject bubble
 func flipPushPullArea(faceLeft):
