@@ -58,6 +58,7 @@ var solidsStandingOn = []
 #needed so can't initiate jump mechanics in midair, after falling
 var jumping = false
 var holdDownCanJump = true
+const SNAP_DEFAULT_VECT = 10
 
 var airTime = 0
 var currMaxAirTime = 0
@@ -98,7 +99,10 @@ var vButton = -5
 #before astro drops through
 var platformDropDownCounter = 0
 var platformBodyExcep = null
-const PLATFORM_DROP_TIME = 0.5
+const PLATFORM_DROP_TIME = 0.3
+
+var inPlatformArray = []
+var inPlatform = false
 
 onready var light2DPosition = get_node("Light2D").get_position()
 onready var light2DScale = get_node("Light2D").get_scale()
@@ -289,6 +293,7 @@ func _physics_process(delta):
 	
 	#temporary fix for anim bug
 	if (groundedBubble && (get_anim()=="FALL" || get_anim()=="JUMP2") && vel.y >= 0):
+		if !inPlatform:
 			set_anim("LAND")
 			
 	if !groundedBubble && get_anim()!="FALL" && get_anim()!="JUMP2" && vel.y < 0:
@@ -351,11 +356,14 @@ func _physics_process(delta):
 		elif directional_force.x  < 0:
 			restrictMovingRight = false
 	
+	var snapMag = 0 if jumping else SNAP_DEFAULT_VECT
+	
 	if (restrictAndMove2Point == null):
 		
 		
-		vel = move_and_slide(velFinal, global.gravVect() * -1, true, 4, deg2rad(30), false)#(vel, Vector2(0, 1), Vector2.UP, false, 4, deg2rad(120), false)
+		#vel = move_and_slide(velFinal, global.gravVect() * -1, true, 4, deg2rad(30), false)#(vel, Vector2(0, 1), Vector2.UP, false, 4, deg2rad(120), false)
 		
+		vel = move_and_slide_with_snap(velFinal, global.gravVect() * snapMag, global.gravVect() * -1, true, 4, deg2rad(45), false)
 
 		#vel = move_and_slide(vel, Vector2.UP, 5, 4, deg2rad(30))#(vel, Vector2(0, 1), Vector2.UP, false, 4, deg2rad(120), false)
 		
@@ -365,7 +373,8 @@ func _physics_process(delta):
 		
 	#so that restrictAndMove2Point does not get transformed by change in gravity
 	else:
-		vel = move_and_slide(velFinal, global.gravVect() * -1, true, 4, deg2rad(30), false)
+		#vel = move_and_slide(velFinal, global.gravVect() * -1, true, 4, deg2rad(30), false)
+		vel = move_and_slide_with_snap(velFinal, global.gravVect() * snapMag, global.gravVect() * -1, true, 4, deg2rad(45), false)
 	
 	if get_slide_count() > 0:
 		if groundedBubble:
@@ -532,7 +541,8 @@ func MoveJump(delta):
 
 	#60 here is acts as how fast before fall anim is activated 
 	#TODO: 60 here is not taking into accoun gravity?
-	if (vel.y >= 50.0 && get_anim() != "FALL" &&  !groundedBubble):
+	if ((vel.y >= 50.0 || platformDropDownCounter > PLATFORM_DROP_TIME)
+	 && get_anim() != "FALL" &&  !groundedBubble):
 		set_anim("FALL")
 		return
 
@@ -1108,6 +1118,24 @@ func _on_groundBubble_body_exited(body):
 			groundedBubble = false
 		
 	
+	
+	
+func _on_inPlatformCheck_body_entered(body):
+	if body.is_in_group("platform"):
+		inPlatformArray.append(body)
+		inPlatform = true
+
+
+func _on_inPlatformCheck_body_exited(body):
+	if body.is_in_group("platform"):
+		if inPlatformArray.has(body):
+			inPlatformArray.erase(body)
+		inPlatform = inPlatformArray.size() != 0
+	
+	
+	
+	
+	
 func _on_ceilingBubble_body_entered(body):
 	if body.is_in_group("solid"):
 		ceilingBubble = true
@@ -1378,6 +1406,12 @@ func CSWrapApplyDependantChanges(CSWrap):
 #				for dependantCSWrap in CSWrap.dependantCSWrappers[global.currCharRes.id]:
 #
 #					global.lvl().get_node(dependantCSWrap.nodePath).CSWrapRecieveTransformChanges(dependantCSWrap, global.currCharRes.id, posChange, rotChange)
+
+
+
+
+
+
 
 
 
