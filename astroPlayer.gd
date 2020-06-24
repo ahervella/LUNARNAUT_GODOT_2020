@@ -53,7 +53,7 @@ var objectStandinOn = []
 
 #used so that when multiple shapes enter or exit, can keep track
 #on whether there is at least one solid (floor) shape touching
-var solidBodyCount = 0
+var solidsStandingOn = []
 
 #needed so can't initiate jump mechanics in midair, after falling
 var jumping = false
@@ -93,6 +93,12 @@ var beepToggle
 #touch controls
 var vJoy = -5 # -5 has no specific functionality, but can't be null or shit breaks
 var vButton = -5
+
+#counter and time needed of holding down on a platform
+#before astro drops through
+var platformDropDownCounter = 0
+var platformBodyExcep = null
+const PLATFORM_DROP_TIME = 0.5
 
 onready var light2DPosition = get_node("Light2D").get_position()
 onready var light2DScale = get_node("Light2D").get_scale()
@@ -171,6 +177,7 @@ func _ready():
 				global.currCharRes = global.charResDict[global.CHAR.USA]
 	CHARACTER_RES = global.currCharRes
 		
+	jumpForce = CHARACTER_RES.baseJump
 	
 		
 #	if (global.currCharRes != null || is_instance_valid(global.currCharRes)):
@@ -213,6 +220,8 @@ func readyDeferred():
 	#checks after character switching applied in lvl ready
 	#due to being call_deferred
 	flipPushPullArea($"ASTRO_ANIM2".is_flipped_h())
+
+
 
 	readyDone = true
 
@@ -263,14 +272,17 @@ func _physics_process(delta):
 		
 	#here may at somepoint choose to have landing ground bool by if_on_ground again so that
 	#shit snaps and doesn't skip past platform?
-	if (groundedBubble):
-		jumping = false
-		holdDownCanJump = true
-#		if(get_anim()=="FALL" || get_anim()=="JUMP2"):
-#			set_anim("LAND")
-		airTime = 0
-		jumpForce = CHARACTER_RES.baseJump
-		currMaxAirTime = DEFAULT_MAX_AIR_TIME
+	
+	
+	
+#	if (groundedBubble):
+#		jumping = false
+#		holdDownCanJump = true
+##		if(get_anim()=="FALL" || get_anim()=="JUMP2"):
+##			set_anim("LAND")
+#		airTime = 0
+#		#jumpForce = CHARACTER_RES.baseJump
+#		currMaxAirTime = DEFAULT_MAX_AIR_TIME
 
 
 	ApplyMovement(delta)
@@ -372,7 +384,7 @@ func ApplyMovement(delta):
 	#governs direction of buttons being pressed. Mostly used for
 	#horizontal movement. Resets to zero every frame
 	
-	ProcessMoveInput()
+	ProcessMoveInput(delta)
 	Move()
 	MoveJump(delta)
 	
@@ -391,7 +403,7 @@ func preventMovingObjPushBack(velBeforeMoveSlide):
 			if coll.collider != null && coll.collider.is_in_group("object"):
 				vel = velBeforeMoveSlide
 
-func ProcessMoveInput():
+func ProcessMoveInput(delta):
 	
 	directional_force = DIRECTION.ZERO
 	
@@ -404,10 +416,46 @@ func ProcessMoveInput():
 
 	if(Input.is_action_pressed("ui_left") || TOUCH_CONTROL_NODE.stickDir.x < 0): #or vJoy == -1):
 		directional_force += DIRECTION.LEFT
-
+	
+	#if platformDropDownCounter > 0: print(platformDropDownCounter)
 	#For testing astro death
 	if(Input.is_action_pressed("ui_down") && !global.playTest):
-		InitDeath()
+		handleplatformDropDownCounter(true, delta)
+	elif(Input.is_action_just_released("ui_down") && !global.playTest):
+		handleplatformDropDownCounter(false, delta)
+		
+		
+func handleplatformDropDownCounter(downPressed, delta):
+
+#		platformDropDownCounter = Timer.new()
+#		platformDropDownCounter.set_wait_time(3)
+#		platformDropDownCounter.connect("timeout", self, "fallThroughPlatform")
+	if !downPressed:
+		platformDropDownCounter = 0
+		return
+		
+	var body = getRelativeNodeBelow()
+	if body == null:
+		return
+		
+	if body != null && !body.is_in_group("platform"): 
+		platformDropDownCounter = 0
+		return
+	
+	
+	if downPressed:
+		platformDropDownCounter += delta
+		
+		
+	if platformDropDownCounter > PLATFORM_DROP_TIME:
+		fallThroughPlatform()
+		
+func fallThroughPlatform():
+	var body = getRelativeNodeBelow()
+	if !body.is_in_group("platform"): return
+	
+	body.fallThrough()
+		
 		
 func Move():
 	#direction multiplier (right = 1, left = -1)
@@ -522,6 +570,7 @@ func MoveJump(delta):
 		# decrease jump force (by adding) if button still held down
 		if (currMaxAirTime <= MAX_AIR_TIME):
 			currMaxAirTime += delta
+			print(currMaxAirTime)
 	
 	
 	#to prevent from double jumping
@@ -977,11 +1026,18 @@ func TakeDamageImpactLaunch(direction):
 
 
 func _on_groundBubble_body_entered(body):
-	if (body.get_groups().has("solid")):
-		solidBodyCount += 1
+	print(body.get_groups())
+	if body.is_in_group("platform") && platformDropDownCounter > PLATFORM_DROP_TIME:	
 		
-		if solidBodyCount == 1:
-			firstSolidBodyNode = body
+		body.fallThrough()
+		_on_groundBubble_body_exited(body)
+		platformBodyExcep = body
+		return
+	
+	if (body.get_groups().has("solid")):
+		if !body.is_in_group("platform"):
+			platformDropDownCounter = 0
+		solidsStandingOn.append(body)
 		
 		if body.is_in_group("object"):
 			#setRayCollObjs(false)
@@ -996,10 +1052,22 @@ func _on_groundBubble_body_entered(body):
 		
 		groundedBubble = true
 		
+		#	if (groundedBubble):
+		jumping = false
+		holdDownCanJump = true
+##		if(get_anim()=="FALL" || get_anim()=="JUMP2"):
+##			set_anim("LAND")
+		airTime = 0
+#		#jumpForce = CHARACTER_RES.baseJump
+		currMaxAirTime = DEFAULT_MAX_AIR_TIME
+		
 		restrictMovingRight = null
 		
 		if (preDeath):
 			InitDeath()
+			
+
+	#	return
 
 func setRayCollObjs(enable):
 	$"StayingGrounded".set_disabled(!enable)
@@ -1007,10 +1075,13 @@ func setRayCollObjs(enable):
 	$"StayingGrounded3".set_disabled(!enable)
 
 func _on_groundBubble_body_exited(body):
+	if body == platformBodyExcep:
+		platformBodyExcep = null
+		return
+
 	if (body.get_groups().has("solid")):
-		solidBodyCount -= 1
-		if body == firstSolidBodyNode:
-			firstSolidBodyNode = null
+		if solidsStandingOn.has(body):
+			solidsStandingOn.erase(body)
 			
 			
 		if body.is_in_group("object"):
@@ -1024,15 +1095,15 @@ func _on_groundBubble_body_exited(body):
 			#if objectStandinOn.size() == 0:
 			#	setRayCollObjs(true)
 
-			#if there are still other solid shapes, that astro is touching,
-			#set the next one
-			if solidBodyCount != 0:
-				var groundedBubbleObjs = get_node("groundBubble").get_overlapping_bodies()
-				for bod in groundedBubbleObjs:
-					if bod.is_in_group("solid"):
-						firstSolidBodyNode = bod
+#			#if there are still other solid shapes, that astro is touching,
+#			#set the next one
+#			if solidsStandingOn.size() != 0:
+#				var groundedBubbleObjs = get_node("groundBubble").get_overlapping_bodies()
+#				for bod in groundedBubbleObjs:
+#					if bod.is_in_group("solid"):
+#						firstSolidBodyNode = bod
 	
-		if (solidBodyCount == 0):
+		if (solidsStandingOn.size() == 0):
 			
 			groundedBubble = false
 		
@@ -1165,7 +1236,7 @@ func _on_push_pull_area_body_exited(body):
 #					item.AutoInteract()
 
 func getRelativeNodeBelow():
-	return firstSolidBodyNode
+	return solidsStandingOn[0] if solidsStandingOn.size() > 0 else null
 	
 	
 func getWidth():
