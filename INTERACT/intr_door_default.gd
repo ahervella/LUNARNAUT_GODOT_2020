@@ -1,3 +1,4 @@
+tool
 extends "res://SCRIPTS/INTERACT/intr_default.gd"
 #extends Sprite
 #
@@ -13,9 +14,14 @@ extends "res://SCRIPTS/INTERACT/intr_default.gd"
 #feeling really good about using the default to extend functionality
 const WHITELIST_GROUPS = ["cablePoint", "object"]
 
+enum DOOR_ACCESS {BOTH_WAYS, LEFT_ONLY, RIGHT_ONLY}
+
 export (Resource) var TC_LOCKED = null
 export (Resource) var TC_UNLOCKED = null
 
+export (DOOR_ACCESS) var doorAccess = DOOR_ACCESS.BOTH_WAYS setget setDoorAccess
+var leftNode = null
+var rightNode = null
 export (float) var DOOR_TIME = 1
 export (float) var DOOR_OPEN_RANGE = 19
 export (bool) var DOOR_AUTO_OPEN = true
@@ -61,6 +67,7 @@ var doorBarrierShapePos
 
 
 func _ready():
+	if Engine.editor_hint: return
 	#add the shadow to the door
 	doorShadowNode = get_node("doorShadow")#get_tree().get_current_scene().doorShadowTscn.instance()
 	#add_child(doorShadowNode)
@@ -92,12 +99,62 @@ func _ready():
 	doorBottomClosePos = doorBottom.get_position()
 	doorBottomOpenPos = doorBottomClosePos + Vector2(0, DOOR_OPEN_RANGE)
 
+	#setDoorAccess(doorAccess)
+	rightEntranceEnable(true)
+	leftEntranceEnable(true)
+
+func setDoorAccess(val):
+	doorAccess = val
+	if doorAccess == DOOR_ACCESS.LEFT_ONLY:
+		rightEntranceEnable(false)
+		leftEntranceEnable(true)
+
+	elif doorAccess == DOOR_ACCESS.RIGHT_ONLY:
+		leftEntranceEnable(false)
+		rightEntranceEnable(true)
+		
+	else:
+		leftEntranceEnable(true)
+		rightEntranceEnable(true)
+		
 
 
-#
+func sideEntranceEnable(enabled, rightSide):
+	var coreArea = get_node("doorCoreArea")
+	var sideArea = coreArea.get_node("doorCoreRight") if rightSide else coreArea.get_node("doorCoreLeft")
+	if sideArea != null:
+		if enabled:
+			sideArea.show()
+		else:
+			sideArea.hide()
+	
+	if !Engine.editor_hint:
+		if enabled:
+			if sideArea == null:
+				if rightSide: 
+					coreArea.add_child(rightNode)
+					rightNode.set_owner(coreArea)
+				else:
+					coreArea.add_child(leftNode)
+					leftNode.set_owner(coreArea)
+		else:
+			if sideArea != null:
+				if rightSide:
+					rightNode = sideArea
+				else:
+					leftNode = sideArea
+					
+				coreArea.remove_child(sideArea)
+	
+func rightEntranceEnable(enabled):
+	sideEntranceEnable(enabled, true)
+	
+func leftEntranceEnable(enabled):
+	sideEntranceEnable(enabled, false)
+
 
 func moveDoorPart(doorNode, doorStartPos, doorEndPos, doorTweenNode, doorTweenNodeUniqueID):
-	
+	if Engine.editor_hint: return
 	var currentPos = doorStartPos
 	
 	if (is_instance_valid(doorTweenNode) && doorTweenNode.is_class("Tween") && doorTweenNodeUniqueID == doorTweenNode.to_string()):
@@ -112,6 +169,8 @@ func moveDoorPart(doorNode, doorStartPos, doorEndPos, doorTweenNode, doorTweenNo
 	
 	
 func openDoor():
+	if Engine.editor_hint: return
+	
 	if doorIsOpen: return
 	
 	
@@ -133,6 +192,8 @@ func openDoor():
 	
 	
 func closeDoor():
+	if Engine.editor_hint: return
+	
 	if !doorIsOpen: return
 	
 	
@@ -156,9 +217,11 @@ func closeDoor():
 
 	
 func AutoInteract():
+	if Engine.editor_hint: return
 #	print("working autodoor?")
 ##	print("door auto interact")
-
+	leftEntranceEnable(true)
+	rightEntranceEnable(true)
 
 	#if (DOOR_LOCKED):
 	#	TextInteract()
@@ -181,6 +244,7 @@ func AutoInteract():
 
 
 func Interact():
+	if Engine.editor_hint: return
 	#if door is unlocked, then can't interact with door anymore
 	if (!DOOR_LOCKED):
 		return
@@ -220,10 +284,13 @@ func Interact():
 
 
 func AutoCloseInteract():
+	if Engine.editor_hint: return
 	.AutoCloseInteract()
 	
 	if (!DOOR_LOCKED):
 		closeDoor()
+		
+	setDoorAccess(doorAccess)
 #func AutoOpenInteract():
 #	print("auto_close")
 #	global.interactNode.closeText()
@@ -286,12 +353,14 @@ func AutoCloseInteract():
 
 
 func _on_doorCoreArea_body_entered(body):
+	if Engine.editor_hint: return
 	if inWhiteListGroup(body):
 		if shitPresentArray.size() == 0: openDoor()
 		shitPresentArray.append(body)
 
 
 func _on_doorCoreArea_body_exited(body):
+	if Engine.editor_hint: return
 	if inWhiteListGroup(body):
 		if shitPresentArray.has(body):
 			shitPresentArray.erase(body)
@@ -299,6 +368,7 @@ func _on_doorCoreArea_body_exited(body):
 		
 		
 func inWhiteListGroup(body):
+	if Engine.editor_hint: return
 	for group in WHITELIST_GROUPS:
 		if body.is_in_group(group):
 			return true
