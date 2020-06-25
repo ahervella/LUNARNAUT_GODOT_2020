@@ -10,6 +10,7 @@ onready var TIMELINE_LABEL_NODE = get_node(TIMELINE_LABEL_PATH)
 export (bool) var touchControlsOn = false
 export (bool) var timelineLabelOn = false
 export (bool) var disableCSTouchButton = false
+export (bool) var disableBlackBG = false
 
 var zoomDict = {global.ZOOM.NORM: 0.7, global.ZOOM.CLOSE : 0.4, global.ZOOM.FAR : 1.4, global.ZOOM.MEGA_FAR : 2}
 
@@ -43,6 +44,7 @@ func _ready():
 func readyExt():
 	if global.playTest:
 		FadeOutOfBlack()
+		disableBlackBG = false
 		#blackOverlayNode.set_modulate( Color(0, 0, 0, 0))
 	else:
 		

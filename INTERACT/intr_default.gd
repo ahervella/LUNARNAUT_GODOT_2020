@@ -10,7 +10,7 @@ extends Sprite
 
 #ALEJANDRO (Feb-25-2020)
 #decided to switch this to a general sound and text interact node
-enum TEXT_SIDE {LEFT = -1, RIGHT = 1, DYNAMIC = 0}
+enum TEXT_SIDE {LEFT = -1, RIGHT = 1, DYNAMIC_FRONT = 0, DYNAMIC_BEHIND = 2}
 
 export (Resource) var TC_AUTO = null
 export (Resource) var TC_INTERACT = null
@@ -19,7 +19,7 @@ export (float) var T_I_DISPLAY_TIME = 0
 export (Vector2) var CUSTOM_POSITION_OFFSET = Vector2(0, 0)
 export (bool) var FIXED_TEXT = false
 
-export (TEXT_SIDE) var TEXT_POSITION = TEXT_SIDE.DYNAMIC
+export (TEXT_SIDE) var TEXT_POSITION = TEXT_SIDE.DYNAMIC_FRONT
 var TEXT_POSITION_INT
 
 export (String) var interactSoundNode = null

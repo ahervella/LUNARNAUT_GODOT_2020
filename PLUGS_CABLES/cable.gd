@@ -2,6 +2,7 @@ tool
 extends Node2D
 
 const DEBUG_COLOR = Color( 0, 0.75, 0, 0.5 )
+const ILLEGAL_GROUPS = ["object", "astro", "cable", "platform"]
 
 var readyDone = false
 export (PackedScene) var CABLE_NODE = null#preload("res://cablePoint.tscn")
@@ -9,10 +10,12 @@ export (PackedScene) var CABLE_NODE_SPRITE = null#preload("res://cablePointSprit
 export (NodePath) var START_PIN_PATH = null
 var START_PIN = null
 export (bool) var START_PIN_REF_ONLY
+export (bool) var START_ATTEMPT_CONN_ON_READY = false
 
 export (NodePath) var END_PIN_PATH = null
 var END_PIN = null
 export (bool) var END_PIN_REF_ONLY
+export (bool) var END_ATTEMPT_CONN_ON_READY = false
 
 export (PackedScene) var START_PLUG_SCENE = null setget startPlug
 var START_PLUG = null
@@ -141,13 +144,23 @@ func readyDeferred():
 	
 	initShapes()
 	
+	setLightMaskLayer()
+	
+	attemptInitConnections()
+	
 	
 	readyDone = true
 	
 	
 func lookForNodeExceptions(node):
 	
-	if node.is_in_group("object") || node.is_in_group("astro") || node.is_in_group("cable"):
+	var inIllegalGroup = false
+	for group in ILLEGAL_GROUPS:
+		if node.is_in_group(group):
+			inIllegalGroup = true
+			break
+	
+	if inIllegalGroup:#node.is_in_group("object") || node.is_in_group("astro") || node.is_in_group("cable"):
 		if !PHYS_EXCEP.has(node.get_path()):
 			PHYS_EXCEP.append(node.get_path())
 		
@@ -229,30 +242,33 @@ func resize_arrays():
 
 func init_position():
 	
+	var seperationVect = (END_PIN.get_global_position() - START_PIN.get_global_position())
+	
+	
 	for i in range(NODE_COUNT):
 		if (i == 0):
 			var startPos = get_global_position()
-			if (START_PIN != null):
-				startPos = START_PIN.get_global_position()
-				if (START_PIN_REF_ONLY && !Engine.editor_hint):
-						START_PIN = null
+			#if (START_PIN != null):
+			startPos = START_PIN.get_global_position()
+			if (START_PIN_REF_ONLY && !Engine.editor_hint): 
+					START_PIN = null
 				
 			pos[i] = startPos
 			posOld[i] = startPos
 		
 		elif (i == NODE_COUNT - 1):
 			var endPos = get_global_position() + Vector2(400, 0)
-			if (END_PIN != null):
-				endPos = END_PIN.get_global_position()
-				if (END_PIN_REF_ONLY && !Engine.editor_hint):
-					END_PIN = null
+			#if (END_PIN != null):
+			endPos = END_PIN.get_global_position()
+			if (END_PIN_REF_ONLY && !Engine.editor_hint):
+				END_PIN = null
 				
 			pos[NODE_COUNT - 1] = endPos
 			posOld[NODE_COUNT - 1] = endPos
 		
 		else:
-			pos[i] = position + Vector2(CONSTRAIN *i, 0) + pos[0]
-			posOld[i] = position + Vector2(CONSTRAIN *i, 0) + posOld[0]
+			pos[i] = pos[0] + ((seperationVect/float(NODE_COUNT-1)) * i)#position + Vector2(CONSTRAIN *i, 0) + pos[0]
+			posOld[i] = pos[i]#position + Vector2(CONSTRAIN *i, 0) + posOld[0]
 			
 			
 		
@@ -260,6 +276,24 @@ func init_position():
 	
 	
 	
+func setLightMaskLayer():
+	START_PLUG.setLightMask(CABLE_LINE2D.get_light_mask())
+	END_PLUG.setLightMask(CABLE_LINE2D.get_light_mask())
+	
+	
+func attemptInitConnections():
+	yield(get_tree(), "physics_frame" )
+	yield(get_tree(), "physics_frame" )
+	yield(get_tree(), "physics_frame" )
+	if START_ATTEMPT_CONN_ON_READY:
+		attemptCableConnection(true)
+		#START_PLUG.attemptConnection()
+		
+	if END_ATTEMPT_CONN_ON_READY:
+		attemptCableConnection(false)
+#		var result = END_PLUG.attemptConnection()
+#		if result == END_PLUG.CONN_RESULT.SUCCESS:
+#			END_PIN = END_PLUG.connPlug
 #supposedly need to to this instead of _process in order for move_and_slide
 #to work alright, but I didn't really notice a difference with just _proccess
 func _physics_process(delta):
@@ -279,8 +313,9 @@ func _physics_process(delta):
 	if Engine.editor_hint && !activeInEditor:
 		return
 	
-	tempStartNodePos = pos[0]
-	tempEndNodePos = getUltimateChildCable().pos[pos.size() -1]#END_PIN.get_global_position()
+	tempStartNodePos = pos[1]
+	var UCC = getUltimateChildCable()
+	tempEndNodePos = UCC.pos[UCC.pos.size() -2]#END_PIN.get_global_position()
 	
 	update_points(delta)
 	
@@ -375,8 +410,9 @@ func ropeLengthLimit(delta):
 		var astro = global.lvl().astroNode
 		if START_PIN == astro:
 			var diffVect = astro.get_global_position() - tempStartNodePos
-			diffVect = diffVect.normalized() * diff
-			astro.restrictAndMove2Point = tempStartNodePos - diffVect
+			#diffVect += diffVect.rotated(90) if diffVect.x < 0 else diffVect.rotated(-90)
+			diffVect = diffVect.normalized() * (diff + 100)
+			astro.restrictAndMove2Point = astro.get_global_position() - diffVect
 			update_points(delta)
 	
 			for i in range(ROPE_TAUGHTNESS):
@@ -388,8 +424,9 @@ func ropeLengthLimit(delta):
 		
 		elif ultimateCC.END_PIN == astro:
 			var diffVect = astro.get_global_position() - tempEndNodePos
-			diffVect = diffVect.normalized() * diff
-			astro.restrictAndMove2Point = (tempEndNodePos - diffVect)
+			#diffVect += diffVect.rotated(90) if diffVect.x < 0 else diffVect.rotated(-90)
+			diffVect = diffVect.normalized() * (diff + 100)
+			astro.restrictAndMove2Point = (astro.get_global_position() - diffVect)
 			update_points(delta)
 	
 			for i in range(ROPE_TAUGHTNESS):

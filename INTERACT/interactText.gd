@@ -130,8 +130,10 @@ func set_text_pos(customOffset, fixedText, textSidePosition):
 		get_flip = false
 	elif (textSidePosition == -1):
 		get_flip = true
-	else:
+	elif (textSidePosition == 1):
 		get_flip = ASTRO_NODE.get_node("ASTRO_ANIM2").is_flipped_h()
+	else:
+		get_flip = !ASTRO_NODE.get_node("ASTRO_ANIM2").is_flipped_h()
 
 	textLength = min (get("custom_fonts/normal_font").get_wordwrap_string_size(text, get_size().x).x, get("custom_fonts/normal_font").get_string_size(text).x)
 	

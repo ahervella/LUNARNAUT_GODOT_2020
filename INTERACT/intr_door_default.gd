@@ -19,6 +19,10 @@ export (float) var DOOR_OPEN_RANGE = 19
 export (bool) var DOOR_AUTO_OPEN = true
 export (bool) var DOOR_LOCKED = false
 
+var shitPresentArray = []
+
+var doorIsOpen = false
+
 #export (int) var DEPENDANT_LVL = null
 #export (String) var DEPENDANT_LVL_BOOL = null
 #export (bool) var OPPOSITE_IS_TRUE = false
@@ -106,6 +110,9 @@ func moveDoorPart(doorNode, doorStartPos, doorEndPos, doorTweenNode, doorTweenNo
 	
 	
 func openDoor():
+	if doorIsOpen: return
+	
+	
 	if doorBarrierShape.get_parent() != null:
 		doorBarrierShape.get_parent().remove_child(doorBarrierShape)
 	#had to do above instead beacuse for some damn reason disabling the shape
@@ -120,7 +127,16 @@ func openDoor():
 	doorBottomTween = moveDoorPart(doorBottom, doorBottomClosePos, doorBottomOpenPos, doorBottomTween, doorBottomTweenUniqueID)
 	doorBottomTweenUniqueID = doorBottomTween.to_string()
 	
+	doorIsOpen = true
+	
+	
 func closeDoor():
+	if !doorIsOpen: return
+	
+	
+	
+	if shitPresentArray.size() > 0: return
+	
 	if doorBarrierShape.get_parent() == null:
 		doorBarrierShapePar.add_child(doorBarrierShape)
 		doorBarrierShape.set_owner(doorBarrierShapePar)
@@ -134,7 +150,7 @@ func closeDoor():
 	doorBottomTween = moveDoorPart(doorBottom, doorBottomOpenPos, doorBottomClosePos, doorBottomTween, doorBottomTweenUniqueID)
 	doorBottomTweenUniqueID = doorBottomTween.to_string()
 	
-	
+	doorIsOpen = false
 
 	
 func AutoInteract():
@@ -265,3 +281,16 @@ func AutoCloseInteract():
 #	var can_enter = global.get("doorCloseed")
 #	if (groups.has("nora2Door") and can_enter):
 #			openDoor()
+
+
+func _on_doorCoreArea_body_entered(body):
+	if body.is_in_group("cablePoint"):
+		if shitPresentArray.size() == 0: openDoor()
+		shitPresentArray.append(body)
+
+
+func _on_doorCoreArea_body_exited(body):
+	if body.is_in_group("cablePoint"):
+		if shitPresentArray.has(body):
+			shitPresentArray.erase(body)
+		if shitPresentArray.size() == 0: closeDoor()

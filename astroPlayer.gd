@@ -69,7 +69,10 @@ const DEFAULT_JUMP_FORCE = -150
 var jumpForce = 0
 
 #used to restrict astro horizontal movement from cables
+#restrictAndMove2PointJUMP is used so that it only pulls back once
+#in mid air
 var restrictAndMove2Point = null
+var restrictAndMove2PointJUMP = false
 var restrictMovingRight = null
 
 #once on the ground and health depleted, goes true
@@ -348,13 +351,18 @@ func _physics_process(delta):
 		#vel = move_and_slide_with_snap(vel, Vector2(0, 1), Vector2.UP, false, 4, deg2rad(120), false)
 	velFinal = vel.rotated(global.gravRadAng - deg2rad(90))
 	
-	if restrictAndMove2Point != null:
-		velFinal =  restrictAndMove2Point - restrictAndMove2Point.normalized() * 20 - get_global_position()# + (restrictAndMove2Point.normalized() * 200) - get_global_position()
+	if restrictAndMove2Point != null && !restrictAndMove2PointJUMP:
+		velFinal =  restrictAndMove2Point  - get_global_position()#- restrictAndMove2Point.normalized() * 20                # + (restrictAndMove2Point.normalized() * 200) - get_global_position()
 		restrictAndMove2Point = null
 		if directional_force.x > 0:
 			restrictMovingRight = true
 		elif directional_force.x  < 0:
 			restrictMovingRight = false
+		restrictAndMove2PointJUMP = true
+		
+		
+	if groundedBubble && !inPlatform:
+		restrictAndMove2PointJUMP = false
 	
 	var snapMag = 0 if jumping else SNAP_DEFAULT_VECT
 	

@@ -91,7 +91,8 @@ func setConnection(plugNode):
 		
 	
 	
-
+func setLightMask(val):
+	$plugSprite.set_light_mask(val)
 	
 	
 func _ready():
@@ -106,6 +107,11 @@ func _ready():
 			
 	setPlugTcAuto()
 	useNextInterNodeIfNeeded = true
+	
+#	readyEXT()#call_deferred("readyEXT")
+#
+#func readyEXT():
+#	pass
 	
 	
 	
