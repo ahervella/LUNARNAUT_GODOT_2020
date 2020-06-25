@@ -11,6 +11,8 @@ extends "res://SCRIPTS/INTERACT/intr_default.gd"
 #ALEJANDRO (Mar-03-2020)
 #Threw out all of old door shit, started door scene and script from scratch,
 #feeling really good about using the default to extend functionality
+const WHITELIST_GROUPS = ["cablePoint", "object"]
+
 export (Resource) var TC_LOCKED = null
 export (Resource) var TC_UNLOCKED = null
 
@@ -284,13 +286,20 @@ func AutoCloseInteract():
 
 
 func _on_doorCoreArea_body_entered(body):
-	if body.is_in_group("cablePoint"):
+	if inWhiteListGroup(body):
 		if shitPresentArray.size() == 0: openDoor()
 		shitPresentArray.append(body)
 
 
 func _on_doorCoreArea_body_exited(body):
-	if body.is_in_group("cablePoint"):
+	if inWhiteListGroup(body):
 		if shitPresentArray.has(body):
 			shitPresentArray.erase(body)
 		if shitPresentArray.size() == 0: closeDoor()
+		
+		
+func inWhiteListGroup(body):
+	for group in WHITELIST_GROUPS:
+		if body.is_in_group(group):
+			return true
+	return false
