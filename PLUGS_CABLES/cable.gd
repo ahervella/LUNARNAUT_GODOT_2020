@@ -144,6 +144,8 @@ func readyDeferred():
 	
 	initShapes()
 	
+	setSourcePlugs()
+	
 	setLightMaskLayer()
 	
 	attemptInitConnections()
@@ -239,6 +241,11 @@ func resize_arrays():
 	#resize
 	pos.resize(NODE_COUNT)
 	posOld.resize(NODE_COUNT)
+
+func setSourcePlugs():
+	START_PLUG.sourcePlug = END_PLUG
+	END_PLUG.sourcePlug = START_PLUG
+
 
 func init_position():
 	

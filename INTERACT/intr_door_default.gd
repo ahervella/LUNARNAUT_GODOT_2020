@@ -24,8 +24,9 @@ var leftNode = null
 var rightNode = null
 export (float) var DOOR_TIME = 1
 export (float) var DOOR_OPEN_RANGE = 19
-export (bool) var DOOR_AUTO_OPEN = true
-export (bool) var DOOR_LOCKED = false
+#export (bool) var DOOR_AUTO_OPEN = true
+var DOOR_TEMP_LOCKED = false
+export (bool) var DOOR_MANUAL_LOCK = false
 
 var shitPresentArray = []
 
@@ -227,7 +228,7 @@ func AutoInteract():
 	#	TextInteract()
 	#can_interact = true
 	
-	if (DOOR_AUTO_OPEN || !DOOR_LOCKED):
+	if (!DOOR_MANUAL_LOCK && !DOOR_TEMP_LOCKED):#(DOOR_AUTO_OPEN || !DOOR_LOCKED):
 		openDoor()
 		interactNode = global.getNextInteractNodeIndex()#interactNodeIndex = global.getNextInteractNodeIndex()
 		if interactNode != null:
@@ -246,7 +247,7 @@ func AutoInteract():
 func Interact():
 	if Engine.editor_hint: return
 	#if door is unlocked, then can't interact with door anymore
-	if (!DOOR_LOCKED):
+	if (!DOOR_TEMP_LOCKED):
 		return
 
 	#if still locked and interact timer is up, can then interact
@@ -261,8 +262,8 @@ func Interact():
 	can_interact = false
 
 	#unlock case
-	if (hasRequiredItems()):
-		DOOR_LOCKED = false
+	if (hasRequiredItems() && !DOOR_MANUAL_LOCK):
+		DOOR_TEMP_LOCKED = false
 		openDoor()
 		#global.interactNode.animateText(TC_UNLOCKED, InteractAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
 		if TC_UNLOCKED != null:
@@ -287,7 +288,7 @@ func AutoCloseInteract():
 	if Engine.editor_hint: return
 	.AutoCloseInteract()
 	
-	if (!DOOR_LOCKED):
+	if (!DOOR_TEMP_LOCKED):
 		closeDoor()
 		
 	setDoorAccess(doorAccess)

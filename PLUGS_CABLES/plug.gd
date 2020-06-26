@@ -538,10 +538,15 @@ func disconnectPlug():
 	
 
 func receivedEntity(entity):
-	return sourcePlug.transmitEntity(entity)
-
+	if sourcePlug != null:
+		return sourcePlug.transmitEntity(entity)
+	return ("NO sourcePlug found at " + get_name())
+	
 func transmitEntity(entity):
-	return connPlug.receivedEntity(entity)
+	if connPlug != null:
+		return connPlug.receivedEntity(entity)
+	
+	return ("NO connPlug found at " + get_name())
 	
 	
 	

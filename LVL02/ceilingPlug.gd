@@ -6,8 +6,9 @@ onready var visitorDoorToUnlock = get_node(visitorDoorToUnlockPath)
 
 func receivedEntity(entity):
 	if !Engine.editor_hint: return
-	visitorDoorToUnlock.DOOR_LOCKED = false
-	visitorDoorToUnlock.openDoor()
+	
+	if entity is String:
+		return true
 
 #func _ready(): 
 #	if Engine.editor_hint: return
