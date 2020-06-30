@@ -36,7 +36,7 @@ var doorIsOpen = false
 #export (String) var DEPENDANT_LVL_BOOL = null
 #export (bool) var OPPOSITE_IS_TRUE = false
 
-var doorShadowNode
+var doorShadowWhole
 
 var doorShadowTop
 var doorShadowTopClosePos : Vector2
@@ -70,7 +70,7 @@ var doorBarrierShapePos
 func _ready():
 	if Engine.editor_hint: return
 	#add the shadow to the door
-	doorShadowNode = get_node("doorShadow")#get_tree().get_current_scene().doorShadowTscn.instance()
+	doorShadowWhole = get_node("doorShadowWhole")
 	#add_child(doorShadowNode)
 #	print(get_index())
 #	print("doorindex")
@@ -78,8 +78,8 @@ func _ready():
 	
 	#doorShadowNode.set_global_position(get_global_position())
 	
-	doorShadowTop = doorShadowNode.get_node("doorShadowTop")
-	doorShadowBottom = doorShadowNode.get_node("doorShadowBottom")
+	doorShadowTop = get_node("doorShadowTop")
+	doorShadowBottom = get_node("doorShadowBottom")
 	doorTop = get_node("doorTop")
 	doorBottom = get_node("doorBottom")
 	doorBarrierShape = get_node("doorStaticBody/doorShape")
@@ -154,7 +154,7 @@ func leftEntranceEnable(enabled):
 	sideEntranceEnable(enabled, false)
 
 
-func moveDoorPart(doorNode, doorStartPos, doorEndPos, doorTweenNode, doorTweenNodeUniqueID):
+func moveDoorPart(doorNode, doorStartPos, doorEndPos, doorTweenNode, doorTweenNodeUniqueID, opening):
 	if Engine.editor_hint: return
 	var currentPos = doorStartPos
 	
@@ -165,8 +165,25 @@ func moveDoorPart(doorNode, doorStartPos, doorEndPos, doorTweenNode, doorTweenNo
 	else:
 		doorTweenNode = null
 	
-	return global.newTween(doorNode, 'position', currentPos, doorEndPos, DOOR_TIME, 0, null, Tween.TRANS_CIRC, Tween.EASE_OUT)
+	var fr = null if opening else funcref(self, "showWholeShadow")
+	if opening:
+		hideWholeShadow()
+	return global.newTween(doorNode, 'position', currentPos, doorEndPos, DOOR_TIME, 0, fr, Tween.TRANS_CIRC, Tween.EASE_OUT)
 	
+	
+func hideWholeShadow():
+	return
+	if doorShadowWhole.is_visible():
+		doorShadowWhole.hide()
+		doorShadowBottom.show()
+		doorShadowTop.show()
+		
+func showWholeShadow():
+	return
+	if !doorShadowWhole.is_visible():
+		doorShadowWhole.show()
+		doorShadowBottom.hide()
+		doorShadowTop.hide()
 	
 	
 func openDoor():
@@ -180,13 +197,13 @@ func openDoor():
 	#had to do above instead beacuse for some damn reason disabling the shape
 	#wasn't always working :////
 	#doorBarrierShape.set_disabled(true)
-	doorShadowTopTween = moveDoorPart(doorShadowTop, doorShadowTopClosePos, doorShadowTopOpenPos, doorShadowTopTween, doorShadowTopTweenUniqueID)
+	doorShadowTopTween = moveDoorPart(doorShadowTop, doorShadowTopClosePos, doorShadowTopOpenPos, doorShadowTopTween, doorShadowTopTweenUniqueID, true)
 	doorShadowTopTweenUniqueID = doorShadowTopTween.to_string()
-	doorShadowBottomTween = moveDoorPart(doorShadowBottom, doorShadowBottomClosePos, doorShadowBottomOpenPos, doorShadowBottomTween, doorShadowBottomTweenUniqueID)
+	doorShadowBottomTween = moveDoorPart(doorShadowBottom, doorShadowBottomClosePos, doorShadowBottomOpenPos, doorShadowBottomTween, doorShadowBottomTweenUniqueID, true)
 	doorShadowBottomTweenUniqueID = doorShadowBottomTween.to_string()
-	doorTopTween = moveDoorPart(doorTop, doorTopClosePos, doorTopOpenPos, doorTopTween, doorTopTweenUniqueID)
+	doorTopTween = moveDoorPart(doorTop, doorTopClosePos, doorTopOpenPos, doorTopTween, doorTopTweenUniqueID, true)
 	doorTopTweenUniqueID = doorTopTween.to_string()
-	doorBottomTween = moveDoorPart(doorBottom, doorBottomClosePos, doorBottomOpenPos, doorBottomTween, doorBottomTweenUniqueID)
+	doorBottomTween = moveDoorPart(doorBottom, doorBottomClosePos, doorBottomOpenPos, doorBottomTween, doorBottomTweenUniqueID, true)
 	doorBottomTweenUniqueID = doorBottomTween.to_string()
 	
 	doorIsOpen = true
@@ -205,13 +222,13 @@ func closeDoor():
 		doorBarrierShapePar.add_child(doorBarrierShape)
 		doorBarrierShape.set_owner(doorBarrierShapePar)
 	#doorBarrierShape.set_disabled(false)
-	doorShadowTopTween = moveDoorPart(doorShadowTop, doorShadowTopOpenPos, doorShadowTopClosePos, doorShadowTopTween, doorShadowTopTweenUniqueID)
+	doorShadowTopTween = moveDoorPart(doorShadowTop, doorShadowTopOpenPos, doorShadowTopClosePos, doorShadowTopTween, doorShadowTopTweenUniqueID, false)
 	doorShadowTopTweenUniqueID = doorShadowTopTween.to_string()
-	doorShadowBottomTween = moveDoorPart(doorShadowBottom, doorShadowBottomOpenPos, doorShadowBottomClosePos, doorShadowBottomTween, doorShadowBottomTweenUniqueID)
+	doorShadowBottomTween = moveDoorPart(doorShadowBottom, doorShadowBottomOpenPos, doorShadowBottomClosePos, doorShadowBottomTween, doorShadowBottomTweenUniqueID, false)
 	doorShadowBottomTweenUniqueID = doorShadowBottomTween.to_string()
-	doorTopTween = moveDoorPart(doorTop, doorTopOpenPos, doorTopClosePos, doorTopTween, doorTopTweenUniqueID)
+	doorTopTween = moveDoorPart(doorTop, doorTopOpenPos, doorTopClosePos, doorTopTween, doorTopTweenUniqueID, false)
 	doorTopTweenUniqueID = doorTopTween.to_string()
-	doorBottomTween = moveDoorPart(doorBottom, doorBottomOpenPos, doorBottomClosePos, doorBottomTween, doorBottomTweenUniqueID)
+	doorBottomTween = moveDoorPart(doorBottom, doorBottomOpenPos, doorBottomClosePos, doorBottomTween, doorBottomTweenUniqueID, false)
 	doorBottomTweenUniqueID = doorBottomTween.to_string()
 	
 	doorIsOpen = false
