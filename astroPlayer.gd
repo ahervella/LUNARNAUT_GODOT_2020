@@ -605,7 +605,7 @@ func MoveJump(delta):
 		# decrease jump force (by adding) if button still held down
 		if (currMaxAirTime <= MAX_AIR_TIME):
 			currMaxAirTime += delta
-			print(currMaxAirTime)
+			#print(currMaxAirTime)
 	
 	
 	#to prevent from double jumping
