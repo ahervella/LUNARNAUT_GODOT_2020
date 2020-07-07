@@ -583,8 +583,10 @@ func MoveJump(delta):
 		#is just pressed or released
 	
 	
-	if (jumpJustPressed && (groundedBubble) && holdDownCanJump):# and anim_jump
+	if (jumpJustPressed && (groundedBubble) && holdDownCanJump && !inPlatform):# and anim_jump
 		set_anim("JUMP2")
+		#if already jumping anim, frame won't reset to 0 by itself
+		$"ASTRO_ANIM2".set_frame(0)
 		jumping = true
 		
 		
