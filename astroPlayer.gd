@@ -623,8 +623,20 @@ func ProcessInteractInput():
 		
 		# only be able to interact with shit if not currently able to move an object
 		if movableObject == null:
+			#for item in currItems:
+			
+			
+			#setting so that items can be prioritized if holding cables or some shit
+			var priorityItem = null
 			for item in currItems:
-				item.Interact()
+				if item.cancelOverlappingInteractables:
+					priorityItem = item
+				
+			if priorityItem == null:
+				for item in currItems:
+					item.Interact()
+			else:
+				priorityItem.Interact()
 				
 		else: movableObject.Interact()
 			

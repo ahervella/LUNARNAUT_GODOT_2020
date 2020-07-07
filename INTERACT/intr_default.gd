@@ -40,6 +40,9 @@ export (bool) var eatRequirements = false
 #interactNodes
 export (bool) var useNextInterNodeIfNeeded = false
 
+#make this the only interactable the happens if multiple interactables present
+export (bool) var cancelOverlappingInteractables = true
+
 var interactNode = null
 
 var can_interact : bool = true

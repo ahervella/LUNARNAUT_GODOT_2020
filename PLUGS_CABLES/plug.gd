@@ -107,6 +107,7 @@ func _ready():
 			
 	setPlugTcAuto()
 	useNextInterNodeIfNeeded = true
+	cancelOverlappingInteractables = false
 	
 	if isFixedPort:
 		setLightMask(get_light_mask())
