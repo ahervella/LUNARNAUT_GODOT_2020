@@ -166,7 +166,13 @@ func _ready():
 		else:
 			interactTextNodePathString = interactTextNodePathString + "/" + INTERACT_TEXT_NODE_PATH.get_name(i)
 	interactTextNodePathString = "/root/" + global.lvl().get_name() + "/" + interactTextNodePathString
-	INTERACT_TEXT_NODE = get_node(interactTextNodePathString)
+	
+	for child in get_node(interactTextNodePathString).get_children():
+		if child is RichTextLabel:
+			INTERACT_TEXT_NODE = child
+			break
+	
+	#INTERACT_TEXT_NODE = get_node(interactTextNodePathString)
 	
 	
 	#need this so that anywhere an interact references the interactNode,

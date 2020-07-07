@@ -103,7 +103,7 @@ func getNextInteractNodeIndex():
 func addNewInteractNode(index, overrideFlip):
 
 	if interactNodes.size() > index && interactNodes[index] == null:
-		var newInteractNode = interactNode.duplicate(DUPLICATE_USE_INSTANCING)
+		var newInteractNode = interactNode.duplicate(DUPLICATE_SCRIPTS)
 		newInteractNode.overrideFlip = overrideFlip
 		newInteractNode.ASTRO_NODE = interactNode.ASTRO_NODE
 		interactNode.get_parent().add_child_below_node(interactNode, newInteractNode)
