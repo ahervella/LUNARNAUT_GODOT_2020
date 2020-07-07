@@ -108,6 +108,8 @@ func _ready():
 	setPlugTcAuto()
 	useNextInterNodeIfNeeded = true
 	
+	if isFixedPort:
+		setLightMask(get_light_mask())
 #	readyEXT()#call_deferred("readyEXT")
 #
 #func readyEXT():

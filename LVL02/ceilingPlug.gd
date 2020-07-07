@@ -5,7 +5,7 @@ export (NodePath) var visitorDoorToUnlockPath
 onready var visitorDoorToUnlock = get_node(visitorDoorToUnlockPath)
 
 func receivedEntity(entity):
-	if !Engine.editor_hint: return
+	if Engine.editor_hint: return
 	
 	if entity is String:
 		return true

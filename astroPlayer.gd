@@ -258,6 +258,11 @@ func enableShadowsSetter(val):
 	enableShadows = val
 	get_node("Light2D").set_enabled(val)
 	get_node("Light2D/LightDarker").set_enabled(val)
+	
+	get_node("ShadowModulate").set("visible", val)
+	get_node("LightsShadowMaskZNode").set("visible", val)
+	
+	
 	property_list_changed_notify()
 
 

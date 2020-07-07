@@ -26,7 +26,7 @@ func setSetLightMask(isWallFloor):
 	if lo == null: return
 	print("oaijdfoaisdjf")
 	print(isWallFloor)
-	var lightMask = 14 if isWallFloor else 6
+	var lightMask = 30 if isWallFloor else 6
 	
 	
 	lo.set_occluder_light_mask(lightMask)

@@ -9,7 +9,7 @@ enum colorType{
 	good
 }
 
-var dict = {colorType.info: Color.dimgray, colorType.warning: Color.yellow, colorType.alert: Color.red, colorType.good: Color.green }
+var dict = {colorType.info: Color.whitesmoke, colorType.warning: Color.yellow, colorType.alert: Color.red, colorType.good: Color.green }
 
 export(colorType) var ColorType;
 export(String) var text;

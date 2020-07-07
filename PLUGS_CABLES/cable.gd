@@ -136,6 +136,8 @@ func readyDeferred():
 	
 	if (CABLE_LINE2D_PATH != null):
 		CABLE_LINE2D = get_node(CABLE_LINE2D_PATH)
+		#makes joints round by default
+		CABLE_LINE2D.set_joint_mode(2)
 	
 	
 	resize_arrays()
@@ -407,6 +409,10 @@ func thisObjectCheckChange():
 		thisObjChangeDetected = CSWrapDetectChange(csWrap)
 		
 func ropeLengthLimit(delta):
+	
+	#only restrict rope if cable is connected somewhere
+	if ((START_PIN == null || START_PIN.is_in_group("astro") )
+	&& (END_PIN == null || END_PIN.is_in_group("astro"))): return
 	
 	var head = getUltimateParentCable()
 	var ropeLength = head.getRopeLength()
