@@ -69,7 +69,38 @@ func consistentCharSet():
 		
 		charRes.level = getLvlSceneName()
 		
+func checkIfLightException(node = self):
+	for child in node.get_children():
+		if !child.has_method("get_light_mask"): continue
 		
+		#check if light layer has the specific bit set on
+		var lightLayerVal = child.get_light_mask()
+		
+		if (lightLayerVal & (1 << 11) != 0):
+			var mat = CanvasItemMaterial.new()
+			mat.set_blend_mode(CanvasItemMaterial.BLEND_MODE_ADD)
+			child.set_material(mat)
+		
+		if (lightLayerVal & (1 << 10) != 0):
+			var index = child.get_index()
+			var newCL = CanvasLayer.new()
+			newCL.set_follow_viewport(true)
+			newCL.set_layer(2)
+			node.add_child_below_node(child, newCL)
+			newCL.set_owner(node)
+			var pos = child.get_global_position()
+			var scale = child.get_global_scale()
+			node.remove_child(child)
+			newCL.add_child(child)
+			child.set_owner(newCL)
+			child.set_global_position(pos)
+			child.set_global_scale(scale)
+			
+			
+		else:
+			if child.get_child_count() > 0:
+				checkIfLightException(child)
+				
 #//////////// START OF TOOL AND SETGET CODE ////////////////
 
 func setAddAstroAndCam(garboVal):
@@ -313,7 +344,7 @@ func _ready():
 		readyDone = true
 		return
 	
-
+	
 	
 	global.playTest = playTest
 	astroNode = get_node(astroNodePath)
@@ -324,6 +355,7 @@ func _ready():
 	
 	if allCharToThisScene: consistentCharSet()
 	
+	checkIfLightException()
 	
 	readyDone = true
 

@@ -60,6 +60,7 @@ func _ready():
 	
 	CAM_GLOBAL_START_POS  = Vector2(214.26, ASTRO_GLOBAL_START_POS.y) 
 	
+	#checkIfLightException()
 	
 	initLevel()
 	
@@ -76,6 +77,8 @@ func _ready():
 	if(global.playTest):
 		initAstro()
 		
+
+
 
 	
 func initLevel():
