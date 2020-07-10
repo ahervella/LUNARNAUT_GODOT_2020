@@ -8,6 +8,7 @@ extends AnimatedSprite
 var canUseO2 : bool = true
 var processed = false
 export (Resource) var TEXT_INTERACT
+var cancelOverlappingInteractables = true
 
 func _ready():
 	self.set_animation("GREEN")
@@ -17,7 +18,8 @@ func _ready():
 func Interact():
 	if (canUseO2):
 		use_o2()
-		global.interactNode.closeText()
+		if global.interactNode != null:
+			global.interactNode.closeText()
 
 func AutoInteract():
 	print("canisterInteract")
@@ -25,7 +27,8 @@ func AutoInteract():
 
 func AutoCloseInteract():
 	if (canUseO2):
-		global.interactNode.closeText()
+		if global.interactNode != null:
+			global.interactNode.closeText()
 
 	
 func TextInteract():

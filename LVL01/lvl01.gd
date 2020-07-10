@@ -73,10 +73,11 @@ func _ready():
 
 	astroNode.set_health(ASTRO_HEALTH)
 
+
 	#settings for playtest
 	if(global.playTest):
 		initAstro()
-		
+		astroNode.call_deferred("lightSwitchToggle")
 
 
 
@@ -110,7 +111,7 @@ func loadNextLevel():
 	#all level scenes need to be named via format lvl##
 	#this assumes all levels are consecutive
 	if (demoVersionOfLevel1):
-		var demoVidNode = get_node("DemoOutro")
+		var demoVidNode = get_node("DemoOutroCanvas/DemoOutro")
 		demoVidNode.show()
 		astroNode.CAMERA_NODE.hide()
 		astroNode.CAMERA_NODE.blackOverlayNode.hide()

@@ -215,7 +215,7 @@ func closeDoor():
 	if !doorIsOpen: return
 	
 	
-	
+	yield(get_tree(), "idle_frame")
 	if shitPresentArray.size() > 0: return
 	
 	if doorBarrierShape.get_parent() == null:
