@@ -105,7 +105,7 @@ func setKey(garboVal):
 		if newName != null && newName != "":
 			print("new name:")
 			print(newName)
-			newName = newName.replace("/", ">>>")
+			newName = newName.replace("/", "---")
 			currLvlNode.changeCSWKey(self, newName)
 	property_list_changed_notify()
 	currLvlNode.property_list_changed_notify()
