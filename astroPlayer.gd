@@ -42,6 +42,7 @@ var max_move_speed = 200
 var directional_force = Vector2()
 #const GRAVITY = 3
 var gravity = 0
+var fanForce = null
 var groundedBubble = false
 var ceilingBubble = false
 
@@ -284,6 +285,7 @@ func _physics_process(delta):
 #		lvlNodeReady = global.lvl().readyDone
 #		return
 	
+	
 	gravity = global.gravFor1Frame * global.gravMag#GRAVITY * global.gravMag
 		
 	set_rotation(global.gravRadAng - deg2rad(90))
@@ -362,6 +364,12 @@ func _physics_process(delta):
 		#vel = move_and_slide_with_snap(vel, Vector2(0, 1), Vector2.UP, false, 4, deg2rad(120), false)
 	velFinal = vel.rotated(global.gravRadAng - deg2rad(90))
 	
+	var snapMag = 0 if jumping else SNAP_DEFAULT_VECT
+	
+	if fanForce != null:
+		velFinal += fanForce
+		snapMag = 0
+	
 	if restrictAndMove2Point != null && !restrictAndMove2PointJUMP:
 		velFinal =  restrictAndMove2Point  - get_global_position()#- restrictAndMove2Point.normalized() * 20                # + (restrictAndMove2Point.normalized() * 200) - get_global_position()
 		restrictAndMove2Point = null
@@ -375,7 +383,7 @@ func _physics_process(delta):
 	if groundedBubble && !inPlatform:
 		restrictAndMove2PointJUMP = false
 	
-	var snapMag = 0 if jumping else SNAP_DEFAULT_VECT
+	
 	
 	if (restrictAndMove2Point == null):
 		
@@ -406,7 +414,9 @@ func _physics_process(delta):
 	preventMovingObjPushBack(velFinal)
 	
 	
+func fanEnabled(enabled, fanAccel = null):
 
+	fanForce = fanAccel if enabled else null
 			
 func ApplyMovement(delta):
 	#governs direction of buttons being pressed. Mostly used for

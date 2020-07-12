@@ -22,6 +22,7 @@ export (String) var showSoundGroup = null
 export (String) var hideSoundNode = null
 export (String) var hideSoundGroup = null
 
+var fanForce = null
 
 var rectObjBelow = null
 #var rectObjsAbove = []
@@ -242,6 +243,9 @@ func activate():
 		remove_collision_exception_with(thing)
 		
 		
+func fanEnabled(enabled, fanAccel = null):
+	fanForce = fanAccel if enabled else null
+	
 func _integrate_forces(state):
 	
 	if transJustChangedPos != null && transJustChanged && transJustChangedPos != get_position():
@@ -304,7 +308,10 @@ func _integrate_forces(state):
 	if rectObjBelow == null || movingDir != 0:
 		vel.x -= vel.x * LINEAR_DAMP
 	
-	state.set_linear_velocity(vel.rotated(global.gravRadAngFromNorm))
+	var finalVel = vel.rotated(global.gravRadAngFromNorm)
+	if fanForce != null:
+		finalVel += fanForce
+	state.set_linear_velocity(finalVel)
 	
 	#record contact positions with the contacting body as the key
 	contactPosDict.clear()
