@@ -54,6 +54,9 @@ var timeDiscrepBodyPresentDict2 = {}
 var timeDiscrepManuallyRemovingArea = []
 var timeDiscrepRemovingArea
 
+#to enable physics_process in extended scripts
+var physicsProcessOn = false
+
 func getLvlSceneName():
 	var path = get_tree().get_edited_scene_root().filename if Engine.editor_hint else global.lvl().filename
 	
@@ -300,7 +303,8 @@ func _physics_process(delta):
 			if child.is_in_group("object"):
 				child.set_physics_process(true)
 		
-		set_physics_process(false)
+		if !physicsProcessOn:
+			set_physics_process(false)
 
 	elif readyDone && !oneShotFrameWait:
 		oneShotFrameWait = true
