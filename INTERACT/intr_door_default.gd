@@ -25,7 +25,9 @@ var rightNode = null
 export (float) var DOOR_TIME = 1
 export (float) var DOOR_OPEN_RANGE = 19
 #export (bool) var DOOR_AUTO_OPEN = true
-var DOOR_TEMP_LOCKED = false
+
+#need this to keep door unlocked after unlocked
+var DOOR_TEMP_LOCKED = true
 export (bool) var DOOR_MANUAL_LOCK = false
 
 var shitPresentArray = []
@@ -37,6 +39,8 @@ var doorIsOpen = false
 #export (bool) var OPPOSITE_IS_TRUE = false
 
 var doorShadowWhole
+
+var doorTimer
 
 var doorShadowTop
 var doorShadowTopClosePos : Vector2
@@ -71,6 +75,13 @@ func _ready():
 	if Engine.editor_hint: return
 	#add the shadow to the door
 	doorShadowWhole = get_node("doorShadowWhole")
+	
+	doorTimer = Timer.new()
+	add_child(timer)
+	doorTimer.set_owner(self)
+	doorTimer.set_wait_time(DOOR_TIME)
+	doorTimer.connect("timeout", self, 'showWholeShadow')
+	
 	#add_child(doorShadowNode)
 #	print(get_index())
 #	print("doorindex")
@@ -103,6 +114,9 @@ func _ready():
 	#setDoorAccess(doorAccess)
 	rightEntranceEnable(true)
 	leftEntranceEnable(true)
+	
+	if hasRequiredItems():
+		DOOR_TEMP_LOCKED = false
 
 func setDoorAccess(val):
 	doorAccess = val
@@ -172,14 +186,14 @@ func moveDoorPart(doorNode, doorStartPos, doorEndPos, doorTweenNode, doorTweenNo
 	
 	
 func hideWholeShadow():
-	return
+	#return
 	if doorShadowWhole.is_visible():
 		doorShadowWhole.hide()
 		doorShadowBottom.show()
 		doorShadowTop.show()
 		
 func showWholeShadow():
-	return
+	#return
 	if !doorShadowWhole.is_visible():
 		doorShadowWhole.show()
 		doorShadowBottom.hide()
@@ -191,6 +205,8 @@ func openDoor():
 	
 	if doorIsOpen: return
 	
+	hideWholeShadow()
+	doorTimer.stop()
 	
 	if doorBarrierShape.get_parent() != null:
 		doorBarrierShape.get_parent().remove_child(doorBarrierShape)
@@ -218,6 +234,7 @@ func closeDoor():
 	yield(get_tree(), "idle_frame")
 	if shitPresentArray.size() > 0: return
 	
+	doorTimer.start(0)
 	if doorBarrierShape.get_parent() == null:
 		doorBarrierShapePar.add_child(doorBarrierShape)
 		doorBarrierShape.set_owner(doorBarrierShapePar)
