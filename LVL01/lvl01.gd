@@ -60,6 +60,7 @@ func _ready():
 	
 	CAM_GLOBAL_START_POS  = Vector2(214.26, ASTRO_GLOBAL_START_POS.y) 
 	
+	#checkIfLightException()
 	
 	initLevel()
 	
@@ -72,10 +73,13 @@ func _ready():
 
 	astroNode.set_health(ASTRO_HEALTH)
 
+
 	#settings for playtest
 	if(global.playTest):
 		initAstro()
-		
+		astroNode.call_deferred("lightSwitchToggle")
+
+
 
 	
 func initLevel():
@@ -107,7 +111,7 @@ func loadNextLevel():
 	#all level scenes need to be named via format lvl##
 	#this assumes all levels are consecutive
 	if (demoVersionOfLevel1):
-		var demoVidNode = get_node("DemoOutro")
+		var demoVidNode = get_node("DemoOutroCanvas/DemoOutro")
 		demoVidNode.show()
 		astroNode.CAMERA_NODE.hide()
 		astroNode.CAMERA_NODE.blackOverlayNode.hide()

@@ -427,6 +427,7 @@ func ApplyMovement(delta):
 	MoveJump(delta)
 	
 	ProcessInteractInput()
+	ProcessFlashlightInput()
 	MoveCameraAndInteracText()
 	RestrictFromRope()
 	MoveMovableObjects()
@@ -659,6 +660,18 @@ func ProcessInteractInput():
 	grabbingMovableObj = (Input.is_action_pressed("ui_interact") || touchInteractPressed) && movableObject != null && groundedBubble
 	
 
+func ProcessFlashlightInput():
+	if(!global.controls_enabled):
+		return
+	
+	if Input.is_action_just_pressed("ui_light"):
+		lightSwitchToggle()
+
+func lightSwitchToggle():
+	var lightOn = !get_node("Light2D").is_enabled()
+	get_node("Light2D").set_enabled(lightOn)
+	get_node("Light2D/LightDarker").set_enabled(lightOn)
+	#get_node("SuitLight").set_enabled(!lightOn)
 
 func MoveCameraAndInteracText():
 	
@@ -816,49 +829,64 @@ func astro_o2_health(hc):
 		anim_code2 = "GGG"
 		timer_reset()
 		blink_time = BLINK_SLOW
+		var suitLight = get_node("SuitLight")
+		suitLight.setSuitLight(suitLight.LIGHT.THREE_GREEN)
 	
 	elif (hc == 7):
 		anim_code1 = "GGG"
 		anim_code2 = "GGR"
 		timer_reset()
 		blink_time = BLINK_SLOW
+		var suitLight = get_node("SuitLight")
+		suitLight.setSuitLight(suitLight.LIGHT.THREE_GREEN)
 	
 	elif (hc == 6):
 		anim_code1 = "GGR"
 		anim_code2 = "GGR"
 		timer_reset()
 		blink_time = BLINK_SLOW
+		var suitLight = get_node("SuitLight")
+		suitLight.setSuitLight(suitLight.LIGHT.TWO_GREEN)
 	
 	elif (hc == 5):
 		anim_code1 = "GRR"
 		anim_code2 = "GGR"
 		timer_reset()
 		blink_time = BLINK_SLOW
+		var suitLight = get_node("SuitLight")
+		suitLight.setSuitLight(suitLight.LIGHT.TWO_GREEN)
 	
 	elif (hc == 4):
 		anim_code1 = "GRR"
 		anim_code2 = "GRR"
 		timer_reset()
 		blink_time = BLINK_SLOW
+		var suitLight = get_node("SuitLight")
+		suitLight.setSuitLight(suitLight.LIGHT.ONE_GREEN)
 		
 	elif (hc == 3):
 		anim_code1 = "GRR"
 		anim_code2 = "RRR"
 		timer_reset()
 		blink_time = BLINK_SLOW
+		var suitLight = get_node("SuitLight")
+		suitLight.setSuitLight(suitLight.LIGHT.ONE_GREEN)
 		
 	elif (hc == 2):
 		anim_code1 = "GRR"
 		anim_code2 = "RRR"
 		timer_reset()
 		blink_time = BLINK_FAST
+		var suitLight = get_node("SuitLight")
+		suitLight.setSuitLight(suitLight.LIGHT.ZERO_GREEN)
 		
 	elif (hc == 1):
 		anim_code1 = "RRR"
 		anim_code2 = "RRR"
 		timer_reset()
 		blink_time = BLINK_FAST
-		
+		var suitLight = get_node("SuitLight")
+		suitLight.setSuitLight(suitLight.LIGHT.ZERO_GREEN)
 
 
 

@@ -13,9 +13,19 @@ extends Area2D
 
 var in_inner_node = false
 var in_outer_node = false
+export (NodePath) var moduleOutsidePath
+var moduleOutside
 
+export (NodePath) var moduleOutside2Path
+var moduleOutside2
+
+export (NodePath) var moduleInsideShadowPath
+var moduleInsideShadow
 
 func _ready():
+	moduleOutside = get_node(moduleOutsidePath)
+	moduleOutside2 = get_node(moduleOutside2Path)
+	moduleInsideShadow = get_node(moduleInsideShadowPath)
 	call_deferred('readyDeferred')
 
 func readyDeferred():
@@ -75,15 +85,20 @@ func out_ship_visibility(thing):
 	#if (inner and outer and thing), or (inner and not outer and thing), or (not in either and not inner, which is for initial cond)
 	if ((in_inner_node && in_outer_node && thing) or (in_inner_node && !in_outer_node && thing) or (!in_inner_node && !in_outer_node && !thing)):
 		
+		
+		tween_exec(moduleOutside, 0)
+		#moduleInsideShadow.show()
+		#tween_exec(moduleInsideShadow, 0)
+		
 		for i in (bg_nodes):
 			tween_exec(i, 0)
 			
-		for i in (moon_nodes):
-			tween_exec(i, 0)
+		#for i in (moon_nodes):
+		#	tween_exec(i, 0)
 		
 			
-		for i in (out_ship_nodes):
-			tween_exec(i,  0)
+		#for i in (out_ship_nodes):
+		#	tween_exec(i,  0)
 		
 		#tween_exec(get_node(BLACK_NODE_PATH), 1)
 		#disables moon ground floor so astro can go into ship
@@ -92,14 +107,14 @@ func out_ship_visibility(thing):
 		
 		
 	if (in_inner_node && in_outer_node && !thing):
-		for i in (out_ship_nodes):
-			tween_exec(i, 1)
+		#for i in (out_ship_nodes):
+		#	tween_exec(i, 1)
 
-		for i in (moon_nodes):
-			tween_exec(i, 1)
+		#for i in (moon_nodes):
+		#	tween_exec(i, 1)
 			
-		
-		
+		tween_exec(moduleOutside, 1)
+		#moduleInsideShadow.hide()
 		for i in (bg_nodes):
 			tween_exec(i, 1)
 			
@@ -121,15 +136,23 @@ func tween_exec(node, startOrFin):
 	var cur_a = cur_color.a
 	
 	
-	if (node.is_in_group("moon_node")):
-		#turns the moon nodes into black or noraml and alpha fade
-		global.newTween(node, "modulate", cur_color, Color(startOrFin, startOrFin, startOrFin, startOrFin), 0.3, 0)
-		#get_node(tween_node).interpolate_property(node, "modulate", cur_color, Color(startOrFin, startOrFin, startOrFin, startOrFin), 0.3 , 0, Tween.EASE_OUT)
-	
-	#turns node into alpha fade
-	else:
-		global.newTween(node, "modulate", cur_color, Color(cur_r, cur_g, cur_b, startOrFin), 0.3, 0)
+	if startOrFin:
+		#moduleOutside.set_light_mask(64)
+		global.newTween(node, "modulate", cur_color, Color(cur_r, cur_g, cur_b, startOrFin), 0.3, 0, funcref(self, "onFinishShowMoonPart"))
 		#get_node(tween_node).interpolate_property(node, "modulate", cur_color, Color(cur_r, cur_g, cur_b, startOrFin), 0.3 , 0, Tween.EASE_OUT)
+	else:
+		onStartHideMoonPart()
+		#moduleOutside.set_light_mask(64)
+		global.newTween(node, "modulate", cur_color, Color(cur_r, cur_g, cur_b, startOrFin), 0.3, 0)
 	
-	
+func onFinishShowMoonPart():
+	moduleInsideShadow.hide()
+	moduleOutside.hide()
+	moduleOutside2.show()
+	#moduleOutside.set_light_mask(65536 + 64)
 
+func onStartHideMoonPart():
+	moduleInsideShadow.show()
+	moduleOutside.show()
+	moduleOutside2.hide()
+	#moduleOutside.set_light_mask(64)

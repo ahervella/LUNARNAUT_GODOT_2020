@@ -81,7 +81,7 @@ func Interact():
 		# Update text for items we got
 		if (itemsGained != null && itemsGained.size() > 0):
 			for iq in itemsGained:
-				TC_INTERACT.text = "%s\nGained %d %s" % [TC_INTERACT.text,iq.quantity, iq.item.Name]
+				TC_INTERACT.text = "%s\nGained %d %s" % [TC_INTERACT.text,iq.quantity, iq.item.ScreenName]
 	
 		# Display text
 		if (interactNode != null && is_instance_valid(interactNode)):
@@ -129,7 +129,7 @@ func AutoInteract():
 		addedItemsToAuto = true;
 		TC_AUTO.text = "%s\n%s Items:" % [TC_AUTO.text, "Consumed" if eatRequirements else "Required"]
 		for iq in itemsRequired:
-			TC_AUTO.text = "%s\n%d %s" % [TC_AUTO.text,iq.quantity, iq.item.Name]
+			TC_AUTO.text = "%s\n%d %s" % [TC_AUTO.text,iq.quantity, iq.item.ScreenName]
 	
 	var missing = !get_tree().get_current_scene().CheckHasInventoryItems(itemsRequired, false);
 
