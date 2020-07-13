@@ -651,7 +651,8 @@ func ProcessInteractInput():
 	
 
 func ProcessFlashlightInput():
-	pass
+	if(!global.controls_enabled):
+		return
 	
 	if Input.is_action_just_pressed("ui_light"):
 		lightSwitchToggle()
