@@ -467,7 +467,7 @@ func removeDisabledCSWrapperNodes():
 	for csWrap in charSwitchWrappers.values():
 		if !csWrap.checkIfInCharLvl(global.currCharRes.id):
 			var nodeObj = get_node(csWrap.nodePath)
-			remove_child(nodeObj)
+			nodeObj.get_parent().remove_child(nodeObj)
 		
 		
 	
