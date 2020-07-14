@@ -248,6 +248,10 @@ func fanEnabled(enabled, fanAccel = null):
 	
 func _integrate_forces(state):
 	
+#	if get_parent() == null:
+#		set_use_custom_integrator(false)
+#		return
+	
 	if transJustChangedPos != null && transJustChanged && transJustChangedPos != get_position():
 		activate()
 		CSWrapSaveStartState(csWrap)
@@ -370,8 +374,11 @@ func checkForAndMarkAsChanged():
 	var lvlNode = global.lvl()
 	if !global.lvl().processDone: return
 	
+	
 	if csWrap == null:
 		for csw in lvlNode.charSwitchWrappers.values():
+			if !csw.checkIfInCharLvl(global.currCharRes.id): continue
+			
 			if lvlNode.get_node(csw.nodePath) == self:
 				csWrap = csw
 				break
