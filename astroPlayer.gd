@@ -84,7 +84,10 @@ var dead = false
 var preDeath = false
 var immune = false
 const IMMUNE_TIME = 2.5
-var touchingNora = false
+var touchingEnemies = []
+
+const HAZARD_IMMUNE_TIME = 0.75
+var onHazard = false
 
 #the current item astro is in
 var currItems = []
@@ -274,6 +277,10 @@ func enableShadowsSetter(val):
 
 
 
+func hazardEnabled(enabled, hazType, hazAreaID, hazObject):
+	onHazard = enabled
+
+
 func _physics_process(delta):
 	
 	#only execute in game
@@ -303,6 +310,8 @@ func _physics_process(delta):
 #		airTime = 0
 #		#jumpForce = CHARACTER_RES.baseJump
 #		currMaxAirTime = DEFAULT_MAX_AIR_TIME
+
+	ProcessHazards()
 
 
 	ApplyMovement(delta)
@@ -417,7 +426,12 @@ func _physics_process(delta):
 func fanEnabled(enabled, fanAccel = null):
 
 	fanForce = fanAccel if enabled else null
-			
+
+
+func ProcessHazards():
+	if !onHazard: return
+	TakeDamage(null, HAZARD_IMMUNE_TIME)
+
 func ApplyMovement(delta):
 	#governs direction of buttons being pressed. Mostly used for
 	#horizontal movement. Resets to zero every frame
@@ -1058,13 +1072,13 @@ func _on_ASTRO_ANIM_animation_finished():
 	
 	$"ASTRO_ANIM2"._set_playing(true)
 
-func TakeDamage():
+func TakeDamage(enemyPos = null, customImmuneTime = null):
 	
 	if(immune || dead || preDeath):
 		return
 		
 	#so astro can go through nora
-	global.lvl(01).noraNode.set_collision_layer_bit( 0, false )
+	#global.lvl(01).noraNode.set_collision_layer_bit( 0, false )
 	
 	audio.sound("breathingHurt").play()
 	
@@ -1073,10 +1087,25 @@ func TakeDamage():
 	#this is where death logic happens too (and sets preDeath)
 	dec_health()
 	
-	var astroPos = self.get_global_position()
-	var noraPos = global.lvl(01).noraNode.get_global_position()
-
-	if (astroPos.x < noraPos.x):
+	
+	
+	
+		#if now dead after dec_health, trigger proper red effects
+	if (preDeath || dead):
+		CAMERA_NODE.deathRedness()
+	else:
+		CAMERA_NODE.TakeDamageFlash()
+		
+		
+	#TODO: make timer take in object and method of object so don't
+	#need to remember
+	var immuneTime = IMMUNE_TIME if customImmuneTime == null else customImmuneTime
+	global.newTimer(immuneTime, funcref(self, 'ImmuneToFalse'))
+	
+	
+	if enemyPos == null: return
+	
+	if (get_global_position().x < enemyPos.x):
 		#launch right
 		TakeDamageImpactLaunch(-1)
 	else:
@@ -1088,21 +1117,12 @@ func TakeDamage():
 	
 	$"ASTRO_ANIM2".set_frame(14)
 	
-	#if now dead after dec_health, trigger proper red effects
-	if (preDeath || dead):
-		CAMERA_NODE.deathRedness()
-	else:
-		CAMERA_NODE.TakeDamageFlash()
-		
-		
-	#TODO: make timer take in object and method of object so don't
-	#need to remember
-	global.newTimer(IMMUNE_TIME, funcref(self, 'ImmuneToFalse'))
+
 	#immune = false
 		
 func ImmuneToFalse():
 	immune = false
-	if (touchingNora):
+	if (touchingEnemies.size() > 0):
 		TakeDamage()
 
 func TakeDamageImpactLaunch(direction):
@@ -1226,9 +1246,10 @@ func _on_Item_check_area_entered(area):
 		
 		processItemEntered(newItem)
 	
-	if (area.get_groups().has("nora")):
-		touchingNora = true
-		TakeDamage()
+	if (area.get_groups().has("nora") || area.is_in_group("enemy")):
+		touchingEnemies.append(area.get_parent())
+		var enemyPos = area.get_parent()#global.lvl(01).noraNode.get_global_position()
+		TakeDamage(enemyPos)
 
 
 func processItemEntered(newItem):
@@ -1270,8 +1291,8 @@ func _on_Item_check_area_exited(area):
 
 		#currItem = null
 		
-	if (area.get_groups().has("nora")):
-		touchingNora = false
+	if (area.get_groups().has("nora") || area.is_in_group("enemy")):
+		touchingEnemies.remove(area.get_parent())
 		
 		
 func processItemExited(exitingItem):

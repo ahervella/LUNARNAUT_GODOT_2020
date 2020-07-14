@@ -2,10 +2,12 @@ tool
 extends RigidBody2D
 
 enum OBJECT_WEIGHT{HEAVY, MEDIUM, LIGHT}
+enum OBJECT_MATERIAL{METAL, WOOD}
 
 const LINEAR_DAMP = 0.01
 const DEFAULT_FRIC = 0.7
 
+export (OBJECT_MATERIAL) var objectMaterial = OBJECT_MATERIAL.METAL
 export (OBJECT_WEIGHT) var objectWeight = OBJECT_WEIGHT.MEDIUM setget changeWeight
 export (bool) var roll = false
 export (Vector2) var shapeDimensions = Vector2(25, 25) setget setShapeDim
@@ -23,6 +25,10 @@ export (String) var hideSoundNode = null
 export (String) var hideSoundGroup = null
 
 var fanForce = null
+
+var hazardDict = {
+	OBJECT_MATERIAL.WOOD : global.HAZ.ACID,
+	OBJECT_MATERIAL.METAL : global.HAZ.ELEC}
 
 var rectObjBelow = null
 #var rectObjsAbove = []
@@ -59,6 +65,10 @@ var deactivated = false
 
 var astroTouchBugOn = false
 var astroTouching = false
+
+var hazardObject = null
+var hazardAreaID = null
+var objectShape = null
 
 func getterFunction():
 	pass
@@ -157,6 +167,11 @@ func _ready():
 	
 	setInteractVars()
 	set_physics_process(false)
+	
+	for child in get_children():
+		if child is CollisionShape2D || child is CollisionPolygon2D:
+			objectShape = child
+			break
 	#if get_name() == "PROTO_OBJ_RECT2":
 	#	set_global_position(get_global_position() - Vector2(0, 100))
 	
@@ -246,6 +261,47 @@ func activate():
 func fanEnabled(enabled, fanAccel = null):
 	fanForce = fanAccel if enabled else null
 	
+	
+func hazardEnabled(enabled, hazType, hazAreaID, hazObj):
+	
+	if !enabled:
+		if hazAreaID == hazardAreaID:
+			hazObj.removeHazardShape(get_name())
+			hazardObject == null
+		return
+		
+	if (hazardDict[objectMaterial] != hazType): return
+	
+	if hazardObject != null: return
+	
+	hazardObject = hazObj
+	hazardAreaID = hazAreaID
+	
+	hazObj.addHazardShape(get_name(), objectShape, hazAreaID)
+	
+	#var dupShape = null
+#	var dupShapeTrans = null
+#
+#	dupHazardShape = objectShape.duplicate()
+#
+#	dupHazardShape.add_to_group(get_name())
+#
+#	hazArea.add_child(dupHazardShape)
+#	dupHazardShape.set_owner(hazArea)
+#	processHazard()
+	
+	#dupShape.set_global_transform(dupShapeTrans)
+	#dupShape.set_global_scale(dupShape.get_global_scale()*1.05)
+		
+				
+	
+func processHazard():
+	if hazardObject == null: return
+	
+	hazardObject.updateHazardShape(get_name(), get_global_transform())
+	
+	
+	
 func _integrate_forces(state):
 	
 #	if get_parent() == null:
@@ -323,6 +379,8 @@ func _integrate_forces(state):
 		#local coll point to object plus global position of object
 		var pos = state.get_contact_collider_position(i) + get_global_position()
 		contactPosDict[pos] = state.get_contact_collider_object(i)
+
+	processHazard()
 
 	checkForAndMarkAsChanged()
 	thisObjectCheckChange()
