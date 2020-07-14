@@ -31,6 +31,7 @@ extends Node
 
 
 enum ZOOM {NORM, CLOSE, FAR, MEGA_FAR}
+enum HAZ {ACID, ELEC}
 
 var availableChar = [CharacterRes.CHAR.RUS,
 					 CharacterRes.CHAR.USA,
