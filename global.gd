@@ -31,7 +31,12 @@ extends Node
 
 
 enum ZOOM {NORM, CLOSE, FAR, MEGA_FAR}
+enum MAT {WOOD, METAL, CONCRETE}
 enum HAZ {ACID, ELEC}
+
+var hazardDict = {
+	MAT.WOOD : HAZ.ACID,
+	MAT.METAL : HAZ.ELEC}
 
 var availableChar = [CharacterRes.CHAR.RUS,
 					 CharacterRes.CHAR.USA,

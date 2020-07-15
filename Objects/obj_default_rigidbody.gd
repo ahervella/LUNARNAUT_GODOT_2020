@@ -2,12 +2,12 @@ tool
 extends RigidBody2D
 
 enum OBJECT_WEIGHT{HEAVY, MEDIUM, LIGHT}
-enum OBJECT_MATERIAL{METAL, WOOD}
+#enum OBJECT_MATERIAL{METAL, WOOD}
 
 const LINEAR_DAMP = 0.01
 const DEFAULT_FRIC = 0.7
 
-export (OBJECT_MATERIAL) var objectMaterial = OBJECT_MATERIAL.METAL
+export (global.MAT) var objectMaterial = global.MAT.METAL
 export (OBJECT_WEIGHT) var objectWeight = OBJECT_WEIGHT.MEDIUM setget changeWeight
 export (bool) var roll = false
 export (Vector2) var shapeDimensions = Vector2(25, 25) setget setShapeDim
@@ -26,9 +26,6 @@ export (String) var hideSoundGroup = null
 
 var fanForce = null
 
-var hazardDict = {
-	OBJECT_MATERIAL.WOOD : global.HAZ.ACID,
-	OBJECT_MATERIAL.METAL : global.HAZ.ELEC}
 
 var rectObjBelow = null
 #var rectObjsAbove = []
@@ -270,7 +267,7 @@ func hazardEnabled(enabled, hazType, hazAreaID, hazObj):
 			hazardObject == null
 		return
 		
-	if (hazardDict[objectMaterial] != hazType): return
+	if (global.hazardDict[objectMaterial] != hazType): return
 	
 	if hazardObject != null: return
 	

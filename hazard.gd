@@ -40,12 +40,24 @@ func _on_HAZARD_AREA_body_exited(body):
 
 
 func bodyEntered(body, areaID):
-	if !body.is_in_group("astro") && !body.is_in_group("object"): return
-	body.hazardEnabled(true, hazardType, areaID, self)
+	if (!body.is_in_group("astro") 
+	&& !body.is_in_group("object")
+	&& !body.is_in_group("block")): return
+	
+	if body.is_in_group("block"):
+		body.get_parent().hazardEnabled(true, hazardType, areaID, self)
+	else:
+		body.hazardEnabled(true, hazardType, areaID, self)
 	
 func bodyExited(body, areaID):
-	if !body.is_in_group("astro") && !body.is_in_group("object"): return
-	body.hazardEnabled(false, hazardType, areaID, self)
+	if (!body.is_in_group("astro") 
+	&& !body.is_in_group("object")
+	&& !body.is_in_group("block")): return
+	
+	if body.is_in_group("block"):
+		body.get_parent().hazardEnabled(false, hazardType, areaID, self)
+	else:
+		body.hazardEnabled(false, hazardType, areaID, self)
 
 func addHazardShape(hazID, objShape, parentAreaID):
 	var dupShape = objShape.duplicate()
