@@ -536,6 +536,10 @@ func disconnectPlug():
 			connPlug.parentCable.END_PIN = null
 		
 		
+		
+		
+
+		
 			
 	connPlug = null
 	
@@ -549,7 +553,7 @@ func transmitEntity(entity):
 	if connPlug != null:
 		return connPlug.receivedEntity(entity)
 	
-	return ("NO connPlug found at " + get_name())
+	return ("NO connPlug found at " + get_name()) 
 	
 	
 	
@@ -773,5 +777,33 @@ func CSWrapApplyDependantChanges(CSWrap):
 	
 	
 	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	#ROOT NODE SCRIPT (extends lvl.gd)
+	
+	#func process():
+	#if sendingPlug.transmitEntity("hi"):
+		#open door
+		
+		
+		
+		
+		
+		
+	#in the receivingPlug script:
+	
+	#extend plug.gd
+	#receiveEntity(entity):
+	#	if entity is String and entity == "hi":
+	#		return true
+	#	else return false
+		
 	
 	

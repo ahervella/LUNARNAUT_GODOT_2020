@@ -47,7 +47,9 @@ var touchStateDict = {"stick" : TOUCH_STATE.NO_TOUCH,
 "jump" : TOUCH_STATE.NO_TOUCH, 
 "interact" : TOUCH_STATE.NO_TOUCH, 
 "cs" : TOUCH_STATE.NO_TOUCH, 
-"pause" : TOUCH_STATE.NO_TOUCH}
+"pause" : TOUCH_STATE.NO_TOUCH,
+"inventory" : TOUCH_STATE.NO_TOUCH,
+"light" : TOUCH_STATE.NO_TOUCH}
 
 
 var movingUp = -1
@@ -65,6 +67,18 @@ export (NodePath) var touchInteractPath = null
 onready var touchInteract = get_node(touchInteractPath)
 var touchInteractXBound = []
 var touchInteractYBound = []
+
+onready var lightTween = Tween.new()
+export (NodePath) var touchLightPath = null
+onready var touchLight = get_node(touchLightPath)
+var touchLightXBound = [700, 965]
+var touchLightYBound = [520, null]
+
+onready var inventoryTween = Tween.new()
+export (NodePath) var touchInventoryPath = null
+onready var touchInventory = get_node(touchInventoryPath)
+var touchInventoryXBound = [965, null]
+var touchInventoryYBound = [520, null]
 
 onready var pauseTween = Tween.new()
 export (NodePath) var touchPausePath = null
@@ -143,6 +157,8 @@ func _ready():
 	touchButton.set_modulate(Color(1, 1, 1, 0))
 	touchStick.set_modulate(Color(1, 1, 1, 0))
 	touchInteract.set_modulate(Color(1, 1, 1, 0))
+	touchInventory.set_modulate(Color(1, 1, 1, 0.25))
+	touchLight.set_modulate(Color(1, 1, 1, 0.25))
 	touchPause.set_modulate(Color(1, 1, 1, 0.25))
 	touchCS.set_modulate(Color(1, 1, 1, 0.25))
 	touchPause_scanBG.hide()
@@ -166,6 +182,9 @@ func _ready():
 	
 	add_child(interactTween)
 	#interactTween.interpolate_property(touchInteract, "modulate", Color(1, 1, 1, 1), Color(1, 1, 1, 0), 1 , 0, Tween.EASE_OUT, 0)
+	
+	add_child(lightTween)
+	add_child(interactTween)
 	
 	add_child(csTween)
 	#csTween.interpolate_property(touchCS, "modulate", Color(1, 1, 1, 1), Color(1, 1, 1, 0.5), 1 , 0, Tween.EASE_OUT, 0)
@@ -224,6 +243,14 @@ func _input(event):
 				|| (event is InputEventScreenTouch && !event.is_pressed() 
 					&& ongoing_cs_drag == event.get_index())  )):
 				joyCS(event)
+			
+			elif (event.position.x > touchLightXBound[0] && event.position.x < touchLightXBound[1]
+			&& event.position.y > touchLightYBound[0]):
+				joyLight(event)
+				
+			elif (event.position.x > touchInventoryXBound[0]
+			&& event.position.y > touchInventoryYBound[0]):
+				joyInventory(event)
 			
 			#if event is touch onto screen and left half of screen, 
 			#OR   if button is showing AND (drag event or meets condition to reset)
@@ -312,6 +339,26 @@ func showInteract(visible, pressed):
 	
 	interactTween.start()
 		
+		
+func showLight(pressed):
+	var currColor = touchLight.get_modulate()
+	
+	if (pressed):
+		lightTween.interpolate_property(touchLight, "modulate", currColor, Color(1, 1, 1, 0.25), 1 , 0, Tween.EASE_OUT, 0)
+	else:
+		lightTween.interpolate_property(touchLight, "modulate", currColor, Color(1, 1, 1, 0), 1 , 0, Tween.EASE_OUT, 0)
+	lightTween.start()
+	
+func showInventory(pressed):
+	var currColor = touchInventory.get_modulate()
+	
+	if (pressed):
+		inventoryTween.interpolate_property(touchInventory, "modulate", currColor, Color(1, 1, 1, 0.25), 1 , 0, Tween.EASE_OUT, 0)
+	else:
+		inventoryTween.interpolate_property(touchInventory, "modulate", currColor, Color(1, 1, 1, 0), 1 , 0, Tween.EASE_OUT, 0)
+	inventoryTween.start()
+	
+	
 func showCS(visible, pressed):
 	if disableCS: return
 	csButtonIsShowing = false
@@ -422,6 +469,24 @@ func joyStick(event):
 		setTouchState("stick", TOUCH_STATE.JUST_RELEASED)
 		showStick(false)
 
+
+func joyLight(event):
+	if event is InputEventScreenTouch:
+		if event.is_pressed():
+			setTouchState("light", TOUCH_STATE.JUST_TOUCHED)
+			showLight(true)
+		elif event.is_pressed():
+			setTouchState("light", TOUCH_STATE.JUST_RELEASED)
+			showLight(false)
+	
+func joyInventory(event):
+	if event is InputEventScreenTouch:
+		if event.is_pressed():
+			setTouchState("inventory", TOUCH_STATE.JUST_TOUCHED)
+			showInventory(true)
+		elif event.is_pressed():
+			setTouchState("inventory", TOUCH_STATE.JUST_RELEASED)
+			showInventory(false)
 
 func joyCS(event):
 	#if screen touched (and event is "pressed")
