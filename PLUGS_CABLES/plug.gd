@@ -1,6 +1,8 @@
 tool
 extends "res://SCRIPTS/INTERACT/intr_default.gd"
 
+const hazardScene = preload("res://SCENES/hazard.tscn")
+
 enum PLUG_TYPE {
 	AUX,
 	PWR,
@@ -37,8 +39,10 @@ export (bool) var male = false setget setPlugSex
 export (bool) var isFixedPort = false setget setIsFixedPort
 #for identifying if a plug is temporarily fixed due to its connection
 export (bool) var tempFixed = false
-export (PLUG_REGION) var plugRegion = PLUG_TYPE.AUX setget setPlugRegion
-export (PLUG_TYPE) var plugType = PLUG_REGION.USA setget setPlugType
+export (PLUG_REGION) var plugRegion = PLUG_REGION.USA setget setPlugRegion
+export (PLUG_TYPE) var plugType = PLUG_TYPE.AUX setget setPlugType
+export (bool) var isPowerHazard = false setget setPowerHazard
+var powerPlugHazard = null
 #connPlug is set by cable when its cable end collision area runs into another
 #cable or port collision area
 var connPlug = null setget setConnection
@@ -95,6 +99,37 @@ func setLightMask(val):
 	$plugSprite.set_light_mask(val)
 	
 	
+func setPowerHazard(val):
+	
+	if plugType != PLUG_TYPE.PWR:
+		isPowerHazard = false
+		return
+	
+	isPowerHazard = val
+	
+	if Engine.editor_hint: return
+	
+	if val:
+		
+		powerPlugHazard = hazardScene.instance()
+		
+		add_child(powerPlugHazard)
+		powerPlugHazard.set_owner(powerPlugHazard)
+		
+		powerPlugHazard.clearTextures()
+		
+		var plugShape = null
+		for child in get_children():
+			if child is Area2D:
+				plugShape = child.get_child(0)
+				break
+				
+		powerPlugHazard.setCustomShape(plugShape)
+
+	else:
+		remove_child(powerPlugHazard)
+		powerPlugHazard = null
+	
 func _ready():
 	#only proccess at run time
 	if Engine.editor_hint: return
@@ -124,11 +159,17 @@ func setPlugSex(val):
 	
 func setPlugRegion(val):
 	plugRegion = val
+	if !Engine.editor_hint: return
 	setPlugTcAuto()
 	
 func setPlugType(val):
 	plugType = val
 	setPlugTcAuto()
+	
+	if !Engine.editor_hint: return
+	setPowerHazard(isPowerHazard)
+	
+	property_list_changed_notify()
 	
 func setPlugTcAuto():
 	
