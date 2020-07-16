@@ -3,8 +3,8 @@ extends Sprite
 const DUP_NAME = "duplicateShadow"
 
 export (global.MAT) var blockMaterial = global.MAT.CONCRETE
-var hazardObject = null
-var hazardAreaID = null
+var hazardObjectAreaDict = {}
+#var hazardAreaIDs = []
 onready var blockShape = get_node("StaticBody2D/CollisionShape2D")
 
 export (bool) var isRoomWallFloor = true setget setLightMask
@@ -39,29 +39,60 @@ func setSetLightMask(isWallFloor):
 	lo.property_list_changed_notify()
 	property_list_changed_notify()
 
+func getHazardID():
+	return get_name()
+
+func getCurrHazObj():
+	if hazardObjectAreaDict.size() == 0: return null
+	return hazardObjectAreaDict.keys()[0]
+		
+func getCurrHazArea():
+	if hazardObjectAreaDict.size() == 0: return null
+	return hazardObjectAreaDict[getCurrHazObj()][0]
+
 func hazardEnabled(enabled, hazType, hazAreaID, hazObj):
+	
+	if hazAreaID == getHazardID(): return
+	
 	if !enabled:
-		if hazAreaID == hazardAreaID:
-			hazObj.removeHazardShape(get_name())
-			hazardObject == null
-			set_process(false)
+		if hazardObjectAreaDict.has(hazObj) && hazardObjectAreaDict[hazObj].has(hazAreaID):
+			#var postAddToDiffHaz = false
+			#if hazardAreaIDs[0] == hazAreaID && hazardObjects.size() > 1:
+			#	postAddToDiffHaz = true
+			#if hazardObjects.has(hazObj):
+			hazardObjectAreaDict[hazObj].erase(hazAreaID)
+			if hazardObjectAreaDict[hazObj].size() == 0:
+				#var currHazObj = hazardObjectAreaDict.keys()[0]
+				var assignNewHazObj = getCurrHazObj() == hazObj
+				hazardObjectAreaDict.erase(hazObj)
+				hazObj.removeHazardShape(hazAreaID)
+				
+				if hazardObjectAreaDict.size() > 0 && assignNewHazObj:
+					getCurrHazObj().addHazardShape(getHazardID(), blockShape, self, getCurrHazArea())
+			#if postAddToDiffHaz:
+				
+			
 		return
 		
 	if (global.hazardDict[blockMaterial] != hazType): return
 	
-	if hazardObject != null: return
+	if hazObj.isAreaInSourceRoute(getHazardID(), hazAreaID): return
 	
-	hazardObject = hazObj
-	hazardAreaID = hazAreaID
+	if !hazardObjectAreaDict.has(hazObj):
+		hazardObjectAreaDict[hazObj] = []
 	
-	hazObj.addHazardShape(get_name(), blockShape, hazAreaID)
+	if hazardObjectAreaDict[hazObj].has(hazAreaID): return
+	hazardObjectAreaDict[hazObj].append(hazAreaID)
 	
-	set_process(true)
-
-func _process(delta):
-	if hazardObject == null: return
-	
-	hazardObject.updateHazardShape(get_name(), get_global_transform())
+	if hazardObjectAreaDict.size() == 1:
+		hazObj.addHazardShape(getHazardID(), blockShape, self, hazAreaID)
+#
+#	set_process(true)
+#
+#func _process(delta):
+#	if hazardObject == null: return
+#
+#	hazardObject.updateHazardShape(get_name(), get_global_transform())
 	
 	
 	

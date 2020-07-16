@@ -20,6 +20,8 @@ var customCollShape = null
 
 var childAreaDict = {}
 
+var hazIDNodeDict = {}
+
 
 func _ready():
 	if Engine.editor_hint: return
@@ -28,10 +30,14 @@ func _ready():
 	
 	if customCollShapePath != null:
 		setCustomShape(get_node(customCollShapePath))
+		
+	
 	
 func setHazardAreaAndShape():
 	hazardArea = get_node("HAZARD_AREA")
-	hazardDefShape = get_node("HAZARD_AREA/HAZARD_SHAPE")	
+	hazardDefShape = get_node("HAZARD_AREA/HAZARD_SHAPE")
+	
+	hazIDNodeDict["HAZARD_AREA"] = hazardArea
 
 func setAcidTexture(val):
 	acidTexture = val
@@ -59,11 +65,12 @@ func setEnabled(val):
 	setHazardAreaAndShape()
 
 	for child in hazardArea.get_children():
-		child.set_disabled(!val)
+		#child.set_disabled(!val)
+		child.set_deferred("disabled", !val)
 		
 	if customCollShape != null:
-		hazardDefShape.set_disabled(true)
-
+		#hazardDefShape.set_disabled(true)
+		hazardDefShape.set_deferred("disabled", true)
 
 func clearCustomShape():
 	#customCollShapePath = val
@@ -103,7 +110,7 @@ func enabledDefaultShape(enable):
 	
 	#if Engine.editor_hint: return
 	if hazardDefShape == null: return
-	hazardDefShape.set_disabled(!enable)
+	hazardDefShape.set_deferred("disabled", !enable)#set_disabled(!enable)
 	hazardDefShape.set_visible(enable)
 
 func clearTextures():
@@ -143,27 +150,59 @@ func bodyExited(body, areaID):
 	else:
 		body.hazardEnabled(false, hazardType, areaID, self)
 
-func addHazardShape(hazID, objShape, parentAreaID):
+
+func isAreaInSourceRoute(hazID, startingHazID):
+	var parentHazID = null
+	for key in childAreaDict.keys():
+		if childAreaDict[key].has(startingHazID):
+			parentHazID = key
+			break
+	if parentHazID == null: return false
+	if parentHazID == hazardArea.get_name(): return false
+	else:
+		if parentHazID == hazID: return true
+		return isAreaInSourceRoute(hazID, parentHazID)
+		
+
+func addHazardShape(hazID, objShape, objToAddTo, parentAreaID):
+	
+	call_deferred("addHazardShapeDEFERRED", hazID, objShape, objToAddTo, parentAreaID)
+	
+	
+func addHazardShapeDEFERRED(hazID, objShape, objToAddTo, parentAreaID):
 	if Engine.editor_hint: return
 	
+	#if isParentLoop(): return
+	
 	var dupShape = objShape.duplicate()
+	dupShape.set_global_scale(objShape.get_global_scale() * 1.05)
 	var newArea = Area2D.new()
 	newArea.set_name(hazID)
 	
-	add_child(newArea)
-	newArea.set_owner(self)
+	objToAddTo.add_child(newArea)
+	newArea.set_owner(objToAddTo)
 	
-	newArea.connect("body_entered", self, "bodyEntered", [hazID])
-	newArea.connect("body_exited", self, "bodyExited", [hazID])
+	hazIDNodeDict[hazID] = newArea
 	
+	
+	
+	#yield(get_tree(), "idle_frame")
 	newArea.add_child(dupShape)
 	dupShape.set_owner(newArea)
 	
-	childAreaDict[parentAreaID] = hazID
+	dupShape.set_global_scale(objShape.get_global_scale() * 1.05)
+	
+	if !childAreaDict.has(parentAreaID):
+		childAreaDict[parentAreaID] = []
+		
+	childAreaDict[parentAreaID].append(hazID)
 	
 	
 	
-	updateHazardShape(hazID, objShape.get_global_transform())
+	#updateHazardShape(hazID, objShape.get_global_transform())
+	
+	newArea.connect("body_entered", self, "bodyEntered", [hazID])
+	newArea.connect("body_exited", self, "bodyExited", [hazID])
 	
 func updateHazardShape(hazID, objTransform):
 	if Engine.editor_hint: return
@@ -177,16 +216,22 @@ func updateHazardShape(hazID, objTransform):
 func removeHazardShape(hazID):
 	if Engine.editor_hint: return
 
-	for child in get_children():
-		if child.get_name() == hazID:
-			remove_child(child)
+	for key in hazIDNodeDict.keys():
+		if key == hazID:
+			#remove_child(child)
+			if hazIDNodeDict[key] != hazardArea:
+				hazIDNodeDict[key].queue_free()
+				hazIDNodeDict.erase(key)
 			
 			if childAreaDict.has(hazID):
-				removeHazardShape(childAreaDict[hazID])
+				for haz in childAreaDict[hazID]:
+					removeHazardShape(haz)
+				
+				childAreaDict.erase(hazID)
 				
 			for key in childAreaDict.keys():
-				if childAreaDict[key] == hazID:
-					childAreaDict.erase(key)
+				if childAreaDict[key].has(hazID):
+					childAreaDict[key].erase(key)
 					break
 			
 			return

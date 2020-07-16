@@ -41,7 +41,7 @@ export (bool) var isFixedPort = false setget setIsFixedPort
 export (bool) var tempFixed = false
 export (PLUG_REGION) var plugRegion = PLUG_REGION.USA setget setPlugRegion
 export (PLUG_TYPE) var plugType = PLUG_TYPE.AUX setget setPlugType
-export (bool) var isPowerHazard = false setget setPowerHazard
+export (bool) var isPowerHazard = false setget setIsPowerHazard
 var powerPlugHazard = null
 #connPlug is set by cable when its cable end collision area runs into another
 #cable or port collision area
@@ -64,6 +64,8 @@ var childRemovedException = false
 
 var changesApplied = false
 var triedConn = null
+
+var readyDone = false
 
 func setIsFixedPort(val):
 	if val:
@@ -99,7 +101,7 @@ func setLightMask(val):
 	$plugSprite.set_light_mask(val)
 	
 	
-func setPowerHazard(val):
+func setIsPowerHazard(val):
 	
 	if plugType != PLUG_TYPE.PWR:
 		isPowerHazard = false
@@ -107,14 +109,19 @@ func setPowerHazard(val):
 	
 	isPowerHazard = val
 	
+	if Engine.editor_hint || !readyDone: return
+	attempAddPowerHazard()
+	
+	
+func attempAddPowerHazard():
 	if Engine.editor_hint: return
 	
-	if val:
+	if isPowerHazard:
 		
 		powerPlugHazard = hazardScene.instance()
 		
 		add_child(powerPlugHazard)
-		powerPlugHazard.set_owner(powerPlugHazard)
+		powerPlugHazard.set_owner(self)
 		
 		powerPlugHazard.clearTextures()
 		
@@ -148,10 +155,11 @@ func _ready():
 		setLightMask(get_light_mask())
 #	readyEXT()#call_deferred("readyEXT")
 #
+	readyDone = true
 #func readyEXT():
 #	pass
 	
-	
+	attempAddPowerHazard()
 	
 func setPlugSex(val):
 	male = val
@@ -166,8 +174,8 @@ func setPlugType(val):
 	plugType = val
 	setPlugTcAuto()
 	
-	if !Engine.editor_hint: return
-	setPowerHazard(isPowerHazard)
+	#if !Engine.editor_hint: return
+	setIsPowerHazard(isPowerHazard)
 	
 	property_list_changed_notify()
 	

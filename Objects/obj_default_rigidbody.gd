@@ -63,8 +63,7 @@ var deactivated = false
 var astroTouchBugOn = false
 var astroTouching = false
 
-var hazardObject = null
-var hazardAreaID = null
+var hazardObjectAreaDict = {}
 var objectShape = null
 
 func getterFunction():
@@ -258,23 +257,53 @@ func activate():
 func fanEnabled(enabled, fanAccel = null):
 	fanForce = fanAccel if enabled else null
 	
+func getHazardID():
+	return get_name()
+	
+func getCurrHazObj():
+	if hazardObjectAreaDict.size() == 0: return null
+	return hazardObjectAreaDict.keys()[0]
+		
+func getCurrHazArea():
+	if hazardObjectAreaDict.size() == 0: return null
+	return hazardObjectAreaDict[getCurrHazObj()][0]
 	
 func hazardEnabled(enabled, hazType, hazAreaID, hazObj):
 	
+	if hazAreaID == getHazardID(): return
+	
 	if !enabled:
-		if hazAreaID == hazardAreaID:
-			hazObj.removeHazardShape(get_name())
-			hazardObject == null
+		if hazardObjectAreaDict.has(hazObj) && hazardObjectAreaDict[hazObj].has(hazAreaID):
+			#var postAddToDiffHaz = false
+			#if hazardAreaIDs[0] == hazAreaID && hazardObjects.size() > 1:
+			#	postAddToDiffHaz = true
+			#if hazardObjects.has(hazObj):
+			hazardObjectAreaDict[hazObj].erase(hazAreaID)
+			if hazardObjectAreaDict[hazObj].size() == 0:
+				#var currHazObj = hazardObjectAreaDict.keys()[0]
+				var assignNewHazObj = getCurrHazObj() == hazObj
+				hazardObjectAreaDict.erase(hazObj)
+				hazObj.removeHazardShape(hazAreaID)
+				
+				if hazardObjectAreaDict.size() > 0 && assignNewHazObj:
+					getCurrHazObj().addHazardShape(getHazardID(), objectShape, self, getCurrHazArea())
+			#if postAddToDiffHaz:
+				
+			
 		return
 		
 	if (global.hazardDict[objectMaterial] != hazType): return
 	
-	if hazardObject != null: return
+	if hazObj.isAreaInSourceRoute(getHazardID(), hazAreaID): return
 	
-	hazardObject = hazObj
-	hazardAreaID = hazAreaID
+	if !hazardObjectAreaDict.has(hazObj):
+		hazardObjectAreaDict[hazObj] = []
 	
-	hazObj.addHazardShape(get_name(), objectShape, hazAreaID)
+	if hazardObjectAreaDict[hazObj].has(hazAreaID): return
+	hazardObjectAreaDict[hazObj].append(hazAreaID)
+	
+	if hazardObjectAreaDict.size() == 1:
+		hazObj.addHazardShape(getHazardID(), objectShape, self, hazAreaID)
 	
 	#var dupShape = null
 #	var dupShapeTrans = null
@@ -292,10 +321,10 @@ func hazardEnabled(enabled, hazType, hazAreaID, hazObj):
 		
 				
 	
-func processHazard():
-	if hazardObject == null: return
-	
-	hazardObject.updateHazardShape(get_name(), get_global_transform())
+#func processHazard():
+#	if hazardObject == null: return
+#
+#	hazardObject.updateHazardShape(get_name(), get_global_transform())
 	
 	
 	
@@ -377,7 +406,7 @@ func _integrate_forces(state):
 		var pos = state.get_contact_collider_position(i) + get_global_position()
 		contactPosDict[pos] = state.get_contact_collider_object(i)
 
-	processHazard()
+#	processHazard()
 
 	checkForAndMarkAsChanged()
 	thisObjectCheckChange()
