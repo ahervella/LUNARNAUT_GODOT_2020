@@ -50,7 +50,7 @@ func getCurrHazArea():
 	if hazardObjectAreaDict.size() == 0: return null
 	return hazardObjectAreaDict[getCurrHazObj()][0]
 
-func hazardEnabled(enabled, hazType, hazAreaID, hazObj):
+func hazardEnabled(enabled, hazType, hazAreaID, hazObj, killAstro):
 	
 	if hazAreaID == getHazardID(): return
 	

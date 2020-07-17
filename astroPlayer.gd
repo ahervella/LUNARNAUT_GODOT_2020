@@ -88,6 +88,7 @@ var touchingEnemies = []
 
 const HAZARD_IMMUNE_TIME = 0.75
 var onHazard = false
+var onHazardKillAstro = false
 
 #the current item astro is in
 var currItems = []
@@ -277,9 +278,9 @@ func enableShadowsSetter(val):
 
 
 
-func hazardEnabled(enabled, hazType, hazAreaID, hazObject):
+func hazardEnabled(enabled, hazType, hazAreaID, hazObject, killAstro):
 	onHazard = enabled
-
+	onHazardKillAstro = killAstro
 
 func _physics_process(delta):
 	
@@ -429,6 +430,10 @@ func fanEnabled(enabled, fanAccel = null):
 
 
 func ProcessHazards():
+	if onHazardKillAstro && onHazard:
+		set_health(2)
+		TakeDamage(null, HAZARD_IMMUNE_TIME)
+		return
 	if !onHazard: return
 	TakeDamage(null, HAZARD_IMMUNE_TIME)
 
@@ -1006,19 +1011,22 @@ func dec_health():
 
 	#trigger death animation and turn off controls
 	if (health_code <= 1):
-		global.controls_enabled = false
+		triggerDeath()
 	
-		if(dead):
-			return
+func triggerDeath():
+	global.controls_enabled = false
+	
+	if(dead):
+		return
 	
 		#used incase falling after getting hit by nora, triggered in set_anim function
 		#deadFalling = true
 
 		#triggers var that prevents other anims in set_anim function
-		preDeath = true
+	preDeath = true
 		
 		
-		global.newTimer(0.5, funcref(self, "checkIfDeathGrounded"))
+	global.newTimer(0.5, funcref(self, "checkIfDeathGrounded"))
 		
 		
 func checkIfDeathGrounded():

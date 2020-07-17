@@ -6,6 +6,7 @@ extends Sprite
 export (Texture) var acidTexture setget setAcidTexture
 export (Texture) var elecTexture setget setElectTexture
 export (bool) var enabled = true setget setEnabled
+export (bool) var deathUponTouchingSource = false
 export (NodePath) var customCollShapePath = null 
 
 export (global.HAZ) var hazardType = global.HAZ.ACID setget setTexture
@@ -119,14 +120,14 @@ func clearTextures():
 	set_texture(null)
 
 func _on_HAZARD_AREA_body_entered(body):
-	bodyEntered(body, "HAZARD_AREA")
+	bodyEntered(body, "HAZARD_AREA", deathUponTouchingSource)
 
 
 func _on_HAZARD_AREA_body_exited(body):
 	bodyExited(body, "HAZARD_AREA")
 
 
-func bodyEntered(body, areaID):
+func bodyEntered(body, areaID, killAstro = false):
 	if Engine.editor_hint: return
 	
 	if (!body.is_in_group("astro") 
@@ -134,9 +135,9 @@ func bodyEntered(body, areaID):
 	&& !body.is_in_group("block")): return
 	
 	if body.is_in_group("block"):
-		body.get_parent().hazardEnabled(true, hazardType, areaID, self)
+		body.get_parent().hazardEnabled(true, hazardType, areaID, self, killAstro)
 	else:
-		body.hazardEnabled(true, hazardType, areaID, self)
+		body.hazardEnabled(true, hazardType, areaID, self, killAstro)
 	
 func bodyExited(body, areaID):
 	if Engine.editor_hint: return
@@ -146,9 +147,9 @@ func bodyExited(body, areaID):
 	&& !body.is_in_group("block")): return
 	
 	if body.is_in_group("block"):
-		body.get_parent().hazardEnabled(false, hazardType, areaID, self)
+		body.get_parent().hazardEnabled(false, hazardType, areaID, self, false)
 	else:
-		body.hazardEnabled(false, hazardType, areaID, self)
+		body.hazardEnabled(false, hazardType, areaID, self, false)
 
 
 func isAreaInSourceRoute(hazID, startingHazID):

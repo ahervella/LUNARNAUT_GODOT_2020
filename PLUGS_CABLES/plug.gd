@@ -2,6 +2,7 @@ tool
 extends "res://SCRIPTS/INTERACT/intr_default.gd"
 
 const hazardScene = preload("res://SCENES/hazard.tscn")
+const sparkScene = preload("res://SCENES/PLUG_SCENES/PLUG_SPARK.tscn")
 
 enum PLUG_TYPE {
 	AUX,
@@ -132,10 +133,25 @@ func attempAddPowerHazard():
 				break
 				
 		powerPlugHazard.setCustomShape(plugShape)
+		powerPlugHazard.deathUponTouchingSource = true
+		setPlugSpark(true)
 
 	else:
 		remove_child(powerPlugHazard)
 		powerPlugHazard = null
+		
+		setPlugSpark(false)
+	
+func setPlugSpark(enable):
+	if enable:
+		var spark = sparkScene.instance()
+		add_child(spark)
+		spark.set_owner(self)
+		
+	else:
+		for child in get_children():
+			if child is AnimatedSprite:
+				child.queue_free()
 	
 func _ready():
 	#only proccess at run time
