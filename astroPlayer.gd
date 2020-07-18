@@ -36,6 +36,7 @@ export (bool) var showBlackBG = true setget showBlackBGSetter
 export (bool) var enableShadows = true setget enableShadowsSetter
 
 var vel = Vector2()
+var velTest = Vector2()
 var velFinal = Vector2()
 var max_move_speed = 200
 #var TERMINAL_VEL = 200
@@ -400,18 +401,20 @@ func _physics_process(delta):
 		
 		#vel = move_and_slide(velFinal, global.gravVect() * -1, true, 4, deg2rad(30), false)#(vel, Vector2(0, 1), Vector2.UP, false, 4, deg2rad(120), false)
 		
-		vel = move_and_slide_with_snap(velFinal, global.gravVect() * snapMag, global.gravVect() * -1, true, 4, deg2rad(45), false)
+		vel = move_and_slide_with_snap(velFinal, global.gravVect() * snapMag, global.gravVect() * -1, false, 4, deg2rad(45), false)
 
 		#vel = move_and_slide(vel, Vector2.UP, 5, 4, deg2rad(30))#(vel, Vector2(0, 1), Vector2.UP, false, 4, deg2rad(120), false)
 		
 		velFinal = velFinal.rotated((global.gravRadAng - deg2rad(90))* -1)
 		vel = velFinal
+		velTest = velFinal
 		
 		
 	#so that restrictAndMove2Point does not get transformed by change in gravity
 	else:
 		#vel = move_and_slide(velFinal, global.gravVect() * -1, true, 4, deg2rad(30), false)
-		vel = move_and_slide_with_snap(velFinal, global.gravVect() * snapMag, global.gravVect() * -1, true, 4, deg2rad(45), false)
+		vel = move_and_slide_with_snap(velFinal, global.gravVect() * snapMag, global.gravVect() * -1, false, 4, deg2rad(45), false)
+		velTest = vel
 	
 	if get_slide_count() > 0:
 		if groundedBubble:
