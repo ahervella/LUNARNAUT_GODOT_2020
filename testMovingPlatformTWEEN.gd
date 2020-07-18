@@ -12,7 +12,7 @@ enum EASE_TYPE {EASE_IN, EASE_OUT, EASE_IN_OUT, EASE_OUT_IN}
 
 export (bool) var movingPlatform = false setget setMoving
 export (NodePath) var customPath2D = null
-export (PackedScene) var templatePath = null
+export (NodePath) var templatePath = null
 export (TRANS_TYPE) var transitionType = TRANS_TYPE.TRANS_QUART
 export (EASE_TYPE) var easeType = EASE_TYPE.EASE_IN_OUT
 export (bool) var loop = true
@@ -28,7 +28,7 @@ var stopLength = null
 
 onready var tween = Tween.new()
 var blah = Vector2(1000, 0)
-onready var pathNode = get_node(customPath2D)
+onready var pathNode = get_node(customPath2D) if customPath2D!= null else get_node(templatePath).get_child(0)
 
 onready var debugLine2D = Line2D.new()
 
@@ -44,8 +44,18 @@ func readyDeferred():
 	if get_tree().is_debugging_collisions_hint():
 		get_parent().add_child(debugLine2D)
 		debugLine2D.set_owner(get_parent())
-		debugLine2D.points = pathNode.get_curve().get_baked_points()
-		debugLine2D.set_global_position(pathNode.get_global_position())
+		
+		var points : PoolVector2Array = [] #pathNode.get_curve().get_baked_points()
+		
+		var pathNodePos = pathNode.get_global_position()
+		var pathNodeScale = pathNode.get_global_scale()
+		var pathNodeRot = pathNode.get_global_rotation()
+		
+		for point in pathNode.get_curve().get_baked_points():
+			points.append((point * pathNodeScale).rotated(pathNodeRot) + pathNodePos)
+			
+		debugLine2D.points = points
+		#debugLine2D.set_global_position(pathNode.get_global_position())
 	
 	
 	tween.connect("tween_completed", self, "restartMovement")
@@ -55,7 +65,11 @@ func readyDeferred():
 	
 	
 func updatePos(curveDistance):
-	set_global_position(pathNode.get_curve().interpolate_baked(curveDistance) + pathNode.get_global_position())
+	var localPoint = pathNode.get_curve().interpolate_baked(curveDistance)
+	var pathNodePos = pathNode.get_global_position()
+	var pathNodeScale = pathNode.get_global_scale()
+	var pathNodeRot = pathNode.get_global_rotation()
+	set_global_position((localPoint * pathNodeScale).rotated(pathNodeRot) + pathNodePos)
 	stopLength = curveDistance
 	
 func setMoving(val):

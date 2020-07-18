@@ -144,7 +144,7 @@ func _ready():
 		return
 	
 	
-	print(get_parent().get_children())
+	#(get_parent().get_children())
 	
 	var camNodePathString = ""
 	
@@ -1142,7 +1142,7 @@ func TakeDamageImpactLaunch(direction):
 
 
 func _on_groundBubble_body_entered(body):
-	print(body.get_groups())
+	#(body.get_groups())
 	if body.is_in_group("platform") && platformDropDownCounter > PLATFORM_DROP_TIME:	
 		
 		body.fallThrough()
