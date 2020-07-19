@@ -1,6 +1,6 @@
 tool
 #added tool so it could be extended and not break
-extends Sprite
+extends KinematicBody2D
 
 enum MOVE_TYPE {LINEAR, CUSTOM_PATH}
 
@@ -22,8 +22,6 @@ export (bool) var changeDirection = true
 export (float) var pathTime = 4
 export (float) var delayChangeDirection = 0
 export (float) var easeTimeOnDisable = 2
-
-var kbNode = null
 
 var directionRev = false
 var readyDone = false
@@ -48,10 +46,6 @@ func readyDeferred():
 	add_child(tween)
 	tween.set_owner(self)
 
-	for child in get_children():
-		if child is KinematicBody2D:
-			kbNode = child
-			break
 	
 	if customPath2D != null && customPath2D != "":
 		pathNode = get_node(customPath2D)
@@ -59,18 +53,6 @@ func readyDeferred():
 		pathNode = get_node(templatePath).get_child(0)
 	
 	
-	drawDebugPathLine()
-	
-	
-	tween.connect("tween_completed", self, "restartMovement")
-	readyDone = true
-	
-	setMoving(movingPlatform)
-	
-	
-	
-	
-func drawDebugPathLine():
 	if get_tree().is_debugging_collisions_hint() && !pathNode == null:
 		get_parent().add_child(debugLine2D)
 		debugLine2D.set_owner(get_parent())
@@ -85,7 +67,13 @@ func drawDebugPathLine():
 			points.append((point * pathNodeScale).rotated(pathNodeRot) + pathNodePos)
 			
 		debugLine2D.points = points
+		#debugLine2D.set_global_position(pathNode.get_global_position())
 	
+	
+	tween.connect("tween_completed", self, "restartMovement")
+	readyDone = true
+	
+	setMoving(movingPlatform)
 	
 	
 func updatePos(curveDistance):
@@ -95,14 +83,10 @@ func updatePos(curveDistance):
 	var pathNodePos = pathNode.get_global_position()
 	var pathNodeScale = pathNode.get_global_scale()
 	var pathNodeRot = pathNode.get_global_rotation()
-	var kbLocalPos = kbNode.get_position()
 	set_global_position((localPoint * pathNodeScale).rotated(pathNodeRot) + pathNodePos)
-	
-	#IMPORTANT!!:
-	#For whatever reason, you need to directly set the kinematic body's position (even if (0, 0))
-	#in order for sync to physics to work properly, can't just change the parent position
-	kbNode.set_position(Vector2.ZERO)
-
+#	for child in get_children():
+#		if child is CollisionShape || child is CollisionPolygon2D:
+#			child.set_position(Vector2.ZERO)
 	pathNode.set_global_position(pathNodePos)
 	stopLength = curveDistance
 	
@@ -112,7 +96,7 @@ func setMoving(val):
 	
 	if !readyDone: return
 	
-	if (pathNode == null || kbNode == null) && !Engine.editor_hint:
+	if pathNode == null && !Engine.editor_hint:
 		movingPlatform = false
 		return
 	

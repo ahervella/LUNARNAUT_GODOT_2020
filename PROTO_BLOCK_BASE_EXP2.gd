@@ -1,6 +1,6 @@
 tool
 #added tool so it could be extended and not break
-extends Sprite
+extends KinematicBody2D
 
 enum MOVE_TYPE {LINEAR, CUSTOM_PATH}
 
@@ -23,7 +23,7 @@ export (float) var pathTime = 4
 export (float) var delayChangeDirection = 0
 export (float) var easeTimeOnDisable = 2
 
-var kbNode = null
+var kbNode = self
 
 var directionRev = false
 var readyDone = false
@@ -48,10 +48,6 @@ func readyDeferred():
 	add_child(tween)
 	tween.set_owner(self)
 
-	for child in get_children():
-		if child is KinematicBody2D:
-			kbNode = child
-			break
 	
 	if customPath2D != null && customPath2D != "":
 		pathNode = get_node(customPath2D)
@@ -60,6 +56,7 @@ func readyDeferred():
 	
 	
 	drawDebugPathLine()
+	#rearrangeKinematicBody2D()
 	
 	
 	tween.connect("tween_completed", self, "restartMovement")
@@ -67,6 +64,26 @@ func readyDeferred():
 	
 	setMoving(movingPlatform)
 	
+	
+func rearrangeKinematicBody2D():
+	for child in get_children():
+		if child is KinematicBody2D:
+			kbNode = child
+			break
+			
+	if kbNode == null: return
+	
+	var kbPos = kbNode.get_global_position()
+	remove_child(kbNode)
+	get_parent().add_child_below_node(self, kbNode)
+	kbNode.set_owner(get_parent())
+	kbNode.set_global_position(kbPos)
+	
+	var selfPos = get_global_position()
+	get_parent().remove_child(self)
+	kbNode.add_child(self)
+	set_owner(kbNode)
+	set_global_position(selfPos)
 	
 	
 	
@@ -95,14 +112,9 @@ func updatePos(curveDistance):
 	var pathNodePos = pathNode.get_global_position()
 	var pathNodeScale = pathNode.get_global_scale()
 	var pathNodeRot = pathNode.get_global_rotation()
-	var kbLocalPos = kbNode.get_position()
-	set_global_position((localPoint * pathNodeScale).rotated(pathNodeRot) + pathNodePos)
 	
-	#IMPORTANT!!:
-	#For whatever reason, you need to directly set the kinematic body's position (even if (0, 0))
-	#in order for sync to physics to work properly, can't just change the parent position
+	kbNode.get_parent().set_global_position((localPoint * pathNodeScale).rotated(pathNodeRot) + pathNodePos)
 	kbNode.set_position(Vector2.ZERO)
-
 	pathNode.set_global_position(pathNodePos)
 	stopLength = curveDistance
 	
@@ -112,7 +124,7 @@ func setMoving(val):
 	
 	if !readyDone: return
 	
-	if (pathNode == null || kbNode == null) && !Engine.editor_hint:
+	if (pathNode == null) && !Engine.editor_hint:
 		movingPlatform = false
 		return
 	
