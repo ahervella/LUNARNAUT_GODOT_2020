@@ -37,8 +37,6 @@ func setSetLightMask(isWallFloor):
 			break
 			
 	if lo == null: return
-	print("oaijdfoaisdjf")
-	print(isWallFloor)
 	var lightMask = 30 if isWallFloor else 6
 	
 	

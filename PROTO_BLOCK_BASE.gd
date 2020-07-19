@@ -1,6 +1,6 @@
 tool
 #added tool so it could be extended and not break
-extends Sprite
+extends KinematicBody2D
 
 enum MOVE_TYPE {LINEAR, CUSTOM_PATH}
 
@@ -23,7 +23,6 @@ export (float) var pathTime = 4
 export (float) var delayChangeDirection = 0
 export (float) var easeTimeOnDisable = 2
 
-var kbNode = null
 
 var directionRev = false
 var readyDone = false
@@ -33,9 +32,10 @@ var stopLength = null
 onready var tween = Tween.new()
 var blah = Vector2(1000, 0)
 var pathNode = null
+var pathNodeTrans = null
 
 onready var debugLine2D = Line2D.new()
-
+onready var debugLine2DPos = debugLine2D.get_global_position()
 	
 
 func _ready():
@@ -47,20 +47,18 @@ func readyDeferred():
 	
 	add_child(tween)
 	tween.set_owner(self)
-
-	for child in get_children():
-		if child is KinematicBody2D:
-			kbNode = child
-			break
 	
 	if customPath2D != null && customPath2D != "":
 		pathNode = get_node(customPath2D)
 	elif templatePath != null && templatePath != "":
 		pathNode = get_node(templatePath).get_child(0)
 	
+	if pathNode != null:
+		pathNodeTrans = pathNode.get_global_transform()
 	
 	drawDebugPathLine()
 	
+	 
 	
 	tween.connect("tween_completed", self, "restartMovement")
 	readyDone = true
@@ -77,12 +75,12 @@ func drawDebugPathLine():
 		
 		var points : PoolVector2Array = [] #pathNode.get_curve().get_baked_points()
 		
-		var pathNodePos = pathNode.get_global_position()
-		var pathNodeScale = pathNode.get_global_scale()
-		var pathNodeRot = pathNode.get_global_rotation()
+		var pnPos = pathNodeTrans.get_origin()
+		var pnScale = pathNodeTrans.get_scale()
+		var pnRot = pathNodeTrans.get_rotation()
 		
 		for point in pathNode.get_curve().get_baked_points():
-			points.append((point * pathNodeScale).rotated(pathNodeRot) + pathNodePos)
+			points.append((point * pnScale).rotated(pnRot) + pnPos)
 			
 		debugLine2D.points = points
 	
@@ -92,41 +90,54 @@ func updatePos(curveDistance):
 	if Engine.editor_hint: return
 	
 	var localPoint = pathNode.get_curve().interpolate_baked(curveDistance)
-	var pathNodePos = pathNode.get_global_position()
-	var pathNodeScale = pathNode.get_global_scale()
-	var pathNodeRot = pathNode.get_global_rotation()
-	var kbLocalPos = kbNode.get_position()
-	set_global_position((localPoint * pathNodeScale).rotated(pathNodeRot) + pathNodePos)
 	
-	#IMPORTANT!!:
-	#For whatever reason, you need to directly set the kinematic body's position (even if (0, 0))
-	#in order for sync to physics to work properly, can't just change the parent position
-	kbNode.set_position(Vector2.ZERO)
-
-	pathNode.set_global_position(pathNodePos)
+	#pathNodeTrans = pathNode.get_global_transform()
+	var pnPos = pathNodeTrans.get_origin()
+	var pnScale = pathNodeTrans.get_scale()
+	var pnRot = pathNodeTrans.get_rotation()
+	
+	set_global_position((localPoint * pnScale).rotated(pnRot) + pnPos)
+	
+	#pathNode.set_global_transform(pathNodeTrans)
+	debugLine2D.set_global_position(debugLine2DPos)
+	
 	stopLength = curveDistance
 	
 func setMoving(val):
 	
 	movingPlatform = val
 	
+	modifyGroups(val)
+	
 	if !readyDone: return
 	
-	if (pathNode == null || kbNode == null) && !Engine.editor_hint:
+	if (pathNode == null) && !Engine.editor_hint:
 		movingPlatform = false
 		return
+	
 	
 	
 
 	
 	if Engine.editor_hint: return
 	
+	modifyGroups(val)
+	
 	if val:
+		set_sync_to_physics(true)
 		if stopLength == null:
 			startMovement(directionRev, true)
 		else: resumeMovement()
 	else:
 		stopMovement()
+	
+func modifyGroups(isMoving):
+	if isMoving:
+		if !is_in_group("movingPlatform"):
+			add_to_group("movingPlatform")
+		
+	elif is_in_group("movingPlatform"):
+			remove_from_group("movingPlatform")
 	
 func startMovement(reversed, overrideDelay = false):
 	if Engine.editor_hint: return
