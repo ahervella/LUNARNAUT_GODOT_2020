@@ -139,6 +139,10 @@ func modifyGroups(isMoving):
 	elif is_in_group("movingPlatform"):
 			remove_from_group("movingPlatform")
 	
+	if Engine.editor_hint || !readyDone: return
+	
+	global.lvl().astroNode.checkOnMovingPlatform()
+	
 func startMovement(reversed, overrideDelay = false):
 	if Engine.editor_hint: return
 	

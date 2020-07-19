@@ -1,4 +1,4 @@
-extends Sprite
+extends Node2D#Sprite
 
 #ALEJANDRO (Feb-14-2020)
 #don't know if this is finished yet, but idealy the
