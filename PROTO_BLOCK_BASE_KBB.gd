@@ -1,6 +1,6 @@
 tool
 #added tool so it could be extended and not break
-extends Sprite
+extends KinematicBody2D
 
 enum MOVE_TYPE {LINEAR, CUSTOM_PATH}
 
