@@ -1,20 +1,27 @@
 tool
-extends Sprite
+extends "res://SCRIPTS/PROTO_BLOCK_BASE.gd"#extends Sprite
+
+
+
+
 const DUP_NAME = "duplicateShadow"
 
 export (global.MAT) var blockMaterial = global.MAT.CONCRETE
 var hazardObjectAreaDict = {}
 #var hazardAreaIDs = []
-onready var blockShape = get_node("StaticBody2D/CollisionShape2D")
+onready var blockShape = get_node("KinematicBody2D/CollisionShape2D")
 
 export (bool) var isRoomWallFloor = true setget setLightMask
 var lo
-#func _init():
+
 
 func _ready():
 	if Engine.editor_hint: return
 	
 	setSetLightMask(isRoomWallFloor)
+
+	#_ready() is a built in method so parent ready is already called
+
 
 func setLightMask(isWallFloor):
 	
@@ -86,16 +93,7 @@ func hazardEnabled(enabled, hazType, hazAreaID, hazObj, killAstro):
 	
 	if hazardObjectAreaDict.size() == 1:
 		hazObj.addHazardShape(getHazardID(), blockShape, self, hazAreaID)
-#
-#	set_process(true)
-#
-#func _process(delta):
-#	if hazardObject == null: return
-#
-#	hazardObject.updateHazardShape(get_name(), get_global_transform())
-	
-	
-	
+
 	
 	
 	

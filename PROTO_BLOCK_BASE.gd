@@ -1,4 +1,6 @@
-extends KinematicBody2D
+tool
+#added tool so it could be extended and not break
+extends Sprite
 
 enum MOVE_TYPE {LINEAR, CUSTOM_PATH}
 
@@ -11,8 +13,8 @@ TRANS_CIRC, TRANS_BOUNCE, TRANS_BACK}
 enum EASE_TYPE {EASE_IN, EASE_OUT, EASE_IN_OUT, EASE_OUT_IN}
 
 export (bool) var movingPlatform = false setget setMoving
-export (NodePath) var customPath2D = null
-export (NodePath) var templatePath = null
+export (NodePath) var customPath2D #= null
+export (NodePath) var templatePath #= null
 export (TRANS_TYPE) var transitionType = TRANS_TYPE.TRANS_QUART
 export (EASE_TYPE) var easeType = EASE_TYPE.EASE_IN_OUT
 export (bool) var loop = true
@@ -28,7 +30,7 @@ var stopLength = null
 
 onready var tween = Tween.new()
 var blah = Vector2(1000, 0)
-onready var pathNode = get_node(customPath2D) if customPath2D!= null else get_node(templatePath).get_child(0)
+var pathNode = null
 
 onready var debugLine2D = Line2D.new()
 
@@ -36,12 +38,22 @@ onready var debugLine2D = Line2D.new()
 
 func _ready():
 	call_deferred("readyDeferred")
+	
+	
 func readyDeferred():
+	if Engine.editor_hint: return
+	
 	add_child(tween)
 	tween.set_owner(self)
 
 	
-	if get_tree().is_debugging_collisions_hint():
+	if customPath2D != null:
+		pathNode = get_node(customPath2D)
+	elif templatePath != null:
+		pathNode = get_node(templatePath).get_child(0)
+	
+	
+	if get_tree().is_debugging_collisions_hint() && !pathNode == null:
 		get_parent().add_child(debugLine2D)
 		debugLine2D.set_owner(get_parent())
 		
@@ -65,6 +77,8 @@ func readyDeferred():
 	
 	
 func updatePos(curveDistance):
+	if Engine.editor_hint: return
+	
 	var localPoint = pathNode.get_curve().interpolate_baked(curveDistance)
 	var pathNodePos = pathNode.get_global_position()
 	var pathNodeScale = pathNode.get_global_scale()
@@ -73,8 +87,17 @@ func updatePos(curveDistance):
 	stopLength = curveDistance
 	
 func setMoving(val):
+	
 	movingPlatform = val
+	
+	if pathNode == null && !Engine.editor_hint:
+		movingPlatform = false
+		return
+	
+	
 	if !readyDone: return
+	
+	if Engine.editor_hint: return
 	
 	if val:
 		if stopLength == null:
@@ -84,6 +107,8 @@ func setMoving(val):
 		stopMovement()
 	
 func startMovement(reversed, overrideDelay = false):
+	if Engine.editor_hint: return
+	
 	var startVal = pathNode.get_curve().get_baked_length() if reversed else 0
 	var endVal = 0 if reversed else pathNode.get_curve().get_baked_length()
 	
@@ -93,6 +118,8 @@ func startMovement(reversed, overrideDelay = false):
 	tween.start()
 	
 func restartMovement(object, key):
+	if Engine.editor_hint: return
+	
 	if !loop:
 		movingPlatform = false
 		return
@@ -103,20 +130,15 @@ func restartMovement(object, key):
 	startMovement(directionRev)
 
 func stopMovement():
+	if Engine.editor_hint: return
+	
 	tween.stop_all()
 	
 	
 func resumeMovement():
+	if Engine.editor_hint: return
+	
 	tween.resume_all()
-#	var startVal = stopLength
-#	var endVal = 0 if directionRev else pathNode.get_curve().get_baked_length()
-#
-#	var time = abs(startVal - endVal)/pathNode.get_curve().get_baked_length() * pathTime
-#	tween.interpolate_method(self, "updatePos", startVal, endVal, pathTime, transitionType, easeType)
-#	tween.start()
-#
-#	stopLength = null
-#
 	
 	
 	
