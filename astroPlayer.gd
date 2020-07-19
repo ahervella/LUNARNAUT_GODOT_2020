@@ -113,6 +113,8 @@ const PLATFORM_DROP_TIME = 0.3
 var inPlatformArray = []
 var inPlatform = false
 
+var onMovingPlatform = false
+
 onready var light2DPosition = get_node("Light2D").get_position()
 onready var light2DScale = get_node("Light2D").get_scale()
 
@@ -401,7 +403,7 @@ func _physics_process(delta):
 		
 		#vel = move_and_slide(velFinal, global.gravVect() * -1, true, 4, deg2rad(30), false)#(vel, Vector2(0, 1), Vector2.UP, false, 4, deg2rad(120), false)
 		
-		vel = move_and_slide_with_snap(velFinal, global.gravVect() * snapMag, global.gravVect() * -1, false, 4, deg2rad(45), false)
+		vel = move_and_slide_with_snap(velFinal, global.gravVect() * snapMag, global.gravVect() * -1, !onMovingPlatform, 4, deg2rad(45), false)
 
 		#vel = move_and_slide(vel, Vector2.UP, 5, 4, deg2rad(30))#(vel, Vector2(0, 1), Vector2.UP, false, 4, deg2rad(120), false)
 		
@@ -413,7 +415,7 @@ func _physics_process(delta):
 	#so that restrictAndMove2Point does not get transformed by change in gravity
 	else:
 		#vel = move_and_slide(velFinal, global.gravVect() * -1, true, 4, deg2rad(30), false)
-		vel = move_and_slide_with_snap(velFinal, global.gravVect() * snapMag, global.gravVect() * -1, false, 4, deg2rad(45), false)
+		vel = move_and_slide_with_snap(velFinal, global.gravVect() * snapMag, global.gravVect() * -1, !onMovingPlatform, 4, deg2rad(45), false)
 		velTest = vel
 	
 	if get_slide_count() > 0:
@@ -1166,6 +1168,9 @@ func _on_groundBubble_body_entered(body):
 		#save object standing on and relative position to object
 		#if object in other character does not exist, just get astro global position
 		
+		checkOnMovingPlatform()
+		
+		
 		groundedBubble = true
 		
 		#	if (groundedBubble):
@@ -1184,6 +1189,13 @@ func _on_groundBubble_body_entered(body):
 			
 
 	#	return
+
+func checkOnMovingPlatform():
+	onMovingPlatform = false
+	for solid in solidsStandingOn:
+		if solid.is_in_group("movingPlatform"):
+			onMovingPlatform = true
+			break
 
 func setRayCollObjs(enable):
 	$"StayingGrounded".set_disabled(!enable)
@@ -1219,11 +1231,13 @@ func _on_groundBubble_body_exited(body):
 #					if bod.is_in_group("solid"):
 #						firstSolidBodyNode = bod
 	
+		checkOnMovingPlatform()
+	
 		if (solidsStandingOn.size() == 0):
 			
 			groundedBubble = false
 		
-	
+		
 	
 	
 func _on_inPlatformCheck_body_entered(body):
