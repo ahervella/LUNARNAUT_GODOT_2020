@@ -38,6 +38,32 @@ onready var debugLine2D = Line2D.new()
 onready var debugLine2DPos = debugLine2D.get_global_position()
 	
 
+var spriteNode
+
+
+#so that user can stilla adjust light mask
+func _process(delta):
+	#print(get_name())
+	if !Engine.editor_hint: return
+	
+	copyLightMaskToSpriteChild()
+
+
+
+
+func copyLightMaskToSpriteChild():
+	if spriteNode == null:
+		for child in get_children():
+			if child.is_in_group("protoSprite"):
+				spriteNode = child
+				break
+	
+	if spriteNode == null:
+		return
+	
+	spriteNode.set_light_mask(get_light_mask())
+
+
 func _ready():
 	call_deferred("readyDeferred")
 	

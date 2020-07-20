@@ -11,8 +11,12 @@ var hazardObjectAreaDict = {}
 #var hazardAreaIDs = []
 onready var blockShape = get_node("KinematicBody2D/CollisionShape2D")
 
+
 export (bool) var isRoomWallFloor = true setget setLightMask
+
 var lo
+
+	
 
 
 func _ready():
