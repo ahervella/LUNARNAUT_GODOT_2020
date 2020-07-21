@@ -311,7 +311,7 @@ func Interact():
 	if (T_I_DISPLAY_TIME != 0):
 
 		timer = global.newTimer(T_I_DISPLAY_TIME, funcref(self, 'AutoInteract'))	
-
+		timerUniqueID = timer.to_string()
 	#global.interactNode.animateText(TC_LOCKED, ShowAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)
 	if TC_LOCKED != null:
 		interactNode.animateText(TC_LOCKED, ShowAudioNode(), CUSTOM_POSITION_OFFSET, FIXED_TEXT, TEXT_POSITION)

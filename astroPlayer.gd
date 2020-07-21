@@ -34,8 +34,12 @@ var readyDone = false
 export (bool) var showMoonBG =  true setget showMoonBGSetter
 export (bool) var showBlackBG = true setget showBlackBGSetter
 export (bool) var enableShadows = true setget enableShadowsSetter
+export (bool) var enableSpawnPoint = false
+export (NodePath) var spawnPointPath = null
+onready var spawnPoint = get_node(spawnPointPath) if spawnPointPath != null && spawnPointPath != "" else null
 
 var vel = Vector2()
+var velTest = Vector2()
 var velFinal = Vector2()
 var max_move_speed = 200
 #var TERMINAL_VEL = 200
@@ -88,6 +92,7 @@ var touchingEnemies = []
 
 const HAZARD_IMMUNE_TIME = 0.75
 var onHazard = false
+var onHazardKillAstro = false
 
 #the current item astro is in
 var currItems = []
@@ -110,6 +115,8 @@ const PLATFORM_DROP_TIME = 0.3
 
 var inPlatformArray = []
 var inPlatform = false
+
+var onMovingPlatform = false
 
 onready var light2DPosition = get_node("Light2D").get_position()
 onready var light2DScale = get_node("Light2D").get_scale()
@@ -142,7 +149,7 @@ func _ready():
 		return
 	
 	
-	print(get_parent().get_children())
+	#(get_parent().get_children())
 	
 	var camNodePathString = ""
 	
@@ -214,6 +221,10 @@ func _ready():
 	$"ASTRO_ANIM2"._set_playing(true)
 	
 	
+	
+
+	
+	
 func readyDeferred():
 	
 	#These visible options are soley for the editor to be able to switch
@@ -239,8 +250,21 @@ func readyDeferred():
 	flipPushPullArea($"ASTRO_ANIM2".is_flipped_h())
 
 
+	processSpawnPoint()
+
 
 	readyDone = true
+	
+	
+
+func processSpawnPoint():
+	if (spawnPoint != null && spawnPoint.is_in_group("spawnPoint")) && (enableSpawnPoint || global.playTest):
+		set_global_position(spawnPoint.getGlobalPosition())
+		set_health(spawnPoint.getStartingHealth())
+		if !spawnPoint.flashLightOn:
+			lightSwitchToggle()
+		
+		setAstroFlip(spawnPoint.flip)
 
 func showMoonBGSetter(val):
 	showMoonBG = val
@@ -277,9 +301,9 @@ func enableShadowsSetter(val):
 
 
 
-func hazardEnabled(enabled, hazType, hazAreaID, hazObject):
+func hazardEnabled(enabled, hazType, hazAreaID, hazObject, killAstro):
 	onHazard = enabled
-
+	onHazardKillAstro = killAstro
 
 func _physics_process(delta):
 	
@@ -399,18 +423,20 @@ func _physics_process(delta):
 		
 		#vel = move_and_slide(velFinal, global.gravVect() * -1, true, 4, deg2rad(30), false)#(vel, Vector2(0, 1), Vector2.UP, false, 4, deg2rad(120), false)
 		
-		vel = move_and_slide_with_snap(velFinal, global.gravVect() * snapMag, global.gravVect() * -1, true, 4, deg2rad(45), false)
+		vel = move_and_slide_with_snap(velFinal, global.gravVect() * snapMag, global.gravVect() * -1, !onMovingPlatform, 4, deg2rad(45), false)
 
 		#vel = move_and_slide(vel, Vector2.UP, 5, 4, deg2rad(30))#(vel, Vector2(0, 1), Vector2.UP, false, 4, deg2rad(120), false)
 		
 		velFinal = velFinal.rotated((global.gravRadAng - deg2rad(90))* -1)
 		vel = velFinal
+		velTest = velFinal
 		
 		
 	#so that restrictAndMove2Point does not get transformed by change in gravity
 	else:
 		#vel = move_and_slide(velFinal, global.gravVect() * -1, true, 4, deg2rad(30), false)
-		vel = move_and_slide_with_snap(velFinal, global.gravVect() * snapMag, global.gravVect() * -1, true, 4, deg2rad(45), false)
+		vel = move_and_slide_with_snap(velFinal, global.gravVect() * snapMag, global.gravVect() * -1, !onMovingPlatform, 4, deg2rad(45), false)
+		velTest = vel
 	
 	if get_slide_count() > 0:
 		if groundedBubble:
@@ -429,6 +455,10 @@ func fanEnabled(enabled, fanAccel = null):
 
 
 func ProcessHazards():
+	if onHazardKillAstro && onHazard:
+		set_health(2)
+		TakeDamage(null, HAZARD_IMMUNE_TIME)
+		return
 	if !onHazard: return
 	TakeDamage(null, HAZARD_IMMUNE_TIME)
 
@@ -545,11 +575,7 @@ func Move():
 	
 	#if not pulling an object
 	if !grabbingMovableObj:
-		#flip astro sprite		
-		get_node("ASTRO_ANIM2").set_flip_h(directional_force.x < 0)
-		
-		#flip movableObject bubble
-		flipPushPullArea(get_node("ASTRO_ANIM2").is_flipped_h())
+		setAstroFlip(directional_force.x < 0)
 	
 	#place holder for push and pull anims:
 	else:
@@ -576,6 +602,14 @@ func Move():
 	if (groundedBubble && get_anim() != "RUN2" && vel.y >= 0):
 		if !inPlatform:
 			set_anim("START2")
+
+
+func setAstroFlip(flip):
+	#flip astro sprite		
+	get_node("ASTRO_ANIM2").set_flip_h(flip)
+	
+	#flip movableObject bubble
+	flipPushPullArea(flip)
 
 #flip movableObject bubble
 func flipPushPullArea(faceLeft):
@@ -1006,19 +1040,22 @@ func dec_health():
 
 	#trigger death animation and turn off controls
 	if (health_code <= 1):
-		global.controls_enabled = false
+		triggerDeath()
 	
-		if(dead):
-			return
+func triggerDeath():
+	global.controls_enabled = false
+	
+	if(dead):
+		return
 	
 		#used incase falling after getting hit by nora, triggered in set_anim function
 		#deadFalling = true
 
 		#triggers var that prevents other anims in set_anim function
-		preDeath = true
+	preDeath = true
 		
 		
-		global.newTimer(0.5, funcref(self, "checkIfDeathGrounded"))
+	global.newTimer(0.5, funcref(self, "checkIfDeathGrounded"))
 		
 		
 func checkIfDeathGrounded():
@@ -1131,7 +1168,7 @@ func TakeDamageImpactLaunch(direction):
 
 
 func _on_groundBubble_body_entered(body):
-	print(body.get_groups())
+	#(body.get_groups())
 	if body.is_in_group("platform") && platformDropDownCounter > PLATFORM_DROP_TIME:	
 		
 		body.fallThrough()
@@ -1155,6 +1192,9 @@ func _on_groundBubble_body_entered(body):
 		#save object standing on and relative position to object
 		#if object in other character does not exist, just get astro global position
 		
+		checkOnMovingPlatform()
+		
+		
 		groundedBubble = true
 		
 		#	if (groundedBubble):
@@ -1173,6 +1213,13 @@ func _on_groundBubble_body_entered(body):
 			
 
 	#	return
+
+func checkOnMovingPlatform():
+	onMovingPlatform = false
+	for solid in solidsStandingOn:
+		if solid.is_in_group("movingPlatform"):
+			onMovingPlatform = true
+			break
 
 func setRayCollObjs(enable):
 	$"StayingGrounded".set_disabled(!enable)
@@ -1208,11 +1255,13 @@ func _on_groundBubble_body_exited(body):
 #					if bod.is_in_group("solid"):
 #						firstSolidBodyNode = bod
 	
+		checkOnMovingPlatform()
+	
 		if (solidsStandingOn.size() == 0):
 			
 			groundedBubble = false
 		
-	
+		
 	
 	
 func _on_inPlatformCheck_body_entered(body):

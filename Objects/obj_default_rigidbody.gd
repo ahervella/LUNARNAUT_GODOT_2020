@@ -2,12 +2,12 @@ tool
 extends RigidBody2D
 
 enum OBJECT_WEIGHT{HEAVY, MEDIUM, LIGHT}
-enum OBJECT_MATERIAL{METAL, WOOD}
+#enum OBJECT_MATERIAL{METAL, WOOD}
 
-const LINEAR_DAMP = 0.01
+const LINEAR_DAMP = 0.005#0.01
 const DEFAULT_FRIC = 0.7
 
-export (OBJECT_MATERIAL) var objectMaterial = OBJECT_MATERIAL.METAL
+export (global.MAT) var objectMaterial = global.MAT.METAL
 export (OBJECT_WEIGHT) var objectWeight = OBJECT_WEIGHT.MEDIUM setget changeWeight
 export (bool) var roll = false
 export (Vector2) var shapeDimensions = Vector2(25, 25) setget setShapeDim
@@ -26,9 +26,6 @@ export (String) var hideSoundGroup = null
 
 var fanForce = null
 
-var hazardDict = {
-	OBJECT_MATERIAL.WOOD : global.HAZ.ACID,
-	OBJECT_MATERIAL.METAL : global.HAZ.ELEC}
 
 var rectObjBelow = null
 #var rectObjsAbove = []
@@ -66,9 +63,11 @@ var deactivated = false
 var astroTouchBugOn = false
 var astroTouching = false
 
-var hazardObject = null
-var hazardAreaID = null
+var hazardObjectAreaDict = {}
 var objectShape = null
+
+var solidBodies = []
+var onGround = false
 
 func getterFunction():
 	pass
@@ -261,23 +260,53 @@ func activate():
 func fanEnabled(enabled, fanAccel = null):
 	fanForce = fanAccel if enabled else null
 	
+func getHazardID():
+	return get_name()
 	
-func hazardEnabled(enabled, hazType, hazAreaID, hazObj):
+func getCurrHazObj():
+	if hazardObjectAreaDict.size() == 0: return null
+	return hazardObjectAreaDict.keys()[0]
+		
+func getCurrHazArea():
+	if hazardObjectAreaDict.size() == 0: return null
+	return hazardObjectAreaDict[getCurrHazObj()][0]
+	
+func hazardEnabled(enabled, hazType, hazAreaID, hazObj, killAstro):
+	
+	if hazAreaID == getHazardID(): return
 	
 	if !enabled:
-		if hazAreaID == hazardAreaID:
-			hazObj.removeHazardShape(get_name())
-			hazardObject == null
+		if hazardObjectAreaDict.has(hazObj) && hazardObjectAreaDict[hazObj].has(hazAreaID):
+			#var postAddToDiffHaz = false
+			#if hazardAreaIDs[0] == hazAreaID && hazardObjects.size() > 1:
+			#	postAddToDiffHaz = true
+			#if hazardObjects.has(hazObj):
+			hazardObjectAreaDict[hazObj].erase(hazAreaID)
+			if hazardObjectAreaDict[hazObj].size() == 0:
+				#var currHazObj = hazardObjectAreaDict.keys()[0]
+				var assignNewHazObj = getCurrHazObj() == hazObj
+				hazardObjectAreaDict.erase(hazObj)
+				hazObj.removeHazardShape(hazAreaID)
+				
+				if hazardObjectAreaDict.size() > 0 && assignNewHazObj:
+					getCurrHazObj().addHazardShape(getHazardID(), objectShape, self, getCurrHazArea())
+			#if postAddToDiffHaz:
+				
+			
 		return
 		
-	if (hazardDict[objectMaterial] != hazType): return
+	if (global.hazardDict[objectMaterial] != hazType): return
 	
-	if hazardObject != null: return
+	if hazObj.isAreaInSourceRoute(getHazardID(), hazAreaID): return
 	
-	hazardObject = hazObj
-	hazardAreaID = hazAreaID
+	if !hazardObjectAreaDict.has(hazObj):
+		hazardObjectAreaDict[hazObj] = []
 	
-	hazObj.addHazardShape(get_name(), objectShape, hazAreaID)
+	if hazardObjectAreaDict[hazObj].has(hazAreaID): return
+	hazardObjectAreaDict[hazObj].append(hazAreaID)
+	
+	if hazardObjectAreaDict.size() == 1:
+		hazObj.addHazardShape(getHazardID(), objectShape, self, hazAreaID)
 	
 	#var dupShape = null
 #	var dupShapeTrans = null
@@ -295,10 +324,10 @@ func hazardEnabled(enabled, hazType, hazAreaID, hazObj):
 		
 				
 	
-func processHazard():
-	if hazardObject == null: return
-	
-	hazardObject.updateHazardShape(get_name(), get_global_transform())
+#func processHazard():
+#	if hazardObject == null: return
+#
+#	hazardObject.updateHazardShape(get_name(), get_global_transform())
 	
 	
 	
@@ -341,8 +370,8 @@ func _integrate_forces(state):
 		firstFrameOneShot = false
 	
 	#gravity
-	vel.y += global.gravFor1Frame * global.gravMag * state.get_step()
-	vel.y = clamp(vel.y, -global.gravTermVel, global.gravTermVel)
+	vel.y += global.gravFor1Frame * global.gravMag * state.get_step() 
+	vel.y = clamp(vel.y, -global.gravTermVel * 100, global.gravTermVel * 20)
 	
 	#apply pushing force (will always be perpendicular to astro)
 	if rectObjBelow == null || movingDir != 0:
@@ -364,9 +393,10 @@ func _integrate_forces(state):
 	
 	#linear dampening so shit doesn't bounce around everywhere
 	# and so the circ obj doesn't roll for ever
-	vel.y -= vel.y * LINEAR_DAMP
-	if rectObjBelow == null || movingDir != 0:
-		vel.x -= vel.x * LINEAR_DAMP
+	if (onGround):
+		#vel.y -= vel.y * LINEAR_DAMP
+		if rectObjBelow == null || movingDir != 0:
+			vel.x -= vel.x * LINEAR_DAMP
 	
 	var finalVel = vel.rotated(global.gravRadAngFromNorm)
 	if fanForce != null:
@@ -380,7 +410,7 @@ func _integrate_forces(state):
 		var pos = state.get_contact_collider_position(i) + get_global_position()
 		contactPosDict[pos] = state.get_contact_collider_object(i)
 
-	processHazard()
+#	processHazard()
 
 	checkForAndMarkAsChanged()
 	thisObjectCheckChange()
@@ -399,10 +429,26 @@ func _integrate_forces(state):
 func bodyEntered(body):
 	if body == global.lvl().astroNode:
 		astroTouching = true
+		
+	if body.is_in_group("solid"):
+		if !solidBodies.has(body):
+			solidBodies.append(body)
+		
+		
+		setOnGround()
+			
 func bodyExited(body):
 	if body == global.lvl().astroNode:
 		astroTouching = false
+		
+	if body.is_in_group("solid"):
+		if solidBodies.has(body):
+			solidBodies.erase(body)
+		setOnGround()
+		
 
+func setOnGround():
+	onGround = solidBodies.size() > 0
 
 
 func astroTouchBug(state):

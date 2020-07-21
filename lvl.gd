@@ -562,6 +562,7 @@ func addCSWrapCollShape2DiscrepArea(csWrap, astroChar, areaCSW, interactWithOthe
 			parentNodeRot = cswNode.get_global_rotation()
 			
 		var collShapeNodeDup = collShapeNode.duplicate() #duplicate(DUPLICATE_USE_INSTANCING)
+		collShapeNodeDup.set_disabled(false)
 		collShapeNodeDup.set_name("TIME_DISCREP_SHAPE_%s_%s_%s" % [csWrap.nodePath, global.astroChar2String(astroChar), collShapeNode.get_name()])
 		
 		if !timeDiscrepCSWCharDict[csWrap.nodePath][1].has(astroChar):

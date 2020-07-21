@@ -133,11 +133,13 @@ func setPlugConfiguration(val):
 func setBlockConfiguration(val):
 	if !Engine.editor_hint : return
 	addBlockConfig = false
-	setConfig("/StaticBody2D/CollisionShape2D")
+	setConfig("/KinematicBody2D/CollisionShape2D")
 	if !groups.has("block"):
 		groups.append("block")
 	if !groups.has("solid"):
 		groups.append("solid")
+#	if !groups.has("movingPlatform"):
+#		groups.append("movingPlatform")
 		
 	property_list_changed_notify()
 

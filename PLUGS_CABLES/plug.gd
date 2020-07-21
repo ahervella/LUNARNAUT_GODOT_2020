@@ -1,6 +1,9 @@
 tool
 extends "res://SCRIPTS/INTERACT/intr_default.gd"
 
+const hazardScene = preload("res://SCENES/hazard.tscn")
+const sparkScene = preload("res://SCENES/PLUG_SCENES/PLUG_SPARK.tscn")
+
 enum PLUG_TYPE {
 	AUX,
 	PWR,
@@ -37,8 +40,10 @@ export (bool) var male = false setget setPlugSex
 export (bool) var isFixedPort = false setget setIsFixedPort
 #for identifying if a plug is temporarily fixed due to its connection
 export (bool) var tempFixed = false
-export (PLUG_REGION) var plugRegion = PLUG_TYPE.AUX setget setPlugRegion
-export (PLUG_TYPE) var plugType = PLUG_REGION.USA setget setPlugType
+export (PLUG_REGION) var plugRegion = PLUG_REGION.USA setget setPlugRegion
+export (PLUG_TYPE) var plugType = PLUG_TYPE.AUX setget setPlugType
+export (bool) var isPowerHazard = false setget setIsPowerHazard
+var powerPlugHazard = null
 #connPlug is set by cable when its cable end collision area runs into another
 #cable or port collision area
 var connPlug = null setget setConnection
@@ -60,6 +65,8 @@ var childRemovedException = false
 
 var changesApplied = false
 var triedConn = null
+
+var readyDone = false
 
 func setIsFixedPort(val):
 	if val:
@@ -95,6 +102,57 @@ func setLightMask(val):
 	$plugSprite.set_light_mask(val)
 	
 	
+func setIsPowerHazard(val):
+	
+	if plugType != PLUG_TYPE.PWR:
+		isPowerHazard = false
+		return
+	
+	isPowerHazard = val
+	
+	if Engine.editor_hint || !readyDone: return
+	attempAddPowerHazard()
+	
+	
+func attempAddPowerHazard():
+	if Engine.editor_hint: return
+	
+	if isPowerHazard:
+		
+		powerPlugHazard = hazardScene.instance()
+		
+		add_child(powerPlugHazard)
+		powerPlugHazard.set_owner(self)
+		
+		powerPlugHazard.clearTextures()
+		
+		var plugShape = null
+		for child in get_children():
+			if child is Area2D:
+				plugShape = child.get_child(0)
+				break
+				
+		powerPlugHazard.setCustomShape(plugShape)
+		powerPlugHazard.deathUponTouchingSource = true
+		setPlugSpark(true)
+
+	else:
+		remove_child(powerPlugHazard)
+		powerPlugHazard = null
+		
+		setPlugSpark(false)
+	
+func setPlugSpark(enable):
+	if enable:
+		var spark = sparkScene.instance()
+		add_child(spark)
+		spark.set_owner(self)
+		
+	else:
+		for child in get_children():
+			if child is AnimatedSprite:
+				child.queue_free()
+	
 func _ready():
 	#only proccess at run time
 	if Engine.editor_hint: return
@@ -113,10 +171,11 @@ func _ready():
 		setLightMask(get_light_mask())
 #	readyEXT()#call_deferred("readyEXT")
 #
+	readyDone = true
 #func readyEXT():
 #	pass
 	
-	
+	attempAddPowerHazard()
 	
 func setPlugSex(val):
 	male = val
@@ -124,11 +183,17 @@ func setPlugSex(val):
 	
 func setPlugRegion(val):
 	plugRegion = val
+	if !Engine.editor_hint: return
 	setPlugTcAuto()
 	
 func setPlugType(val):
 	plugType = val
 	setPlugTcAuto()
+	
+	#if !Engine.editor_hint: return
+	setIsPowerHazard(isPowerHazard)
+	
+	property_list_changed_notify()
 	
 func setPlugTcAuto():
 	

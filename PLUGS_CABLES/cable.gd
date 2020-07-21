@@ -292,8 +292,6 @@ func setLightMaskLayer():
 	
 func attemptInitConnections():
 	yield(get_tree(), "physics_frame" )
-	yield(get_tree(), "physics_frame" )
-	yield(get_tree(), "physics_frame" )
 	if START_ATTEMPT_CONN_ON_READY:
 		attemptCableConnection(true)
 		#START_PLUG.attemptConnection()
