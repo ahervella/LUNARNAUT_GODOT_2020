@@ -34,6 +34,9 @@ var readyDone = false
 export (bool) var showMoonBG =  true setget showMoonBGSetter
 export (bool) var showBlackBG = true setget showBlackBGSetter
 export (bool) var enableShadows = true setget enableShadowsSetter
+export (bool) var enableSpawnPoint = false
+export (NodePath) var spawnPointPath = null
+onready var spawnPoint = get_node(spawnPointPath) if spawnPointPath != null && spawnPointPath != "" else null
 
 var vel = Vector2()
 var velTest = Vector2()
@@ -218,6 +221,10 @@ func _ready():
 	$"ASTRO_ANIM2"._set_playing(true)
 	
 	
+	
+
+	
+	
 func readyDeferred():
 	
 	#These visible options are soley for the editor to be able to switch
@@ -243,8 +250,16 @@ func readyDeferred():
 	flipPushPullArea($"ASTRO_ANIM2".is_flipped_h())
 
 
+	processSpawnPoint()
+
 
 	readyDone = true
+	
+	
+
+func processSpawnPoint():
+	if (spawnPoint != null && spawnPoint.has_method("get_global_position")) && (enableSpawnPoint || global.playTest):
+		set_global_position(spawnPoint.get_global_position())
 
 func showMoonBGSetter(val):
 	showMoonBG = val
