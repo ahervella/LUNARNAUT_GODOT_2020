@@ -258,8 +258,13 @@ func readyDeferred():
 	
 
 func processSpawnPoint():
-	if (spawnPoint != null && spawnPoint.has_method("get_global_position")) && (enableSpawnPoint || global.playTest):
-		set_global_position(spawnPoint.get_global_position())
+	if (spawnPoint != null && spawnPoint.is_in_group("spawnPoint")) && (enableSpawnPoint || global.playTest):
+		set_global_position(spawnPoint.getGlobalPosition())
+		set_health(spawnPoint.getStartingHealth())
+		if !spawnPoint.flashLightOn:
+			lightSwitchToggle()
+		
+		setAstroFlip(spawnPoint.flip)
 
 func showMoonBGSetter(val):
 	showMoonBG = val
@@ -570,11 +575,7 @@ func Move():
 	
 	#if not pulling an object
 	if !grabbingMovableObj:
-		#flip astro sprite		
-		get_node("ASTRO_ANIM2").set_flip_h(directional_force.x < 0)
-		
-		#flip movableObject bubble
-		flipPushPullArea(get_node("ASTRO_ANIM2").is_flipped_h())
+		setAstroFlip(directional_force.x < 0)
 	
 	#place holder for push and pull anims:
 	else:
@@ -601,6 +602,14 @@ func Move():
 	if (groundedBubble && get_anim() != "RUN2" && vel.y >= 0):
 		if !inPlatform:
 			set_anim("START2")
+
+
+func setAstroFlip(flip):
+	#flip astro sprite		
+	get_node("ASTRO_ANIM2").set_flip_h(flip)
+	
+	#flip movableObject bubble
+	flipPushPullArea(flip)
 
 #flip movableObject bubble
 func flipPushPullArea(faceLeft):
