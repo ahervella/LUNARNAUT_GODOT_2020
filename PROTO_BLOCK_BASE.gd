@@ -89,7 +89,7 @@ func readyDeferred():
 	if customPath2D != null && customPath2D != "":
 		pathNode = get_node(customPath2D)
 	elif templatePath != null && templatePath != "":
-		pathNode = get_node(templatePath).get_child(0)
+		pathNode = get_node(templatePath).get_child(1)
 	
 	if pathNode != null:
 		pathNodeTrans = pathNode.get_global_transform()
