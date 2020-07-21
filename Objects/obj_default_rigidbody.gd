@@ -4,7 +4,7 @@ extends RigidBody2D
 enum OBJECT_WEIGHT{HEAVY, MEDIUM, LIGHT}
 #enum OBJECT_MATERIAL{METAL, WOOD}
 
-const LINEAR_DAMP = 0.01
+const LINEAR_DAMP = 0.005#0.01
 const DEFAULT_FRIC = 0.7
 
 export (global.MAT) var objectMaterial = global.MAT.METAL
@@ -65,6 +65,9 @@ var astroTouching = false
 
 var hazardObjectAreaDict = {}
 var objectShape = null
+
+var solidBodies = []
+var onGround = false
 
 func getterFunction():
 	pass
@@ -367,8 +370,8 @@ func _integrate_forces(state):
 		firstFrameOneShot = false
 	
 	#gravity
-	vel.y += global.gravFor1Frame * global.gravMag * state.get_step()
-	vel.y = clamp(vel.y, -global.gravTermVel, global.gravTermVel)
+	vel.y += global.gravFor1Frame * global.gravMag * state.get_step() 
+	vel.y = clamp(vel.y, -global.gravTermVel * 100, global.gravTermVel * 20)
 	
 	#apply pushing force (will always be perpendicular to astro)
 	if rectObjBelow == null || movingDir != 0:
@@ -390,9 +393,10 @@ func _integrate_forces(state):
 	
 	#linear dampening so shit doesn't bounce around everywhere
 	# and so the circ obj doesn't roll for ever
-	vel.y -= vel.y * LINEAR_DAMP
-	if rectObjBelow == null || movingDir != 0:
-		vel.x -= vel.x * LINEAR_DAMP
+	if (onGround):
+		#vel.y -= vel.y * LINEAR_DAMP
+		if rectObjBelow == null || movingDir != 0:
+			vel.x -= vel.x * LINEAR_DAMP
 	
 	var finalVel = vel.rotated(global.gravRadAngFromNorm)
 	if fanForce != null:
@@ -425,10 +429,26 @@ func _integrate_forces(state):
 func bodyEntered(body):
 	if body == global.lvl().astroNode:
 		astroTouching = true
+		
+	if body.is_in_group("solid"):
+		if !solidBodies.has(body):
+			solidBodies.append(body)
+		
+		
+		setOnGround()
+			
 func bodyExited(body):
 	if body == global.lvl().astroNode:
 		astroTouching = false
+		
+	if body.is_in_group("solid"):
+		if solidBodies.has(body):
+			solidBodies.erase(body)
+		setOnGround()
+		
 
+func setOnGround():
+	onGround = solidBodies.size() > 0
 
 
 func astroTouchBug(state):
