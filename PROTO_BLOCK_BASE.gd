@@ -1,6 +1,9 @@
 tool
 #added tool so it could be extended and not break
-extends KinematicBody2D
+#there are two sprites because the root node acts as a dummy sprite
+#so that user can easily manipulate proto building blocks
+#(instead of having to use scale tool)
+extends Sprite
 
 enum MOVE_TYPE {LINEAR, CUSTOM_PATH}
 
@@ -23,6 +26,7 @@ export (float) var pathTime = 4
 export (float) var delayChangeDirection = 0
 export (float) var easeTimeOnDisable = 2
 
+var kbNode = null
 
 var directionRev = false
 var readyDone = false
@@ -53,10 +57,16 @@ func _process(delta):
 
 func copyLightMaskToSpriteChild():
 	if spriteNode == null:
-		for child in get_children():
-			if child.is_in_group("protoSprite"):
-				spriteNode = child
-				break
+		if kbNode == null:
+			for child in get_children():
+				if child is KinematicBody2D && child.is_in_group("protoKB"):
+					kbNode = child
+		
+		if kbNode != null:
+			for child in kbNode.get_children():
+				if child.is_in_group("protoSprite"):
+					spriteNode = child
+					break
 	
 	if spriteNode == null:
 		return
@@ -65,6 +75,8 @@ func copyLightMaskToSpriteChild():
 
 
 func _ready():
+	
+	set_self_modulate(Color(1, 1, 1, 0))
 	call_deferred("readyDeferred")
 	
 	
@@ -84,7 +96,7 @@ func readyDeferred():
 	
 	drawDebugPathLine()
 	
-	 
+	kbNode = get_node("KinematicBody2D")
 	
 	tween.connect("tween_completed", self, "restartMovement")
 	readyDone = true
@@ -124,6 +136,10 @@ func updatePos(curveDistance):
 	
 	set_global_position((localPoint * pnScale).rotated(pnRot) + pnPos)
 	
+	#IMPORTANT:
+	#need to do this so that kbNode gets updated and synced to physics
+	kbNode.set_position(Vector2.ZERO)
+	
 	#pathNode.set_global_transform(pathNodeTrans)
 	debugLine2D.set_global_position(debugLine2DPos)
 	
@@ -137,7 +153,7 @@ func setMoving(val):
 	
 	if !readyDone: return
 	
-	if (pathNode == null) && !Engine.editor_hint:
+	if (pathNode == null || kbNode == null) && !Engine.editor_hint:
 		movingPlatform = false
 		return
 	
@@ -150,7 +166,7 @@ func setMoving(val):
 	modifyGroups(val)
 	
 	if val:
-		set_sync_to_physics(true)
+		kbNode.set_sync_to_physics(true)
 		if stopLength == null:
 			startMovement(directionRev, true)
 		else: resumeMovement()

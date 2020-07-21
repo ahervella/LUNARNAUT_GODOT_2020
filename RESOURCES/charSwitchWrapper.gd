@@ -133,7 +133,7 @@ func setPlugConfiguration(val):
 func setBlockConfiguration(val):
 	if !Engine.editor_hint : return
 	addBlockConfig = false
-	setConfig("/CollisionShape2D")
+	setConfig("/KinematicBody2D/CollisionShape2D")
 	if !groups.has("block"):
 		groups.append("block")
 	if !groups.has("solid"):
