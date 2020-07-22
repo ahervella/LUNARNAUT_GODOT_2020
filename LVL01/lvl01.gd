@@ -78,6 +78,7 @@ func _ready():
 	if(global.playTest):
 		initAstro()
 		astroNode.call_deferred("lightSwitchToggle")
+		astroNode.showMoonBGSetter(true)
 
 
 

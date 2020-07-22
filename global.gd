@@ -58,6 +58,9 @@ var levelWrapperDict = {}
 
 var changingScene = false
 
+var dev_transitionShuttle_transScenePath
+var dev_transitionShuttle_faceRight
+
 var interactNode 
 var interactNodes = []
 const DEF_MAX_INTERACT = 2
@@ -428,6 +431,16 @@ func goto_scene(path):
 	
 	get_tree().change_scene(path)
 	changingScene = false
+	
+	dev_transitionShuttle_transScenePath = null
+	
+func goto_scene_via_shuttle(path, shuttleFaceRight):
+	dev_transitionShuttle_transScenePath = path
+	dev_transitionShuttle_faceRight = shuttleFaceRight
+	goto_scene("res://SCENES/dev_transitionShuttle.tscn")
+	
+	
+	
 	
 	
 #used to get the specific level variables, funcs, and attributes

@@ -32,7 +32,7 @@ var MENU_NODE
 var readyDone = false
 
 export (bool) var showMoonBG =  true setget showMoonBGSetter
-export (bool) var showBlackBG = true setget showBlackBGSetter
+export (bool) var showBlackBG = true #setget showBlackBGSetter
 export (bool) var enableShadows = true setget enableShadowsSetter
 export (bool) var enableSpawnPoint = false
 export (NodePath) var spawnPointPath = null
@@ -232,17 +232,19 @@ func readyDeferred():
 	#and shadows will ALWAYS be on in game, and should be made invisible
 	#by making their alpha values zero
 	if (global.playTest):
-		showMoonBGSetter(true)
+		#showMoonBGSetter(true)
 		enableShadowsSetter(true)
-		showBlackBGSetter(true)
+		#showBlackBGSetter(true)
 		
 		
 	else:
 		#set to what ever inspector bools are
-		showMoonBGSetter(showMoonBG)
+		#showMoonBGSetter(showMoonBG)
 		enableShadowsSetter(enableShadows)
-		showBlackBGSetter(showBlackBG)
+		#showBlackBGSetter(showBlackBG)
 	
+	#showMoonBGSetter(showMoonBG)
+	#showBlackBGSetter(showBlackBG)
 	
 	#flip movableObject bubble
 	#checks after character switching applied in lvl ready
@@ -252,6 +254,12 @@ func readyDeferred():
 
 	processSpawnPoint()
 
+
+	CAMERA_NODE.set_enable_follow_smoothing(false)
+	MoveCameraAndInteracText()
+	
+	yield(get_tree(), "idle_frame")
+	CAMERA_NODE.set_deferred("smoothing_enabled", true)
 
 	readyDone = true
 	

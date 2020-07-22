@@ -88,7 +88,7 @@ func TakeDamageFlashReverse():
 	
 	#global.newTween(self, "modulate", Color(r, 0, 0), Color(r, g, b), 0.5, 0.5)
 	
-func FadeOutOfBlack():
+func FadeOutOfBlack(delay = 0):
 	
 	var cur_color = blackOverlayNode.get_modulate()
 	var g = cur_color.g
@@ -96,7 +96,7 @@ func FadeOutOfBlack():
 	var b = cur_color.b
 	var a = cur_color.a
 	
-	global.newTween(blackOverlayNode, "modulate", Color(r, g, b, 1), Color(r, g, b, 0), BLACK_FADE_TIME, 0)
+	global.newTween(blackOverlayNode, "modulate", Color(r, g, b, 1), Color(r, g, b, 0), BLACK_FADE_TIME, delay)
 
 func FadeIntoBlack(wonBool = null):
 	
