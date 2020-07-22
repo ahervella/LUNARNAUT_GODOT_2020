@@ -545,17 +545,17 @@ func fallThroughPlatform():
 		
 func Move():
 	#direction multiplier (right = 1, left = -1)
-	var dirMulti
-
-	#if movement is going right 
-	if (directional_force.x > 0):
-		dirMulti = 1
-		
-	elif(directional_force.x < 0):
-		dirMulti = -1
+#	var dirMulti
+#
+#	#if movement is going right 
+#	if (directional_force.x > 0):
+#		dirMulti = 1
+#
+#	elif(directional_force.x < 0):
+#		dirMulti = -1
 
 	#no movement? do nothing
-	else:
+	if directional_force.x == 0:#else:
 		if (get_anim() == "RUN2"):
 			
 			
@@ -595,8 +595,9 @@ func Move():
 		
 
 	#set light and camera face right
-	get_node("Light2D").set_scale(Vector2 (dirMulti * light2DScale.x, light2DScale.x))
-	get_node("Light2D").set_position(Vector2(dirMulti * light2DPosition.x, light2DPosition.y))
+	
+	#get_node("Light2D").set_scale(Vector2 (dirMulti * light2DScale.x, light2DScale.x))
+	#get_node("Light2D").set_position(Vector2(dirMulti * light2DPosition.x, light2DPosition.y))
 		
 	#animation:
 	if (groundedBubble && get_anim() != "RUN2" && vel.y >= 0):
@@ -610,7 +611,8 @@ func setAstroFlip(flip):
 	
 	#flip movableObject bubble
 	flipPushPullArea(flip)
-
+	
+	flipLights(flip)
 #flip movableObject bubble
 func flipPushPullArea(faceLeft):
 	var dir = -1 if faceLeft else 1
@@ -618,6 +620,12 @@ func flipPushPullArea(faceLeft):
 	var pushPullShape = get_node("push_pull_area/push_pull_area_shape")
 	pushPullShape.set_position(Vector2(abs(pushPullShape.get_position().x) * dir, pushPullShape.get_position().y))
 
+func flipLights(faceLeft):
+	var dir = -1 if faceLeft else 1
+		
+	get_node("Light2D").set_scale(Vector2 (dir * light2DScale.x, light2DScale.x))
+	get_node("Light2D").set_position(Vector2(dir * light2DPosition.x, light2DPosition.y))
+	
 		
 func MoveJump(delta):
 
