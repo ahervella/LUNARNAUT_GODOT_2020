@@ -80,6 +80,8 @@ onready var touchInventory = get_node(touchInventoryPath)
 var touchInventoryXBound = [965, null]
 var touchInventoryYBound = [520, null]
 
+var inventoryToggle = false
+
 onready var pauseTween = Tween.new()
 export (NodePath) var touchPausePath = null
 onready var touchPause = get_node(touchPausePath)
@@ -184,7 +186,7 @@ func _ready():
 	#interactTween.interpolate_property(touchInteract, "modulate", Color(1, 1, 1, 1), Color(1, 1, 1, 0), 1 , 0, Tween.EASE_OUT, 0)
 	
 	add_child(lightTween)
-	add_child(interactTween)
+	add_child(inventoryTween)
 	
 	add_child(csTween)
 	#csTween.interpolate_property(touchCS, "modulate", Color(1, 1, 1, 1), Color(1, 1, 1, 0.5), 1 , 0, Tween.EASE_OUT, 0)
@@ -232,6 +234,7 @@ func _input(event):
 		&& event.position.y < touchPause.get_global_position().y + touchPauseHeight/2
 		&& (event is InputEventScreenTouch || event is InputEventScreenDrag)):
 			joyPause(event)
+			return
 		
 		
 		
@@ -243,14 +246,17 @@ func _input(event):
 				|| (event is InputEventScreenTouch && !event.is_pressed() 
 					&& ongoing_cs_drag == event.get_index())  )):
 				joyCS(event)
+				return
 			
 			elif (event.position.x > touchLightXBound[0] && event.position.x < touchLightXBound[1]
 			&& event.position.y > touchLightYBound[0]):
 				joyLight(event)
+				return
 				
 			elif (event.position.x > touchInventoryXBound[0]
 			&& event.position.y > touchInventoryYBound[0]):
 				joyInventory(event)
+				return
 			
 			#if event is touch onto screen and left half of screen, 
 			#OR   if button is showing AND (drag event or meets condition to reset)
@@ -263,6 +269,7 @@ func _input(event):
 						and !event.is_pressed() 
 						and ongoing_drag != -1)))):
 				joyStick(event)
+				return
 			
 			var pos = event.position
 			
@@ -274,10 +281,12 @@ func _input(event):
 				and event.position.y < interactCenter.y + interactWidthHeight/2
 			 and event is InputEventScreenTouch):
 				joyInteract(event)
+				return
 	
 			#if on the right it is a jump signal
 			elif (event.position.x >= 640 and event is InputEventScreenTouch):
 				joyJump(event)
+				return
 			
 			
 			
@@ -344,18 +353,23 @@ func showLight(pressed):
 	var currColor = touchLight.get_modulate()
 	
 	if (pressed):
-		lightTween.interpolate_property(touchLight, "modulate", currColor, Color(1, 1, 1, 0.25), 1 , 0, Tween.EASE_OUT, 0)
+		lightTween.interpolate_property(touchLight, "modulate", currColor, Color(1, 1, 1, 1), 0.25 , 0, Tween.EASE_OUT, 0)
 	else:
-		lightTween.interpolate_property(touchLight, "modulate", currColor, Color(1, 1, 1, 0), 1 , 0, Tween.EASE_OUT, 0)
+		lightTween.interpolate_property(touchLight, "modulate", currColor, Color(1, 1, 1, 0.25), 0.5 , 0, Tween.EASE_OUT, 0)
 	lightTween.start()
 	
-func showInventory(pressed):
+func showInventory(pressed = null):
 	var currColor = touchInventory.get_modulate()
 	
+	if pressed == null:
+		inventoryToggle = !inventoryToggle
+	
+	pressed = inventoryToggle
+	
 	if (pressed):
-		inventoryTween.interpolate_property(touchInventory, "modulate", currColor, Color(1, 1, 1, 0.25), 1 , 0, Tween.EASE_OUT, 0)
+		inventoryTween.interpolate_property(touchInventory, "modulate", currColor, Color(1, 1, 1, 1), 0.25 , 0, Tween.EASE_OUT, 0)
 	else:
-		inventoryTween.interpolate_property(touchInventory, "modulate", currColor, Color(1, 1, 1, 0), 1 , 0, Tween.EASE_OUT, 0)
+		inventoryTween.interpolate_property(touchInventory, "modulate", currColor, Color(1, 1, 1, 0.25), 0.5 , 0, Tween.EASE_OUT, 0)
 	inventoryTween.start()
 	
 	
@@ -475,7 +489,7 @@ func joyLight(event):
 		if event.is_pressed():
 			setTouchState("light", TOUCH_STATE.JUST_TOUCHED)
 			showLight(true)
-		elif event.is_pressed():
+		else:
 			setTouchState("light", TOUCH_STATE.JUST_RELEASED)
 			showLight(false)
 	
@@ -483,10 +497,10 @@ func joyInventory(event):
 	if event is InputEventScreenTouch:
 		if event.is_pressed():
 			setTouchState("inventory", TOUCH_STATE.JUST_TOUCHED)
-			showInventory(true)
-		elif event.is_pressed():
+			showInventory()
+		else:
 			setTouchState("inventory", TOUCH_STATE.JUST_RELEASED)
-			showInventory(false)
+		#showInventory()
 
 func joyCS(event):
 	#if screen touched (and event is "pressed")

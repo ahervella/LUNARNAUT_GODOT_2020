@@ -712,7 +712,7 @@ func ProcessFlashlightInput():
 	if(!global.controls_enabled):
 		return
 	
-	if Input.is_action_just_pressed("ui_light"):
+	if Input.is_action_just_pressed("ui_light") || TOUCH_CONTROL_NODE.touchStateDict["light"] == TOUCH_CONTROL_NODE.TOUCH_STATE.JUST_TOUCHED:
 		lightSwitchToggle()
 
 func lightSwitchToggle():
