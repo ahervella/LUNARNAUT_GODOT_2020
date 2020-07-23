@@ -21,14 +21,13 @@ onready var hurtTintNode = get_node("CanvasLayer/hurtTint")
 onready var gameOverTextNode = get_node("CanvasLayer/gameOverText")
 
 
-
 onready var shakeTween = Tween.new()
 onready var shakeAmpTween = Tween.new()
 
 var shaking = false
 var currShakeType
 var currShakeAmp
-var currShakeStopTime
+var currShakeDecayTime
 
 const SHAKE_STOP_TIME = 1
 const SHAKE_TIME_RANGE = [0.025, 0.05]
@@ -151,6 +150,9 @@ func FadeIntoBlack(wonBool = null):
 
 func shake(type, time = null, customStopTime = null):
 	
+	shakeTween.stop_all()
+	shakeAmpTween.stop_all()
+	
 	shaking = true
 	if type == global.SHAKE.NONE:
 		reduceShakeAmp()
@@ -159,18 +161,20 @@ func shake(type, time = null, customStopTime = null):
 	currShakeAmp = SHAKE_DICT[currShakeType]
 	
 	
-	if time != null:
-		currShakeStopTime = SHAKE_STOP_TIME if customStopTime == null else customStopTime
-		time = max(time, currShakeStopTime)
-		global.newTimer(time, funcref(self, "reduceShakeAmp"))
-
 	shakeTween.connect("tween_completed", self, "singleShake")
 	shakeAmpTween.connect("tween_completed", self, "stopShake")
+	
+	if time != null:
+		currShakeDecayTime = SHAKE_STOP_TIME if customStopTime == null else customStopTime
+		time = max(time, currShakeDecayTime)
+		reduceShakeAmp(time - currShakeDecayTime)
+
+
 
 	singleShake()
 
-func reduceShakeAmp():
-	shakeAmpTween.interpolate_property(self, "currShakeAmp", currShakeAmp, 0, currShakeStopTime)
+func reduceShakeAmp(delayTime = 0):
+	shakeAmpTween.interpolate_property(self, "currShakeAmp", currShakeAmp, 0, currShakeDecayTime, 0, 2, delayTime)
 	shakeAmpTween.start()
 
 func stopShake():
@@ -180,11 +184,7 @@ func stopShake():
 func singleShake(object = null, key = null):
 	var singleShakeTime = rand_range(SHAKE_TIME_RANGE[0], SHAKE_TIME_RANGE[1])
 	
-	if !shaking:
-#		shakeTween.interpolate_property(self, "offset", get_offset(), Vector2.ZERO, 1, Tween.TRANS_QUAD, Tween.EASE_OUT)
-#		shakeTween.disconnect("tween_completed", self, "singleShake")
-#		shakeTween.start()
-		return
+	if !shaking: return
 		
 	var randRange = Vector2()
 	
