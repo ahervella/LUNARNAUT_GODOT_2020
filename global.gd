@@ -33,6 +33,7 @@ extends Node
 enum ZOOM {NORM, CLOSE, FAR, MEGA_FAR}
 enum MAT {WOOD, METAL, CONCRETE}
 enum HAZ {ACID, ELEC}
+enum SHAKE {LIGHT, MED, HEAVY, MEGA, NONE}
 
 var hazardDict = {
 	MAT.WOOD : HAZ.ACID,

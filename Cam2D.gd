@@ -20,6 +20,27 @@ onready var blackOverlayNode = get_node("CanvasLayer/blackOverlay")
 onready var hurtTintNode = get_node("CanvasLayer/hurtTint")
 onready var gameOverTextNode = get_node("CanvasLayer/gameOverText")
 
+
+
+onready var shakeTween = Tween.new()
+onready var shakeAmpTween = Tween.new()
+
+var shaking = false
+var currShakeType
+var currShakeAmp
+var currShakeStopTime
+
+const SHAKE_STOP_TIME = 1
+const SHAKE_TIME_RANGE = [0.025, 0.05]
+const SHAKE_DICT = {
+global.SHAKE.LIGHT : 1, 
+global.SHAKE.MED : 5, 
+global.SHAKE.HEAVY : 50, 
+global.SHAKE.MEGA : 150, 
+global.SHAKE.NONE : 0}
+
+
+
 func _ready():
 
 	blackOverlayNode.set_modulate( Color(0, 0, 0, 1))
@@ -39,6 +60,9 @@ func _ready():
 	else:
 		TIMELINE_LABEL_NODE.hide()
 		
+	add_child(shakeTween)
+	add_child(shakeAmpTween)
+	
 	call_deferred("readyExt")
 	
 func readyExt():
@@ -123,13 +147,64 @@ func FadeIntoBlack(wonBool = null):
 
 
 
+#vvvvvvv SHAKE CODE vvvvvvvvvvvvvv
 
+func shake(type, time = null, customStopTime = null):
+	
+	shaking = true
+	if type == global.SHAKE.NONE:
+		reduceShakeAmp()
+	
+	currShakeType = type
+	currShakeAmp = SHAKE_DICT[currShakeType]
+	
+	
+	if time != null:
+		currShakeStopTime = SHAKE_STOP_TIME if customStopTime == null else customStopTime
+		time = max(time, currShakeStopTime)
+		global.newTimer(time, funcref(self, "reduceShakeAmp"))
+
+	shakeTween.connect("tween_completed", self, "singleShake")
+	shakeAmpTween.connect("tween_completed", self, "stopShake")
+
+	singleShake()
+
+func reduceShakeAmp():
+	shakeAmpTween.interpolate_property(self, "currShakeAmp", currShakeAmp, 0, currShakeStopTime)
+	shakeAmpTween.start()
+
+func stopShake():
+	shaking = false
+
+
+func singleShake(object = null, key = null):
+	var singleShakeTime = rand_range(SHAKE_TIME_RANGE[0], SHAKE_TIME_RANGE[1])
+	
+	if !shaking:
+#		shakeTween.interpolate_property(self, "offset", get_offset(), Vector2.ZERO, 1, Tween.TRANS_QUAD, Tween.EASE_OUT)
+#		shakeTween.disconnect("tween_completed", self, "singleShake")
+#		shakeTween.start()
+		return
+		
+	var randRange = Vector2()
+	
+	randRange.x = rand_range(-currShakeAmp, currShakeAmp)
+	randRange.y = rand_range(-currShakeAmp, currShakeAmp)
+	
+	shakeTween.interpolate_property(self, "offset", get_offset(), randRange, singleShakeTime)
+	shakeTween.start()
+	
+	
+#^^^^^^^^^^^ SHAKE CODE ^^^^^^^^^^^
+	
+	
+
+
+
+
+	
 func CSWrapSaveStartState(CSWrap):
 	pass
-	
-	
-	
-	
 	
 	
 	
