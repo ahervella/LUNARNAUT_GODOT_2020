@@ -258,7 +258,16 @@ func activate():
 		
 		
 func fanEnabled(enabled, fanAccel = null):
-	fanForce = fanAccel if enabled else null
+	var multiplyer
+	match objectWeight:
+		OBJECT_WEIGHT.LIGHT:
+			multiplyer = 1.2
+		OBJECT_WEIGHT.MEDIUM:
+			multiplyer = 1
+		OBJECT_WEIGHT.HEAVY:
+			multiplyer = 0.5
+			
+	fanForce = fanAccel * multiplyer if enabled else null
 	
 func getHazardID():
 	return get_name()
