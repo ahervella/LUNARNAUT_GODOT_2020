@@ -1,4 +1,4 @@
-extends RichTextLabel
+extends Label
 
 #ALEJANDRO (Feb-14-2020)
 #This is the main script for displaying text for in game
@@ -135,7 +135,7 @@ func set_text_pos(customOffset, fixedText, textSidePosition):
 	else:
 		get_flip = !ASTRO_NODE.get_node("ASTRO_ANIM2").is_flipped_h()
 
-	textLength = min (get("custom_fonts/normal_font").get_wordwrap_string_size(text, get_size().x).x, get("custom_fonts/normal_font").get_string_size(text).x)
+	textLength = min (get("custom_fonts/font").get_wordwrap_string_size(text, get_size().x).x, get("custom_fonts/font").get_string_size(text).x)
 	
 	var longestTextLength = textLength
 	
@@ -181,6 +181,37 @@ func set_text_pos(customOffset, fixedText, textSidePosition):
 	
 
 
+func animateTutorialText(textConfig):#, textTime = null):
+	currentText = textConfig.text
+	timer_reset(currentText)
+	
+	var vpSize = get_viewport().get_size()
+	var textXSpacePercent = 0.8
+	
+	self.set("custom_colors/font_color", textConfig._getColor())
+	self.set_text(currentText)
+	get("custom_fonts/font").set("size", 80)
+	set("rect_size", Vector2(vpSize.x * textXSpacePercent, get_size().y))
+	
+	
+	var wordWrapSize = get("custom_fonts/font").get_wordwrap_string_size(currentText, get_size().x).x
+	var strSize = get("custom_fonts/font").get_string_size(text).x
+	textLength = min (wordWrapSize, strSize)
+	
+	var width = min(textLength, vpSize.x * textXSpacePercent)
+	var textVect = global.getRealTextVector2(currentText, width, get("custom_fonts/font"))
+	
+	textTween = global.newTween(self, "percent_visible", 0, 1, TYPE_TEXT_TIME, 0)
+	textTweenUniqueID = textTween.to_string()
+	
+	audio.sound("textShow").play(0)
+	
+	
+	var xPos = (vpSize.x - textVect.x) / 2
+	var yPos = vpSize.y - textVect.y
+	set_global_position(Vector2(xPos, yPos))#global.lvl().astroNode.get_global_position())
+	
+
 
 func animateText(text, soundNode = null, customPosOffset = Vector2(0,0),
 				fixedText = false, textSide : int = 0, textTime = null):
@@ -199,7 +230,7 @@ func animateText(text, soundNode = null, customPosOffset = Vector2(0,0),
 	timer_reset(currentText)
 	
 	#assign text to text box
-	self.set("custom_colors/default_color", text._getColor())
+	self.set("custom_colors/font_color", text._getColor())
 	self.set_text(currentText)
 	
 	#set the text position

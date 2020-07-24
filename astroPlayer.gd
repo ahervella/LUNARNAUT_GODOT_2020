@@ -179,7 +179,7 @@ func _ready():
 	interactTextNodePathString = "/root/" + global.lvl().get_name() + "/" + interactTextNodePathString
 	
 	for child in get_node(interactTextNodePathString).get_children():
-		if child is RichTextLabel:
+		if child is Label:#RichTextLabel:
 			INTERACT_TEXT_NODE = child
 			break
 	

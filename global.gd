@@ -64,6 +64,7 @@ var dev_transitionShuttle_faceRight
 
 var interactNode 
 var interactNodes = []
+#var independantTextNodes = []
 const DEF_MAX_INTERACT = 2
 var maxInteractNodes = DEF_MAX_INTERACT
 
@@ -110,6 +111,27 @@ func getNextInteractNodeIndex():
 	
 	return newInteractNode
 	
+	
+#func addNewIndependantTextNode():
+#	var newITN = interactNode.duplicate(DUPLICATE_SCRIPTS)
+#	independantTextNodes.append(newITN)
+#	add_child(newITN)
+#	return newITN
+#
+#func destroyIndependantTextNode(itn):
+#	for i in independantTextNodes.size():
+#		if independantTextNodes[i] != null && independantTextNodes[i] == itn:
+#			#remove interactNode references from items in astro
+#
+#
+#			interactNodes.erase(itn)
+#			#interactNode.remove_child(interNode)
+#			if itn.timer != null  && itn.timerUniqueID == itn.timer.to_string():
+#				itn.timer.free()
+#			#interNode.free()
+#			itn.call_deferred('free')
+#			return
+	
 func addNewInteractNode(index, overrideFlip):
 
 	if interactNodes.size() > index && interactNodes[index] == null:
@@ -133,7 +155,7 @@ func setInterNodeVerticalOffset(interNodeIndex):
 
 				
 				if prevInterNode.text != null && prevInterNode.text != "":
-					var actualPrevTextVect = (getRealTextVector2(prevInterNode.text, prevInterNode.get_size().x, prevInterNode.get("custom_fonts/normal_font")))
+					var actualPrevTextVect = (getRealTextVector2(prevInterNode.text, prevInterNode.get_size().x, prevInterNode.get("custom_fonts/font")))
 				#	print(actualPrevTextVect)
 					interNode.multiInterNodeOffset = actualPrevTextVect.y + prevInterNode.multiInterNodeOffset
 		
@@ -152,6 +174,7 @@ func getRealTextVector2(string, width, font):
 	var currLine = ""
 	
 	for word in words:
+		var strSize = font.get_string_size(currLine + word).x
 		if font.get_string_size(currLine + word).x < width || currLine == "":
 			currLine += word + " "
 		else:
