@@ -24,6 +24,11 @@ func _ready():
 	else:
 		visitorsCenterPowerOff()
 
+
+	audio.loadLevelSounds("lvl01", false)
+	audio.sound("music", "lvl01").play(0)
+	global.newTween(audio.sound("music", "lvl01"), "volume_db", -50, -4, 3, 0)
+	
 func _process(delta):
 	if Engine.editor_hint || turnOffAutoCheck: return
 	

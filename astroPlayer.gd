@@ -267,7 +267,7 @@ func readyDeferred():
 	
 
 func processSpawnPoint():
-	if (spawnPoint != null && spawnPoint.is_in_group("spawnPoint")) && (enableSpawnPoint || global.playTest):
+	if (spawnPoint != null && spawnPoint.is_in_group("spawnPoint")) && (enableSpawnPoint):# || global.playTest):
 		set_global_position(spawnPoint.getGlobalPosition())
 		set_health(spawnPoint.getStartingHealth())
 		if !spawnPoint.flashLightOn:
@@ -511,7 +511,7 @@ func ProcessMoveInput(delta):
 	
 	#if platformDropDownCounter > 0: print(platformDropDownCounter)
 	#For testing astro death
-	if(Input.is_action_pressed("ui_down")): #&& !global.playTest):
+	if(Input.is_action_pressed("ui_down") || TOUCH_CONTROL_NODE.stickDir.y > 0): #&& !global.playTest):
 		handleplatformDropDownCounter(true, delta)
 	elif(Input.is_action_just_released("ui_down")):# && !global.playTest):
 		handleplatformDropDownCounter(false, delta)

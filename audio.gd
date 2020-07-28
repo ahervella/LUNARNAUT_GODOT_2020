@@ -149,9 +149,10 @@ func unloadLevelSounds():
 	
 	
 	
-func loadLevelSounds(lvl):
+func loadLevelSounds(lvl, unloadAllOtherSounds = true):
 	
-	unloadLevelSounds()
+	if unloadAllOtherSounds:
+		unloadLevelSounds()
 	
 	if has_node(lvl):
 		for soundNode in get_node(lvl).get_children():

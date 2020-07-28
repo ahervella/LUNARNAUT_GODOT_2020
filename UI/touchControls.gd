@@ -269,7 +269,7 @@ func _input(event):
 						and !event.is_pressed() 
 						and ongoing_drag != -1)))):
 				joyStick(event)
-				return
+				#return
 			
 			var pos = event.position
 			
@@ -284,7 +284,7 @@ func _input(event):
 				return
 	
 			#if on the right it is a jump signal
-			elif (event.position.x >= 640 and event is InputEventScreenTouch):
+			elif (event.position.x >= 640 and (event is InputEventScreenTouch)): #|| event is InputEventScreenDrag)):
 				joyJump(event)
 				return
 			
@@ -439,12 +439,20 @@ func showPause(visible, toggled):
 func joyStick(event):
 	#if past deadzone radius (threshold), change direction of stick
 	if touchStickInner.position.distance_to(-radius) > threshold && ongoing_drag != -1:
-		if touchStickInner.position.x > -radius.x:
+		if touchStickInner.position.x > -200:#-radius.x:
 			stickDir = Vector2(1, 0)
-		else:
+		elif touchStickInner.position.x < -300:#radius.x:
 			stickDir = Vector2(-1, 0)
+			
+		if touchStickInner.position.y > -200:#radius.y:
+			stickDir = stickDir + Vector2(0, 1)
+		else:
+			stickDir = stickDir + Vector2(0, -1)
+			
+		print (touchStickInner.position)
 	else:
 		stickDir = Vector2(0, 0)
+		
 		
 		
 	#if screen touched (and event is "pressed")

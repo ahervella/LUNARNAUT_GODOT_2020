@@ -70,6 +70,7 @@ func _ready():
 	
 	setMenu(mainMenu, mainMenuOPT)
 	
+	audio.unloadLevelSounds()
 	
 	devLevels.hide()
 	for lvl in levels:

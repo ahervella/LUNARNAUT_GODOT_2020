@@ -224,6 +224,7 @@ func openDoor():
 	
 	doorIsOpen = true
 	
+	audio.sound("doorOpen").play()
 	
 func closeDoor():
 	if Engine.editor_hint: return

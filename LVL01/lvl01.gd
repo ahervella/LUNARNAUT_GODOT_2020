@@ -68,7 +68,7 @@ func _ready():
 	#volume set at way top
 	#gradual music fade in
 	audio.sound("music", "lvl01").play(0)
-	global.newTween(audio.sound("music", "lvl01"), "volume_db", -50, -2, 3, 0)
+	global.newTween(audio.sound("music", "lvl01"), "volume_db", -50, -4, 3, 0)
 	
 
 	astroNode.set_health(ASTRO_HEALTH)
