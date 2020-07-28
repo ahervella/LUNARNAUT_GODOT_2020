@@ -35,28 +35,33 @@ func Interact():
 	if can_interact:
 		elevator.movingPlatform = true
 		interactNode.closeText()
+		
+		
+		
+		for child in elevatorLights.get_children():
+			child.set_enabled(true)
+	
+		camShake.get_child(0).set_disabled(false)
+		
+		
+		textTween.interpolate_property(lunarnautText, "modulate", Color(1, 1, 1, 0), Color(1, 1, 1, 1), 3, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, 10)
+		textTweenFade.interpolate_property(lunarnautText, "modulate", Color(1, 1, 1, 1), Color(1, 1, 1, 0), 3, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, 25)
+		textTween.start()
+		textTweenFade.start()
+		
+		var touchControlNode = global.lvl().astroNode.CAMERA_NODE.TOUCH_CONTROL_NODE
+		
+		touchControlsTween.interpolate_property(touchControlNode, "modulate", Color(1, 1, 1, 1), Color(1, 1, 1, 0), 3, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, 0)
+		touchControlsTweenFade.interpolate_property(touchControlNode, "modulate", Color(1, 1, 1, 0), Color(1, 1, 1, 1), 2, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, 28)
+		touchControlsTween.start()
+		touchControlsTweenFade.start()
+		
+		audio.sound("elevator", "lvl02").play()
+	
+		var sound = audio.sound("music", "lvl01")
+		global.newTween(sound, "volume_db", sound.get_volume_db(), -30, 3, 0)
+		global.newTween(sound, "volume_db", sound.get_volume_db(), -4, 6, 60)
+		
 	.Interact()
 	
-	for child in elevatorLights.get_children():
-		child.set_enabled(true)
 	
-	camShake.get_child(0).set_disabled(false)
-	
-	
-	textTween.interpolate_property(lunarnautText, "modulate", Color(1, 1, 1, 0), Color(1, 1, 1, 1), 3, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, 10)
-	textTweenFade.interpolate_property(lunarnautText, "modulate", Color(1, 1, 1, 1), Color(1, 1, 1, 0), 3, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, 25)
-	textTween.start()
-	textTweenFade.start()
-	
-	var touchControlNode = global.lvl().astroNode.CAMERA_NODE.TOUCH_CONTROL_NODE
-	
-	touchControlsTween.interpolate_property(touchControlNode, "modulate", Color(1, 1, 1, 1), Color(1, 1, 1, 0), 3, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, 0)
-	touchControlsTweenFade.interpolate_property(touchControlNode, "modulate", Color(1, 1, 1, 0), Color(1, 1, 1, 1), 2, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, 28)
-	touchControlsTween.start()
-	touchControlsTweenFade.start()
-	
-	audio.sound("elevator", "lvl02").play()
-
-	var sound = audio.sound("music", "lvl01")
-	global.newTween(sound, "volume_db", sound.get_volume_db(), -30, 3, 0)
-	global.newTween(sound, "volume_db", sound.get_volume_db(), -4, 6, 60)
