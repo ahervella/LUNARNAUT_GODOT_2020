@@ -54,6 +54,7 @@ func _ready():
 	
 	var fadeTimerTime = max(5, transitionTime)
 	
+	
 	global.newTimer(fadeTimerTime, funcref(self, "gotoCustomNextScene"))
 	
 	global.newTimer(fadeTimerTime - 5, funcref(astroNode.CAMERA_NODE, "FadeIntoBlack"))
@@ -72,6 +73,7 @@ func gotoCustomNextScene():
 		return
 		
 	global.goto_scene(customNextScene.get_path())
+		
 	
 func StartCFTween(obj, key):
 	CF.set_position(CF_POS)

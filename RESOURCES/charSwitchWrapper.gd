@@ -266,7 +266,7 @@ func addNCSPsToCSW(node):
 	
 				nodeCollShapePaths[index] = pathToSet
 
-		if child is StaticBody2D:
+		if child is StaticBody2D || child is KinematicBody2D:
 			for childChild in child.get_children():
 				addGroupsToCSW(childChild)
 				if childChild is CollisionShape2D:

@@ -58,6 +58,7 @@ const CHAR_RES_SAVE_DIR_PATH = "user://RESOURCES/CHARACTERS/"
 var levelWrapperDict = {}
 
 var changingScene = false
+var resetCharacterSwitching = false
 
 var dev_transitionShuttle_transScenePath
 var dev_transitionShuttle_faceRight
@@ -429,15 +430,15 @@ func loadCharRes():
 		
 		
 		
-func replay():
+func replay(resetCS = false):
 	init()
-	goto_scene("res://SCENES/main_menu.tscn")
+	goto_scene("res://SCENES/main_menu.tscn", resetCS)
 
 func loadLevel(lvlNum):
 	goto_scene(str("res://SCENES/lvl", "%0*d" % [2, lvlNum], ".tscn"))
 
 	
-func goto_scene(path):
+func goto_scene(path, resetCS = false):
 	changingScene = true
 	#call_deferred("goto_sceneEXT", path)
 	
@@ -453,10 +454,19 @@ func goto_scene(path):
 		changingScene = false
 		return
 	
+	if resetCS:
+		call_deferred("clearCSWs")
 	get_tree().change_scene(path)
 	changingScene = false
 	
-	dev_transitionShuttle_transScenePath = null
+	#dev_transitionShuttle_transScenePath = null
+func clearCSWs():
+	if levelWrapperDict.has(lvl().filename):
+		levelWrapperDict.erase(lvl().filename)
+		for csw in lvl().charSwitchWrappers.values():
+			for key in csw.changesToApply.keys():
+				csw.changesToApply[key] = []
+		resetCharacterSwitching = true
 	
 func goto_scene_via_shuttle(path, shuttleFaceRight):
 	dev_transitionShuttle_transScenePath = path

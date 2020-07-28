@@ -564,11 +564,14 @@ func joyPauseOptions(event):
 			match(selectedOpt):
 				2:
 					audio.unloadLevelSounds()
-					global.goto_scene(global.lvl().filename)
+		
+					
+					global.goto_scene(global.lvl().filename, true)
 					continue
 				3:
 					audio.unloadLevelSounds()
-					global.replay()
+
+					global.replay(true)
 					continue
 	
 

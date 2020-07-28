@@ -34,6 +34,7 @@ onready var devLevels = get_node(devLevelsPath)
 onready var version = get_node(versionPath)
 onready var returnButton = get_node(returnButtonPath)
 
+var fadeToBlackStarted = false
 
 var currMenuNode
 var currMenuOpt
@@ -64,6 +65,7 @@ func _ready():
 	mainMenuOPT.resize(mainMenu.get_child_count())
 	mainMenuOPT[0] = "setCustomLevelMenu"
 	mainMenuOPT[1] = "demoLevel"
+	mainMenuOPT[2] = "dev_lvl02"
 	
 	
 	setMenu(mainMenu, mainMenuOPT)
@@ -108,7 +110,7 @@ func _on_MenuLOOP_finished():
 #General input
 func _input(event):
 	
-	if mission.is_playing() || start.is_playing():
+	if fadeToBlackStarted || start.is_playing():
 		return
 	
 	if event is InputEventMouse: return
@@ -116,6 +118,10 @@ func _input(event):
 	if intro.is_playing() && !menu.is_playing():
 		skipMenu = true
 		_on_Intro_finished()
+		return
+	
+	if mission.is_playing():
+		fadeToBlack()
 		return
 	
 	if skipMenu:
@@ -250,6 +256,14 @@ func setMenu(m, mOPT = null):
 	currColWidth = currMenuNode.get_size().x / currColCount
 	currSize = currMenuNode.get_size()
 	
+func dev_lvl02():
+	fadeToBlack()
+	
+	global.newTimer(6, funcref(self, "goto_dev_lvl02"))
+	
+func goto_dev_lvl02():
+	global.goto_scene("res://SCENES/dev_lvl02.tscn")
+	
 	
 func demoLevel():
 	mission.play()
@@ -261,7 +275,9 @@ func demoLevel():
 	
 	global.newTimer(30, funcref(self, "missionTween"))
 
-func missionTween():
+func fadeToBlack():
+	if fadeToBlackStarted: return
+	fadeToBlackStarted = true
 	black.set_modulate(Color(1, 1, 1, 0))
 	black.show()
 	global.newTween(black, "modulate", 

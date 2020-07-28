@@ -30,11 +30,14 @@ func _on_TUTORIAL_TEXT_body_entered(body):
 	startTutorialTextTimer()
 
 func _on_TUTORIAL_TEXT_body_exited(body):
-	if !body.is_in_group("astro"): return
+	if !body.is_in_group("astro") || !closeOnLeaveArea: return
 	closeTutorialText()
+	
 	
 func startTutorialTextTimer():
 	delayTimer.start(0)
+	
+	
 	
 func startTutorialText():
 	yield(get_tree(), "idle_frame")

@@ -122,7 +122,7 @@ func AutoInteract():
 		can_interact = true
 	if (!can_interact):
 		return
-	if (TC_AUTO == null || (itemsRequired == null || itemsRequired.size() == 0)):
+	if (TC_AUTO == null): #|| (itemsRequired == null || itemsRequired.size() == 0)):
 		return
 
 	if (itemsRequired != null && itemsRequired.size() > 0 && !addedItemsToAuto):

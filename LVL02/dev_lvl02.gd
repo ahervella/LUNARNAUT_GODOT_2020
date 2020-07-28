@@ -68,3 +68,25 @@ func vcPower(val):
 	if Engine.editor_hint: return
 	if visitorsCenterHasPower:
 		visitorsCenterPowerOn()
+
+
+
+
+
+
+func _on_vcTransitionArea_body_entered(body):
+	if !body.is_in_group("astro"): return
+	
+	global.controls_enabled = false
+	astroNode.CAMERA_NODE.FadeIntoBlack()
+	global.newTimer(astroNode.CAMERA_NODE.BLACK_FADE_TIME+2, funcref(self, "goToShuttleScene"))
+	
+func goToShuttleScene():
+	global.controls_enabled = false
+	global.goto_scene_via_shuttle("res://SCENES/main_menu.tscn", false)
+	
+	
+	
+	
+	
+	

@@ -35,7 +35,7 @@ func setLightMask(isWallFloor):
 		setSetLightMask(isWallFloor)
 
 func setSetLightMask(isWallFloor):
-	for child in get_children():
+	for child in get_child(0).get_children():
 		if child is LightOccluder2D:
 			lo = child
 			break

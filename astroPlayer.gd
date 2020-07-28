@@ -194,7 +194,8 @@ func _ready():
 	
 	
 	
-	if (global.currCharRes == null):
+	if (global.currCharRes == null || global.resetCharacterSwitching):
+			global.resetCharacterSwitching = false
 			if global.availableChar.has(startingChar):
 				global.currCharRes = global.charResDict[startingChar]
 			else:
@@ -243,8 +244,8 @@ func readyDeferred():
 		enableShadowsSetter(enableShadows)
 		#showBlackBGSetter(showBlackBG)
 	
-	#showMoonBGSetter(showMoonBG)
-	#showBlackBGSetter(showBlackBG)
+	showMoonBGSetter(showMoonBG)
+	showBlackBGSetter(showBlackBG)
 	
 	#flip movableObject bubble
 	#checks after character switching applied in lvl ready
@@ -510,9 +511,9 @@ func ProcessMoveInput(delta):
 	
 	#if platformDropDownCounter > 0: print(platformDropDownCounter)
 	#For testing astro death
-	if(Input.is_action_pressed("ui_down") && !global.playTest):
+	if(Input.is_action_pressed("ui_down")): #&& !global.playTest):
 		handleplatformDropDownCounter(true, delta)
-	elif(Input.is_action_just_released("ui_down") && !global.playTest):
+	elif(Input.is_action_just_released("ui_down")):# && !global.playTest):
 		handleplatformDropDownCounter(false, delta)
 		
 		
@@ -548,7 +549,7 @@ func fallThroughPlatform():
 	var body = getRelativeNodeBelow()
 	if !body.is_in_group("platform"): return
 	
-	body.fallThrough()
+	body.get_parent().fallThrough()
 		
 		
 func Move():
@@ -1187,7 +1188,7 @@ func _on_groundBubble_body_entered(body):
 	#(body.get_groups())
 	if body.is_in_group("platform") && platformDropDownCounter > PLATFORM_DROP_TIME:	
 		
-		body.fallThrough()
+		body.get_parent().fallThrough()
 		_on_groundBubble_body_exited(body)
 		platformBodyExcep = body
 		return
